@@ -4,13 +4,13 @@ import { Instagram, Facebook, Twitter, Mail, Phone, MapPin } from "lucide-react"
 
 export function SiteFooter() {
     return (
-        <footer className="bg-gray-900 text-white">
+        <footer className="bg-black text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {/* Logo y descripción */}
                     <div>
                         <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
                                 <span className="text-white font-bold text-lg">CE</span>
                             </div>
                             <span className="ml-2 text-xl font-semibold">BeautyCenter</span>
@@ -42,7 +42,7 @@ export function SiteFooter() {
                                 { name: "Sobre Nosotros", href: "/#equipo" },
                                 { name: "Testimonios", href: "/#testimonios" },
                                 { name: "Contacto", href: "/#contacto" },
-                                { name: "Reservar Cita", href: "/reservar" },
+                                { name: "Reservar Cita", href: "#" },
                             ].map((link) => (
                                 <li key={link.name}>
                                     <Link href={link.href} className="text-gray-400 hover:text-white transition-colors">
@@ -67,7 +67,7 @@ export function SiteFooter() {
                                 "Radiofrecuencia",
                             ].map((service) => (
                                 <li key={service}>
-                                    <Link href="/reservar" className="text-gray-400 hover:text-white transition-colors">
+                                    <Link href="#" className="text-gray-400 hover:text-white transition-colors">
                                         {service}
                                     </Link>
                                 </li>
@@ -80,7 +80,7 @@ export function SiteFooter() {
                         <h3 className="text-lg font-medium mb-4">Contacto</h3>
                         <ul className="space-y-4">
                             <li className="flex items-start">
-                                <MapPin className="h-5 w-5 text-pink-500 mr-3 mt-0.5" />
+                                <MapPin className="h-5 w-5 text-yellow-500 mr-3 mt-0.5" />
                                 <span className="text-gray-400">
                   Av. Principal 123, Ciudad
                   <br />
@@ -88,11 +88,11 @@ export function SiteFooter() {
                 </span>
                             </li>
                             <li className="flex items-center">
-                                <Phone className="h-5 w-5 text-pink-500 mr-3" />
+                                <Phone className="h-5 w-5 text-yellow-500 mr-3" />
                                 <span className="text-gray-400">+54 11 1234-5678</span>
                             </li>
                             <li className="flex items-center">
-                                <Mail className="h-5 w-5 text-pink-500 mr-3" />
+                                <Mail className="h-5 w-5 text-yellow-500 mr-3" />
                                 <span className="text-gray-400">info@centrodeestetica.com</span>
                             </li>
                         </ul>

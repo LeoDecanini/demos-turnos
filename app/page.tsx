@@ -45,7 +45,7 @@ export default function Home() {
           <section className="relative h-[80vh] min-h-[600px] w-full">
             <div className="absolute inset-0 w-full h-full">
               <img
-                  src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=2070&auto=format&fit=crop"
+                  src="/instalanciones-1.jpg"
                   alt="Centro de estética"
                   className="w-full h-full object-cover"
               />
@@ -53,18 +53,18 @@ export default function Home() {
             </div>
 
             <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
-              <Badge className="mb-4 bg-pink-100 text-pink-800 hover:bg-pink-100 w-fit">
+              <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100 w-fit">
                 Centro de Medicina Estética
               </Badge>
               <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 max-w-2xl">
-                Belleza y Bienestar <span className="text-pink-300">Profesional</span>
+                Belleza y Bienestar <span className="text-yellow-300">Profesional</span>
               </h1>
               <p className="text-xl text-gray-100 max-w-2xl mb-8">
                 Descubre nuestros tratamientos personalizados para realzar tu belleza natural con los mejores
                 profesionales y tecnología de vanguardia.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="h-8 bg-pink-600 hover:bg-pink-700" onClick={() => handleNavigation("/reservar")}>
+                <Button size="lg" className="h-8 bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("#")}>
                   Reservar Cita <CalendarCheck className="ml-2 h-5 w-5" />
                 </Button>
                 <Button
@@ -115,7 +115,7 @@ export default function Home() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                       <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                         <div className="flex items-center mb-3">
-                          <div className="bg-pink-500 p-2 rounded-full mr-3">
+                          <div className="bg-yellow-500 p-2 rounded-full mr-3">
                             <item.icon className="h-5 w-5 text-white" />
                           </div>
                           <h3 className="font-semibold text-xl">{item.title}</h3>
@@ -132,7 +132,7 @@ export default function Home() {
           <section id="servicios" className="py-20 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-16">
-                <Badge className="mb-4 bg-pink-100 text-pink-800 hover:bg-pink-100">Nuestros Servicios</Badge>
+                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Nuestros Servicios</Badge>
                 <h2 className="text-3xl font-bold text-gray-900">Tratamientos Exclusivos</h2>
                 <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
                   Ofrecemos una amplia gama de tratamientos estéticos y médicos para realzar tu belleza natural.
@@ -178,7 +178,7 @@ export default function Home() {
                         <div className="flex justify-between items-center">
                           <CardTitle>{service.title}</CardTitle>
                           {service.popular && (
-                              <Badge className="bg-pink-100 text-pink-800 hover:bg-pink-100">Popular</Badge>
+                              <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Popular</Badge>
                           )}
                         </div>
                         <CardDescription>{service.description}</CardDescription>
@@ -187,14 +187,14 @@ export default function Home() {
                         <ul className="space-y-2">
                           {service.treatments.map((treatment, j) => (
                               <li key={j} className="flex items-center">
-                                <div className="mr-2 h-1.5 w-1.5 rounded-full bg-pink-500"></div>
+                                <div className="mr-2 h-1.5 w-1.5 rounded-full bg-yellow-500"></div>
                                 {treatment}
                               </li>
                           ))}
                         </ul>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("/reservar")}>
+                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("#")}>
                           Ver Detalles
                         </Button>
                       </CardFooter>
@@ -203,7 +203,7 @@ export default function Home() {
               </div>
 
               <div className="mt-12 text-center">
-                <Button size="lg" className="bg-pink-600 hover:bg-pink-700" onClick={() => handleNavigation("/reservar")}>
+                <Button size="lg" className="bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("#")}>
                   Ver Todos los Servicios <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
@@ -218,14 +218,14 @@ export default function Home() {
                   alt="Promoción especial"
                   className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-pink-900/70"></div>
+              <div className="absolute inset-0 bg-yellow-900/70"></div>
             </div>
             <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
               <h2 className="text-3xl font-bold text-white mb-4">Promoción Especial</h2>
-              <p className="text-xl text-pink-100 mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-yellow-100 mb-8 max-w-2xl mx-auto">
                 20% de descuento en tu primer tratamiento facial al reservar este mes
               </p>
-              <Button size="lg" variant="secondary" onClick={() => handleNavigation("/reservar")}>
+              <Button size="lg" variant="secondary" onClick={() => handleNavigation("#")}>
                 Reservar Ahora
               </Button>
             </div>
@@ -236,7 +236,7 @@ export default function Home() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
-                  <Badge className="mb-4 bg-pink-100 text-pink-800 hover:bg-pink-100">Nuestra Historia</Badge>
+                  <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Nuestra Historia</Badge>
                   <h2 className="text-3xl font-bold text-gray-900 mb-6">
                     Más de 10 años de experiencia en medicina estética
                   </h2>
@@ -256,12 +256,12 @@ export default function Home() {
                       { number: "3", label: "Premios de Excelencia" },
                     ].map((stat, i) => (
                         <div key={i} className="text-center p-4 bg-gray-50 rounded-lg shadow-sm">
-                          <p className="text-3xl font-bold text-pink-600">{stat.number}</p>
+                          <p className="text-3xl font-bold text-yellow-600">{stat.number}</p>
                           <p className="text-gray-600">{stat.label}</p>
                         </div>
                     ))}
                   </div>
-                  <Button className="bg-pink-600 hover:bg-pink-700" onClick={() => handleSectionScroll("equipo")}>
+                  <Button className="bg-yellow-600 hover:bg-yellow-700" onClick={() => handleSectionScroll("equipo")}>
                     Conoce a Nuestro Equipo
                   </Button>
                 </div>
@@ -289,7 +289,7 @@ export default function Home() {
           <section className="py-16 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
-                <Badge className="mb-4 bg-pink-100 text-pink-800 hover:bg-pink-100">Galería</Badge>
+                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Galería</Badge>
                 <h2 className="text-3xl font-bold text-gray-900">Nuestras Instalaciones</h2>
                 <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
                   Conoce nuestro centro y los espacios donde realizamos los tratamientos
@@ -325,7 +325,7 @@ export default function Home() {
           <section className="py-20 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-16">
-                <Badge className="mb-4 bg-pink-100 text-pink-800 hover:bg-pink-100">Testimonios</Badge>
+                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Testimonios</Badge>
                 <h2 className="text-3xl font-bold text-gray-900">Lo que dicen nuestros pacientes</h2>
                 <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
                   La satisfacción de nuestros pacientes es nuestra mejor carta de presentación.
@@ -348,7 +348,7 @@ export default function Home() {
                         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop",
                     treatment: "Botox",
                     quote:
-                        "Muy profesionales y atentos. El Dr. Méndez me explicó todo el procedimiento y me sentí muy seguro. Los resultados son naturales, justo lo que buscaba.",
+                        "Muy profesionales y atentos. Me explicaron todo el procedimiento y me sentí muy seguro. Los resultados son naturales, justo lo que buscaba.",
                   },
                   {
                     name: "María González",
@@ -390,10 +390,10 @@ export default function Home() {
           </section>
 
           {/* Equipo */}
-          <section id="equipo" className="py-20 bg-gradient-to-r from-pink-50 to-purple-50">
+          {/* <section id="equipo" className="py-20 bg-gradient-to-r from-yellow-50 to-purple-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-16">
-                <Badge className="mb-4 bg-pink-100 text-pink-800 hover:bg-pink-100">Nuestro Equipo</Badge>
+                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Nuestro Equipo</Badge>
                 <h2 className="text-3xl font-bold text-gray-900">Profesionales Cualificados</h2>
                 <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
                   Contamos con un equipo de especialistas con amplia experiencia en medicina estética.
@@ -449,17 +449,17 @@ export default function Home() {
                       <CardContent>
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center">
-                            <div className="mr-2 h-1.5 w-1.5 rounded-full bg-pink-500"></div>
+                            <div className="mr-2 h-1.5 w-1.5 rounded-full bg-yellow-500"></div>
                             <span className="text-gray-700">Especialidad: {member.specialty}</span>
                           </div>
                           <div className="flex items-center">
-                            <div className="mr-2 h-1.5 w-1.5 rounded-full bg-pink-500"></div>
+                            <div className="mr-2 h-1.5 w-1.5 rounded-full bg-yellow-500"></div>
                             <span className="text-gray-700">Experiencia: {member.experience}</span>
                           </div>
                         </div>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("/reservar")}>
+                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("#")}>
                           Reservar Cita
                         </Button>
                       </CardFooter>
@@ -467,14 +467,14 @@ export default function Home() {
                 ))}
               </div>
             </div>
-          </section>
+          </section> */}
 
           {/* Contacto */}
           <section id="contacto" className="py-20 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <div>
-                  <Badge className="mb-4 bg-pink-100 text-pink-800 hover:bg-pink-100">Contacto</Badge>
+                  <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Contacto</Badge>
                   <h2 className="text-3xl font-bold text-gray-900 mb-6">¿Tienes alguna pregunta?</h2>
                   <p className="text-lg text-gray-700 mb-8">
                     Estamos aquí para ayudarte. Contáctanos para más información sobre nuestros servicios o para programar
@@ -484,8 +484,8 @@ export default function Home() {
                   <div className="space-y-6">
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
-                        <div className="bg-pink-100 p-3 rounded-full">
-                          <MapPin className="h-6 w-6 text-pink-600" />
+                        <div className="bg-yellow-100 p-3 rounded-full">
+                          <MapPin className="h-6 w-6 text-yellow-600" />
                         </div>
                       </div>
                       <div className="ml-4">
@@ -500,8 +500,8 @@ export default function Home() {
 
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
-                        <div className="bg-pink-100 p-3 rounded-full">
-                          <Phone className="h-6 w-6 text-pink-600" />
+                        <div className="bg-yellow-100 p-3 rounded-full">
+                          <Phone className="h-6 w-6 text-yellow-600" />
                         </div>
                       </div>
                       <div className="ml-4">
@@ -512,8 +512,8 @@ export default function Home() {
 
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
-                        <div className="bg-pink-100 p-3 rounded-full">
-                          <Mail className="h-6 w-6 text-pink-600" />
+                        <div className="bg-yellow-100 p-3 rounded-full">
+                          <Mail className="h-6 w-6 text-yellow-600" />
                         </div>
                       </div>
                       <div className="ml-4">
@@ -524,8 +524,8 @@ export default function Home() {
 
                     <div className="flex items-start">
                       <div className="flex-shrink-0">
-                        <div className="bg-pink-100 p-3 rounded-full">
-                          <Clock className="h-6 w-6 text-pink-600" />
+                        <div className="bg-yellow-100 p-3 rounded-full">
+                          <Clock className="h-6 w-6 text-yellow-600" />
                         </div>
                       </div>
                       <div className="ml-4">
@@ -560,7 +560,7 @@ export default function Home() {
                         <input
                             type="text"
                             id="name"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
                         />
                       </div>
                       <div>
@@ -570,7 +570,7 @@ export default function Home() {
                         <input
                             type="email"
                             id="email"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
                         />
                       </div>
                     </div>
@@ -581,7 +581,7 @@ export default function Home() {
                       <input
                           type="text"
                           id="subject"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
                       />
                     </div>
                     <div>
@@ -591,10 +591,10 @@ export default function Home() {
                       <textarea
                           id="message"
                           rows={4}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
                       ></textarea>
                     </div>
-                    <Button className="w-full bg-pink-600 hover:bg-pink-700">Enviar Mensaje</Button>
+                    <Button className="w-full bg-yellow-600 hover:bg-yellow-700">Enviar Mensaje</Button>
                   </form>
                 </div>
               </div>

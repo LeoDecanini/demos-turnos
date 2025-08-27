@@ -12,7 +12,7 @@ const navigation = [
     {name: "Servicios", href: "/#servicios"},
     {name: "Sobre Nosotros", href: "/#equipo"},
     {name: "Contacto", href: "/#contacto"},
-    {name: "Reservar", href: "/reservar"},
+    {name: "Reservar", href: "#"},
 ]
 
 export function SiteHeader() {
@@ -27,7 +27,7 @@ export function SiteHeader() {
                         <span className="sr-only">Centro de Estética</span>
                         <div className="flex items-center">
                             <div
-                                className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center">
+                                className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
                                 <span className="text-white font-bold">B</span>
                             </div>
                             <span className="ml-2 text-xl font-semibold text-gray-900">Beauty</span>
@@ -37,7 +37,7 @@ export function SiteHeader() {
 
                 <div className="flex lg:hidden">
                     <Button size="sm" asChild className={"mr-2"}>
-                        <Link href="/reservar">
+                        <Link href="#">
                             <CalendarCheck className="mr-2 h-4 w-4"/> Reservar
                         </Link>
                     </Button>
@@ -57,9 +57,9 @@ export function SiteHeader() {
                             key={item.name}
                             href={item.href}
                             className={cn(
-                                "text-sm font-medium transition-colors hover:text-pink-600",
+                                "text-sm font-medium transition-colors hover:text-yellow-600",
                                 pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
-                                    ? "text-pink-600"
+                                    ? "text-yellow-600"
                                     : "text-gray-700",
                             )}
                         >
@@ -70,11 +70,11 @@ export function SiteHeader() {
 
                 <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-4">
                     <div className="flex items-center gap-1">
-                        <Phone className="h-4 w-4 text-pink-600"/>
+                        <Phone className="h-4 w-4 text-yellow-600"/>
                         <span className="text-xs font-medium">11 1234-5678</span>
                     </div>
                     <Button size="sm" asChild>
-                        <Link href="/reservar">
+                        <Link href="#">
                             <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
                         </Link>
                     </Button>
@@ -92,7 +92,7 @@ export function SiteHeader() {
                             <span className="sr-only">Centro de Estética</span>
                             <div className="flex items-center">
                                 <div
-                                    className="h-8 w-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center">
+                                    className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
                                     <span className="text-white font-bold">B</span>
                                 </div>
                                 <span className="ml-2 text-xl font-semibold text-gray-900">Beauty</span>
@@ -118,7 +118,7 @@ export function SiteHeader() {
                                         className={cn(
                                             "-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7",
                                             pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
-                                                ? "bg-gray-50 text-pink-600"
+                                                ? "bg-gray-50 text-yellow-600"
                                                 : "text-gray-900 hover:bg-gray-50",
                                         )}
                                         onClick={() => setMobileMenuOpen(false)}
@@ -130,7 +130,7 @@ export function SiteHeader() {
 
                             <div className="py-6">
                                 <Button className="w-full" asChild>
-                                    <Link href="/reservar" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href="#" onClick={() => setMobileMenuOpen(false)}>
                                         <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
                                     </Link>
                                 </Button>
