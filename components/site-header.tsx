@@ -12,7 +12,7 @@ const navigation = [
     {name: "Servicios", href: "/#servicios"},
     {name: "Sobre Nosotros", href: "/#equipo"},
     {name: "Contacto", href: "/#contacto"},
-    {name: "Reservar", href: "#"},
+    {name: "Reservar", href: "/reservar"},
 ]
 
 export function SiteHeader() {

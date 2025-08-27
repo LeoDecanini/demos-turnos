@@ -16,6 +16,9 @@ import {
   Instagram,
   Facebook,
   ChevronRight,
+  ShieldCheck,
+  HeartHandshake,
+  Leaf,
 } from "lucide-react"
 
 export default function Home() {
@@ -64,7 +67,7 @@ export default function Home() {
               profesionales y tecnología de vanguardia.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="h-8 bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("#")}>
+              <Button size="lg" className="h-8 bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("/reservar")}>
                 Reservar Cita <CalendarCheck className="ml-2 h-5 w-5" />
               </Button>
               <Button
@@ -145,7 +148,7 @@ export default function Home() {
                         </ul>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("#")}>
+                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("/reservar")}>
                           Ver Detalles
                         </Button>
                       </CardFooter>
@@ -154,7 +157,7 @@ export default function Home() {
               </div>
 
               <div className="mt-12 text-center">
-                <Button size="lg" className="bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("#")}>
+                <Button size="lg" className="bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("/reservar")}>
                   Ver Todos los Servicios <ChevronRight className="ml-2 h-5 w-5" />
                 </Button>
               </div>
@@ -173,25 +176,25 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
                   {
-                    icon: Star,
-                    title: "Excelencia",
-                    desc: "Más de 1,000 clientes satisfechos",
+                    icon: ShieldCheck,
+                    title: "Seguridad",
+                    desc: "Protocolos médicos y equipos certificados",
                     image:
                       "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?q=80&w=1974&auto=format&fit=crop",
                   },
                   {
-                    icon: Users,
-                    title: "Profesionales",
-                    desc: "Equipo médico especializado",
+                    icon: HeartHandshake,
+                    title: "Acompañamiento",
+                    desc: "Plan personalizado y seguimiento post tratamiento",
                     image:
-                      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop",
+                      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=2069&auto=format&fit=crop",
                   },
                   {
-                    icon: Sparkles,
-                    title: "Tecnología",
-                    desc: "Equipos de última generación",
+                    icon: Leaf,
+                    title: "Resultados Naturales",
+                    desc: "Enfoque estético que respeta tu esencia",
                     image:
-                      "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=2068&auto=format&fit=crop",
+                      "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?q=80&w=2069&auto=format&fit=crop",
                   },
                 ].map((item, i) => (
                   <div key={i} className="relative overflow-hidden rounded-2xl shadow-lg group">
@@ -217,8 +220,6 @@ export default function Home() {
           </div>
         </section>
 
-
-
         {/* Banner de promoción */}
         <section className="relative py-16">
           <div className="absolute inset-0">
@@ -234,7 +235,7 @@ export default function Home() {
             <p className="text-xl text-yellow-100 mb-8 max-w-2xl mx-auto">
               20% de descuento en tu primer tratamiento facial al reservar este mes
             </p>
-            <Button size="lg" variant="secondary" onClick={() => handleNavigation("#")}>
+            <Button size="lg" variant="secondary" onClick={() => handleNavigation("/reservar")}>
               Reservar Ahora
             </Button>
           </div>
@@ -468,7 +469,7 @@ export default function Home() {
                         </div>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("#")}>
+                        <Button variant="outline" className="w-full" onClick={() => handleNavigation("/reservar")}>
                           Reservar Cita
                         </Button>
                       </CardFooter>
