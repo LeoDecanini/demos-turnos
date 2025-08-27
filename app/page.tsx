@@ -39,97 +39,48 @@ export default function Home() {
   }
 
   return (
-      <>
-        <div className="min-h-screen">
-          {/* Hero Section con imagen grande a todo lo ancho */}
-          <section className="relative h-[80vh] min-h-[600px] w-full">
-            <div className="absolute inset-0 w-full h-full">
-              <img
-                  src="/instalanciones-1.jpg"
-                  alt="Centro de estética"
-                  className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30"></div>
-            </div>
+    <>
+      <div className="min-h-screen">
+        {/* Hero Section con imagen grande a todo lo ancho */}
+        <section className="relative h-[80vh] min-h-[600px] w-full">
+          <div className="absolute inset-0 w-full h-full">
+            <img
+              src="/instalanciones-1.jpg"
+              alt="Centro de estética"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30"></div>
+          </div>
 
-            <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
-              <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100 w-fit">
-                Centro de Medicina Estética
-              </Badge>
-              <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 max-w-2xl">
-                Belleza y Bienestar <span className="text-yellow-300">Profesional</span>
-              </h1>
-              <p className="text-xl text-gray-100 max-w-2xl mb-8">
-                Descubre nuestros tratamientos personalizados para realzar tu belleza natural con los mejores
-                profesionales y tecnología de vanguardia.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="h-8 bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("#")}>
-                  Reservar Cita <CalendarCheck className="ml-2 h-5 w-5" />
-                </Button>
-                <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-8 text-black hover:text-white border-white hover:bg-white/20"
-                    onClick={() => handleSectionScroll("servicios")}
-                >
-                  Ver Servicios <ChevronRight className="ml-2 h-5 w-5" />
-                </Button>
-              </div>
+          <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
+            <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100 w-fit">
+              Centro de Medicina Estética
+            </Badge>
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 max-w-2xl">
+              Belleza y Bienestar <span className="text-yellow-300">Profesional</span>
+            </h1>
+            <p className="text-xl text-gray-100 max-w-2xl mb-8">
+              Descubre nuestros tratamientos personalizados para realzar tu belleza natural con los mejores
+              profesionales y tecnología de vanguardia.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Button size="lg" className="h-8 bg-yellow-600 hover:bg-yellow-700" onClick={() => handleNavigation("#")}>
+                Reservar Cita <CalendarCheck className="ml-2 h-5 w-5" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-8 text-black hover:text-white border-white hover:bg-white/20"
+                onClick={() => handleSectionScroll("servicios")}
+              >
+                Ver Servicios <ChevronRight className="ml-2 h-5 w-5" />
+              </Button>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Características destacadas */}
-          <section className="py-12 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[
-                  {
-                    icon: Star,
-                    title: "Excelencia",
-                    desc: "Más de 1,000 clientes satisfechos",
-                    image:
-                        "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?q=80&w=1974&auto=format&fit=crop",
-                  },
-                  {
-                    icon: Users,
-                    title: "Profesionales",
-                    desc: "Equipo médico especializado",
-                    image:
-                        "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop",
-                  },
-                  {
-                    icon: Sparkles,
-                    title: "Tecnología",
-                    desc: "Equipos de última generación",
-                    image:
-                        "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=2068&auto=format&fit=crop",
-                  },
-                ].map((item, i) => (
-                    <div key={i} className="relative overflow-hidden rounded-2xl shadow-lg group">
-                      <img
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.title}
-                          className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                      <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                        <div className="flex items-center mb-3">
-                          <div className="bg-yellow-500 p-2 rounded-full mr-3">
-                            <item.icon className="h-5 w-5 text-white" />
-                          </div>
-                          <h3 className="font-semibold text-xl">{item.title}</h3>
-                        </div>
-                        <p className="text-gray-100">{item.desc}</p>
-                      </div>
-                    </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Servicios Destacados */}
-          <section id="servicios" className="py-20 bg-gray-50">
+        {/* Servicios Destacados */}
+        {/*  <section id="servicios" className="py-20 bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-16">
                 <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Nuestros Servicios</Badge>
@@ -208,189 +159,247 @@ export default function Home() {
                 </Button>
               </div>
             </div>
-          </section>
+          </section> */}
 
-          {/* Banner de promoción */}
-          <section className="relative py-16">
-            <div className="absolute inset-0">
-              <img
-                  src="https://images.unsplash.com/photo-1596178060810-72f53ce9a65c?q=80&w=2069&auto=format&fit=crop"
-                  alt="Promoción especial"
-                  className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-yellow-900/70"></div>
-            </div>
-            <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-              <h2 className="text-3xl font-bold text-white mb-4">Promoción Especial</h2>
-              <p className="text-xl text-yellow-100 mb-8 max-w-2xl mx-auto">
-                20% de descuento en tu primer tratamiento facial al reservar este mes
-              </p>
-              <Button size="lg" variant="secondary" onClick={() => handleNavigation("#")}>
-                Reservar Ahora
-              </Button>
-            </div>
-          </section>
+        <section id="diferenciales" className="py-20 bg-gradient-to-b from-white to-yellow-50">
+          <div className="mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <Badge className="mb-4 bg-yellow-100 text-yellow-800">¿Por qué elegirnos?</Badge>
+            <h2 className="text-3xl font-bold text-gray-900">Tu bienestar, nuestra prioridad</h2>
+            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+              No solo ofrecemos tratamientos, sino una experiencia completa de cuidado y confianza.
+            </p>
 
-          {/* Sobre Nosotros */}
-          <section className="py-20 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div>
-                  <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Nuestra Historia</Badge>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                    Más de 10 años de experiencia en medicina estética
-                  </h2>
-                  <p className="text-lg text-gray-700 mb-6">
-                    Fundado en 2013, nuestro centro de medicina estética ha sido pionero en introducir las técnicas más
-                    avanzadas y seguras para realzar la belleza natural de nuestros pacientes.
-                  </p>
-                  <p className="text-lg text-gray-700 mb-8">
-                    Contamos con un equipo de profesionales altamente cualificados y en constante formación, que trabajan
-                    con la tecnología más innovadora para ofrecer resultados excepcionales.
-                  </p>
-                  <div className="grid grid-cols-2 gap-6 mb-8">
-                    {[
-                      { number: "5,000+", label: "Pacientes Satisfechos" },
-                      { number: "15+", label: "Profesionales" },
-                      { number: "30+", label: "Tratamientos" },
-                      { number: "3", label: "Premios de Excelencia" },
-                    ].map((stat, i) => (
-                        <div key={i} className="text-center p-4 bg-gray-50 rounded-lg shadow-sm">
-                          <p className="text-3xl font-bold text-yellow-600">{stat.number}</p>
-                          <p className="text-gray-600">{stat.label}</p>
-                        </div>
-                    ))}
-                  </div>
-                  <Button className="bg-yellow-600 hover:bg-yellow-700" onClick={() => handleSectionScroll("equipo")}>
-                    Conoce a Nuestro Equipo
-                  </Button>
-                </div>
-                <div className="relative">
-                  <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
-                    <img
-                        src="https://images.unsplash.com/photo-1560750588-73207b1ef5b8?q=80&w=2070&auto=format&fit=crop"
-                        alt="Nuestro centro"
-                        className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
-                    <img
-                        src="/instalanciones-1.jpg"
-                        alt="Tratamiento"
-                        className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Galería de imágenes */}
-          <section className="py-16 bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Galería</Badge>
-                <h2 className="text-3xl font-bold text-gray-900">Nuestras Instalaciones</h2>
-                <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-                  Conoce nuestro centro y los espacios donde realizamos los tratamientos
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {[
-                  "/instalanciones-1.jpg",
-                  "/instalanciones-2.jpg",
-                  "/instalanciones-3.jpg",
-                  "/instalanciones-6.avif",
-                  "/instalanciones-4.jpg",
-                  "/instalanciones-5.png",
-                ].map((img, i) => (
-                    <div
-                        key={i}
-                        className={`overflow-hidden rounded-lg shadow-md ${i === 0 || i === 3 ? "col-span-2 row-span-2" : ""}`}
-                    >
-                      <img
-                          src={img || "/placeholder.svg"}
-                          alt={`Instalación ${i + 1}`}
-                          className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                          style={{ height: i === 0 || i === 3 ? "400px" : "200px" }}
-                      />
+                  {
+                    icon: Star,
+                    title: "Excelencia",
+                    desc: "Más de 1,000 clientes satisfechos",
+                    image:
+                      "https://images.unsplash.com/photo-1607779097040-26e80aa78e66?q=80&w=1974&auto=format&fit=crop",
+                  },
+                  {
+                    icon: Users,
+                    title: "Profesionales",
+                    desc: "Equipo médico especializado",
+                    image:
+                      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=2070&auto=format&fit=crop",
+                  },
+                  {
+                    icon: Sparkles,
+                    title: "Tecnología",
+                    desc: "Equipos de última generación",
+                    image:
+                      "https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=2068&auto=format&fit=crop",
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="relative overflow-hidden rounded-2xl shadow-lg group">
+                    <img
+                      src={item.image || "/placeholder.svg"}
+                      alt={item.title}
+                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+                      <div className="flex items-center mb-3">
+                        <div className="bg-yellow-500 p-2 rounded-full mr-3">
+                          <item.icon className="h-5 w-5 text-white" />
+                        </div>
+                        <h3 className="font-semibold text-xl">{item.title}</h3>
+                      </div>
+                      <p className="text-gray-100">{item.desc}</p>
                     </div>
+                  </div>
                 ))}
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Testimonios */}
-          <section className="py-20 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-16">
-                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Testimonios</Badge>
-                <h2 className="text-3xl font-bold text-gray-900">Lo que dicen nuestros pacientes</h2>
-                <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-                  La satisfacción de nuestros pacientes es nuestra mejor carta de presentación.
+
+
+        {/* Banner de promoción */}
+        <section className="relative py-16">
+          <div className="absolute inset-0">
+            <img
+              src="https://images.unsplash.com/photo-1596178060810-72f53ce9a65c?q=80&w=2069&auto=format&fit=crop"
+              alt="Promoción especial"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-yellow-900/70"></div>
+          </div>
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">Promoción Especial</h2>
+            <p className="text-xl text-yellow-100 mb-8 max-w-2xl mx-auto">
+              20% de descuento en tu primer tratamiento facial al reservar este mes
+            </p>
+            <Button size="lg" variant="secondary" onClick={() => handleNavigation("#")}>
+              Reservar Ahora
+            </Button>
+          </div>
+        </section>
+
+        {/* Sobre Nosotros */}
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Nuestra Historia</Badge>
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                  Más de 10 años de experiencia en medicina estética
+                </h2>
+                <p className="text-lg text-gray-700 mb-6">
+                  Fundado en 2013, nuestro centro de medicina estética ha sido pionero en introducir las técnicas más
+                  avanzadas y seguras para realzar la belleza natural de nuestros pacientes.
                 </p>
+                <p className="text-lg text-gray-700 mb-8">
+                  Contamos con un equipo de profesionales altamente cualificados y en constante formación, que trabajan
+                  con la tecnología más innovadora para ofrecer resultados excepcionales.
+                </p>
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  {[
+                    { number: "5,000+", label: "Pacientes Satisfechos" },
+                    { number: "15+", label: "Profesionales" },
+                    { number: "30+", label: "Tratamientos" },
+                    { number: "3", label: "Premios de Excelencia" },
+                  ].map((stat, i) => (
+                    <div key={i} className="text-center p-4 bg-gray-50 rounded-lg shadow-sm">
+                      <p className="text-3xl font-bold text-yellow-600">{stat.number}</p>
+                      <p className="text-gray-600">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <Button className="bg-yellow-600 hover:bg-yellow-700" onClick={() => handleSectionScroll("equipo")}>
+                  Conoce a Nuestro Equipo
+                </Button>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[
-                  {
-                    name: "Laura Martínez",
-                    image:
-                        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974&auto=format&fit=crop",
-                    treatment: "Tratamiento Facial",
-                    quote:
-                        "Increíble experiencia. Los resultados superaron mis expectativas y el trato fue excelente. Recomiendo totalmente el tratamiento de hidrafacial.",
-                  },
-                  {
-                    name: "Carlos Rodríguez",
-                    image:
-                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop",
-                    treatment: "Botox",
-                    quote:
-                        "Muy profesionales y atentos. Me explicaron todo el procedimiento y me sentí muy seguro. Los resultados son naturales, justo lo que buscaba.",
-                  },
-                  {
-                    name: "María González",
-                    image:
-                        "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
-                    treatment: "Criolipólisis",
-                    quote:
-                        "Después de dos sesiones, los resultados son visibles. El personal es muy amable y las instalaciones son modernas y limpias. Volveré sin duda.",
-                  },
-                ].map((testimonial, i) => (
-                    <Card key={i} className="bg-gray-50 border-0 shadow-md">
-                      <CardHeader>
-                        <div className="flex items-center gap-4">
-                          <div className="h-14 w-14 rounded-full overflow-hidden">
-                            <img
-                                src={testimonial.image || "/placeholder.svg"}
-                                alt={testimonial.name}
-                                className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">{testimonial.name}</CardTitle>
-                            <CardDescription>{testimonial.treatment}</CardDescription>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex mb-4">
-                          {[...Array(5)].map((_, j) => (
-                              <Star key={j} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                          ))}
-                        </div>
-                        <p className="text-gray-700 italic">&quot;{testimonial.quote}&quot;</p>
-                      </CardContent>
-                    </Card>
-                ))}
+              <div className="relative">
+                <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
+                  <img
+                    src="https://images.unsplash.com/photo-1560750588-73207b1ef5b8?q=80&w=2070&auto=format&fit=crop"
+                    alt="Nuestro centro"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
+                  <img
+                    src="/instalanciones-1.jpg"
+                    alt="Tratamiento"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          {/* Equipo */}
-          {/* <section id="equipo" className="py-20 bg-gradient-to-r from-yellow-50 to-purple-50">
+        {/* Galería de imágenes */}
+        <section className="py-16 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Galería</Badge>
+              <h2 className="text-3xl font-bold text-gray-900">Nuestras Instalaciones</h2>
+              <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+                Conoce nuestro centro y los espacios donde realizamos los tratamientos
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                "/instalanciones-1.jpg",
+                "/instalanciones-2.jpg",
+                "/instalanciones-3.jpg",
+                "/instalanciones-6.avif",
+                "/instalanciones-4.jpg",
+                "/instalanciones-5.png",
+              ].map((img, i) => (
+                <div
+                  key={i}
+                  className={`overflow-hidden rounded-lg shadow-md ${i === 0 || i === 3 ? "col-span-2 row-span-2" : ""}`}
+                >
+                  <img
+                    src={img || "/placeholder.svg"}
+                    alt={`Instalación ${i + 1}`}
+                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                    style={{ height: i === 0 || i === 3 ? "400px" : "200px" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonios */}
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Testimonios</Badge>
+              <h2 className="text-3xl font-bold text-gray-900">Lo que dicen nuestros pacientes</h2>
+              <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+                La satisfacción de nuestros pacientes es nuestra mejor carta de presentación.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[
+                {
+                  name: "Laura Martínez",
+                  image:
+                    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974&auto=format&fit=crop",
+                  treatment: "Tratamiento Facial",
+                  quote:
+                    "Increíble experiencia. Los resultados superaron mis expectativas y el trato fue excelente. Recomiendo totalmente el tratamiento de hidrafacial.",
+                },
+                {
+                  name: "Carlos Rodríguez",
+                  image:
+                    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop",
+                  treatment: "Botox",
+                  quote:
+                    "Muy profesionales y atentos. Me explicaron todo el procedimiento y me sentí muy seguro. Los resultados son naturales, justo lo que buscaba.",
+                },
+                {
+                  name: "María González",
+                  image:
+                    "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
+                  treatment: "Criolipólisis",
+                  quote:
+                    "Después de dos sesiones, los resultados son visibles. El personal es muy amable y las instalaciones son modernas y limpias. Volveré sin duda.",
+                },
+              ].map((testimonial, i) => (
+                <Card key={i} className="bg-gray-50 border-0 shadow-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-full overflow-hidden">
+                        <img
+                          src={testimonial.image || "/placeholder.svg"}
+                          alt={testimonial.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">{testimonial.name}</CardTitle>
+                        <CardDescription>{testimonial.treatment}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex mb-4">
+                      {[...Array(5)].map((_, j) => (
+                        <Star key={j} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                      ))}
+                    </div>
+                    <p className="text-gray-700 italic">&quot;{testimonial.quote}&quot;</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Equipo */}
+        {/* <section id="equipo" className="py-20 bg-gradient-to-r from-yellow-50 to-purple-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-16">
                 <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Nuestro Equipo</Badge>
@@ -469,138 +478,138 @@ export default function Home() {
             </div>
           </section> */}
 
-          {/* Contacto */}
-          <section id="contacto" className="py-20 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div>
-                  <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Contacto</Badge>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-6">¿Tienes alguna pregunta?</h2>
-                  <p className="text-lg text-gray-700 mb-8">
-                    Estamos aquí para ayudarte. Contáctanos para más información sobre nuestros servicios o para programar
-                    una consulta.
-                  </p>
+        {/* Contacto */}
+        <section id="contacto" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div>
+                <Badge className="mb-4 bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Contacto</Badge>
+                <h2 className="text-3xl font-bold text-gray-900 mb-6">¿Tienes alguna pregunta?</h2>
+                <p className="text-lg text-gray-700 mb-8">
+                  Estamos aquí para ayudarte. Contáctanos para más información sobre nuestros servicios o para programar
+                  una consulta.
+                </p>
 
-                  <div className="space-y-6">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <div className="bg-yellow-100 p-3 rounded-full">
-                          <MapPin className="h-6 w-6 text-yellow-600" />
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">Ubicación</h3>
-                        <p className="mt-1 text-gray-600">
-                          Av. Principal 123, Ciudad
-                          <br />
-                          Código Postal 12345
-                        </p>
+                <div className="space-y-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="bg-yellow-100 p-3 rounded-full">
+                        <MapPin className="h-6 w-6 text-yellow-600" />
                       </div>
                     </div>
-
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <div className="bg-yellow-100 p-3 rounded-full">
-                          <Phone className="h-6 w-6 text-yellow-600" />
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">Teléfono</h3>
-                        <p className="mt-1 text-gray-600">+54 11 1234-5678</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <div className="bg-yellow-100 p-3 rounded-full">
-                          <Mail className="h-6 w-6 text-yellow-600" />
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">Email</h3>
-                        <p className="mt-1 text-gray-600">info@centrodeestetica.com</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        <div className="bg-yellow-100 p-3 rounded-full">
-                          <Clock className="h-6 w-6 text-yellow-600" />
-                        </div>
-                      </div>
-                      <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">Horario</h3>
-                        <p className="mt-1 text-gray-600">
-                          Lunes a Viernes: 9:00 - 20:00
-                          <br />
-                          Sábados: 9:00 - 14:00
-                        </p>
-                      </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-medium text-gray-900">Ubicación</h3>
+                      <p className="mt-1 text-gray-600">
+                        Av. Principal 123, Ciudad
+                        <br />
+                        Código Postal 12345
+                      </p>
                     </div>
                   </div>
 
-                  <div className="mt-8 flex space-x-4">
-                    <Button variant="outline" size="icon">
-                      <Instagram className="h-5 w-5" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Facebook className="h-5 w-5" />
-                    </Button>
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="bg-yellow-100 p-3 rounded-full">
+                        <Phone className="h-6 w-6 text-yellow-600" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-medium text-gray-900">Teléfono</h3>
+                      <p className="mt-1 text-gray-600">+54 11 1234-5678</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="bg-yellow-100 p-3 rounded-full">
+                        <Mail className="h-6 w-6 text-yellow-600" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-medium text-gray-900">Email</h3>
+                      <p className="mt-1 text-gray-600">info@centrodeestetica.com</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <div className="bg-yellow-100 p-3 rounded-full">
+                        <Clock className="h-6 w-6 text-yellow-600" />
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-medium text-gray-900">Horario</h3>
+                      <p className="mt-1 text-gray-600">
+                        Lunes a Viernes: 9:00 - 20:00
+                        <br />
+                        Sábados: 9:00 - 14:00
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-8 shadow-lg">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Envíanos un mensaje</h3>
-                  <form className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                          Nombre
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                          Email
-                        </label>
-                        <input
-                            type="email"
-                            id="email"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
-                        />
-                      </div>
-                    </div>
+                <div className="mt-8 flex space-x-4">
+                  <Button variant="outline" size="icon">
+                    <Instagram className="h-5 w-5" />
+                  </Button>
+                  <Button variant="outline" size="icon">
+                    <Facebook className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-8 shadow-lg">
+                <h3 className="text-xl font-semibold text-gray-900 mb-6">Envíanos un mensaje</h3>
+                <form className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
-                        Asunto
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                        Nombre
                       </label>
                       <input
-                          type="text"
-                          id="subject"
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                        type="text"
+                        id="name"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
                       />
                     </div>
                     <div>
-                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                        Mensaje
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                        Email
                       </label>
-                      <textarea
-                          id="message"
-                          rows={4}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
-                      ></textarea>
+                      <input
+                        type="email"
+                        id="email"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                      />
                     </div>
-                    <Button className="w-full bg-yellow-600 hover:bg-yellow-700">Enviar Mensaje</Button>
-                  </form>
-                </div>
+                  </div>
+                  <div>
+                    <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
+                      Asunto
+                    </label>
+                    <input
+                      type="text"
+                      id="subject"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+                      Mensaje
+                    </label>
+                    <textarea
+                      id="message"
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+                    ></textarea>
+                  </div>
+                  <Button className="w-full bg-yellow-600 hover:bg-yellow-700">Enviar Mensaje</Button>
+                </form>
               </div>
             </div>
-          </section>
-        </div>
-      </>
+          </div>
+        </section>
+      </div>
+    </>
   )
 }
