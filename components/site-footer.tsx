@@ -42,7 +42,7 @@ export function SiteFooter() {
                                 { name: "Sobre Nosotros", href: "/#equipo" },
                                 { name: "Testimonios", href: "/#testimonios" },
                                 { name: "Contacto", href: "/#contacto" },
-                                { name: "Reservar Cita", href: "#" },
+                                { name: "Reservar Cita", href: "/reservar" },
                             ].map((link) => (
                                 <li key={link.name}>
                                     <Link href={link.href} className="text-gray-400 hover:text-white transition-colors">
