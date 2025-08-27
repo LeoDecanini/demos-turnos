@@ -275,7 +275,7 @@ export default function Home() {
                   </div>
                   <div className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
                     <img
-                        src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?q=80&w=2068&auto=format&fit=crop"
+                        src="/instalanciones-1.jpg"
                         alt="Tratamiento"
                         className="w-full h-full object-cover"
                     />
@@ -298,12 +298,12 @@ export default function Home() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  "https://images.unsplash.com/photo-1633613286991-611fe299c4be?q=80&w=2070&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=2070&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1600334129128-685c5582fd35?q=80&w=2070&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1519415510236-718bdfcd89c8?q=80&w=2070&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1532413992378-f169ac26fff0?q=80&w=2070&auto=format&fit=crop",
-                  "https://images.unsplash.com/photo-1470259078422-826894b933aa?q=80&w=2074&auto=format&fit=crop",
+                  "/instalanciones-1.jpg",
+                  "/instalanciones-2.jpg",
+                  "/instalanciones-3.jpg",
+                  "/instalanciones-6.avif",
+                  "/instalanciones-4.jpg",
+                  "/instalanciones-5.png",
                 ].map((img, i) => (
                     <div
                         key={i}
