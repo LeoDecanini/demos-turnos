@@ -27,10 +27,9 @@ export function SiteHeader() {
                         <span className="sr-only">Centro de Estética</span>
                         <div className="flex items-center">
                             <div
-                                className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
-                                <span className="text-white font-bold">B</span>
+                                className="h-8 w-8 rounded-full bg-[url(/logo.jpg)] bg-center bg-contain">
                             </div>
-                            <span className="ml-2 text-xl font-semibold text-gray-900">Beauty</span>
+                            <span className="ml-2 text-xl font-semibold text-gray-900">MG Estética 22</span>
                         </div>
                     </Link>
                 </div>
@@ -69,12 +68,12 @@ export function SiteHeader() {
                 </div>
 
                 <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-4">
-                    <div className="flex items-center gap-1">
+                    {/*<div className="flex items-center gap-1">
                         <Phone className="h-4 w-4 text-yellow-600"/>
                         <span className="text-xs font-medium">11 1234-5678</span>
-                    </div>
+                    </div>*/}
                     <Button size="sm" asChild>
-                        <Link href="#">
+                        <Link href="/reservar">
                             <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
                         </Link>
                     </Button>
@@ -95,7 +94,7 @@ export function SiteHeader() {
                                     className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
                                     <span className="text-white font-bold">B</span>
                                 </div>
-                                <span className="ml-2 text-xl font-semibold text-gray-900">Beauty</span>
+                                <span className="ml-2 text-xl font-semibold text-gray-900">MG Estética 22</span>
                             </div>
                         </Link>
                         <button
