@@ -91,8 +91,7 @@ export function SiteHeader() {
                             <span className="sr-only">Centro de Estética</span>
                             <div className="flex items-center">
                                 <div
-                                    className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
-                                    <span className="text-white font-bold">B</span>
+                                    className="h-8 w-8 rounded-full bg-[url(/logo.jpg)] bg-center bg-contain">
                                 </div>
                                 <span className="ml-2 text-xl font-semibold text-gray-900">MG Estética 22</span>
                             </div>
