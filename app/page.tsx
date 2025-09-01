@@ -234,7 +234,6 @@ export default function Home() {
                         className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"></div>
                     <div className="relative mx-auto px-4 sm:px-6 lg:px-8 text-center">
                         <ReusableBadge
-                            Icon={Award}
                         >
                             ¿Por qué elegirnos?
                         </ReusableBadge>
