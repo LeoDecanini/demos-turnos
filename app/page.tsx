@@ -110,7 +110,6 @@ export default function Home() {
                         <div className="text-center mb-8">
                             <ReusableBadge
                                 className={"mb-2"}
-                                Icon={Heart}
                             >
                                 Nuestros Servicios
                             </ReusableBadge>
