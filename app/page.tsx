@@ -46,7 +46,7 @@ export default function Home() {
     return (
         <>
             <div className="min-h-svh">
-                <section className="relative h-[85vh] min-h-[700px] w-full overflow-hidden">
+                <section className="relative h-[92vh] min-h-[700px] w-full overflow-hidden">
                     <div className="absolute inset-0 w-full h-full">
                         <img
                             src="/instalanciones-1.jpg"
@@ -61,7 +61,8 @@ export default function Home() {
 
                     <div
                         className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
-                        <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-8 border border-white/10 max-w-2xl">
+                        <div
+                            className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 md:p-8 border border-white/10 max-w-2xl">
                             <Badge
                                 className="mb-3 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 hover:from-amber-200 hover:to-yellow-200 border-0 px-4 py-2 text-sm font-medium shadow-lg transition-colors">
                                 <Sparkles className="w-4 h-4 mr-2"/>
@@ -273,36 +274,36 @@ export default function Home() {
                                             "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=1974&auto=format&fit=crop", // mujer en la naturaleza, luz suave
                                     },
                                 ]
-                                .map((item, i) => (
-                                    <div
-                                        key={i}
-                                        className="group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3"
-                                    >
-                                        <div className="relative h-80 overflow-hidden">
-                                            <img
-                                                src={item.image || "/placeholder.svg"}
-                                                alt={item.title}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                            />
-                                            <div
-                                                className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                                            <div
-                                                className="absolute inset-0 bg-gradient-to-br from-amber-900/20 to-yellow-900/20 group-hover:from-amber-800/30 group-hover:to-yellow-800/30 transition-all duration-500"></div>
-                                        </div>
-                                        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                                            <div className="flex items-center mb-4">
+                                    .map((item, i) => (
+                                        <div
+                                            key={i}
+                                            className="group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3"
+                                        >
+                                            <div className="relative h-80 overflow-hidden">
+                                                <img
+                                                    src={item.image || "/placeholder.svg"}
+                                                    alt={item.title}
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                />
                                                 <div
-                                                    className="bg-gradient-to-r from-amber-500 to-yellow-600 p-3 rounded-2xl mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                                    <item.icon className="h-6 w-6 text-white"/>
-                                                </div>
-                                                <h3 className="font-bold text-2xl group-hover:text-amber-300 transition-colors duration-300">
-                                                    {item.title}
-                                                </h3>
+                                                    className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                                                <div
+                                                    className="absolute inset-0 bg-gradient-to-br from-amber-900/20 to-yellow-900/20 group-hover:from-amber-800/30 group-hover:to-yellow-800/30 transition-all duration-500"></div>
                                             </div>
-                                            <p className="text-gray-100 text-left text-lg leading-relaxed-moveup font-light">{item.desc}</p>
+                                            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                                                <div className="flex items-center mb-4">
+                                                    <div
+                                                        className="bg-gradient-to-r from-amber-500 to-yellow-600 p-3 rounded-2xl mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                                        <item.icon className="h-6 w-6 text-white"/>
+                                                    </div>
+                                                    <h3 className="font-bold text-2xl group-hover:text-amber-300 transition-colors duration-300">
+                                                        {item.title}
+                                                    </h3>
+                                                </div>
+                                                <p className="text-gray-100 text-left text-lg leading-relaxed-moveup font-light">{item.desc}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
                             </div>
                         </div>
                     </div>
@@ -804,13 +805,18 @@ export default function Home() {
                                 </div>
 
                                 <div className="mt-4">
-                                    <Button
-                                        variant="outline"
-                                        className="bg-gradient-to-r from-pink-50 to-rose-50 border-2 border-pink-200 hover:from-pink-500 hover:to-rose-600 hover:text-white transition-all duration-300 font-semibold py-3 px-6"
+                                    <Link
+                                        href={"https://www.instagram.com/mgestetica22"}
+                                        target={"_blank"}
                                     >
-                                        <Instagram className="h-5 w-5 mr-2"/>
-                                        Seguinos en Instagram
-                                    </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="bg-gradient-to-r from-pink-50 to-rose-50 border-2 border-pink-200 hover:from-pink-500 hover:to-rose-600 hover:text-white transition-all duration-300 font-semibold py-3 px-6"
+                                        >
+                                            <Instagram className="h-5 w-5 mr-2"/>
+                                            Seguinos en Instagram
+                                        </Button>
+                                    </Link>
                                 </div>
                             </div>
 
