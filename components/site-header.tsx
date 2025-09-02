@@ -36,7 +36,7 @@ export function SiteHeader() {
 
                 <div className="flex lg:hidden">
                     <Button size="sm" asChild className={"mr-2"}>
-                        <Link href="#">
+                        <Link href="/reservar">
                             <CalendarCheck className="mr-2 h-4 w-4"/> Reservar
                         </Link>
                     </Button>
@@ -128,7 +128,7 @@ export function SiteHeader() {
 
                             <div className="py-6">
                                 <Button className="w-full" asChild>
-                                    <Link href="#" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href="/reservar" onClick={() => setMobileMenuOpen(false)}>
                                         <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
                                     </Link>
                                 </Button>
