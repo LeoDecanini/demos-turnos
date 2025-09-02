@@ -8,7 +8,7 @@ import {SiteFooter} from "@/components/site-footer";
 import {SiteHeader} from "@/components/site-header";
 
 export const metadata: Metadata = {
-    title: "MG Estética 22 - Centro de Medicina Estética Premium",
+    title: "MG Estética 22 - Centro de Medicina Estética",
     description:
         "Centro especializado en medicina estética con tecnología de vanguardia. Tratamientos faciales, corporales y rejuvenecimiento. Sistema de turnos moveup.",
     keywords:
