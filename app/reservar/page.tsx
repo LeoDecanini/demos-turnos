@@ -9,13 +9,13 @@ import {FaWhatsapp} from "react-icons/fa6";
 
 export default function ReservarPage() {
     return (
-        <div className="min-h-svh bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
+        <div className="min-h-[calc(100svh-68px)] mt-[68px] bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
             <div
                 className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"></div>
             <div
                 className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(251,191,36,0.05),transparent_50%)]"></div>
 
-            <div className="relative flex h-svh items-center justify-center px-4">
+            <div className="relative flex h-[calc(100svh-68px)] items-center justify-center px-4">
                 <div
                     className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-12 flex flex-col items-center text-center max-w-2xl mx-auto">
                     <ReusableBadge>
