@@ -20,24 +20,23 @@ export function SiteHeader() {
     const pathname = usePathname()
 
     return (
-        <header className="bg-white shadow-sm sticky top-0 z-50">
+        <header className="bg-white shadow-sm fixed w-full top-0 z-50">
             <nav className="mx-auto flex max-w-7xl items-center justify-between p-4 lg:px-8" aria-label="Global">
                 <div className="flex lg:flex-1">
                     <Link href="/" className="-m-1.5 p-1.5">
                         <span className="sr-only">Centro de Estética</span>
                         <div className="flex items-center">
                             <div
-                                className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
-                                <span className="text-white font-bold">B</span>
+                                className="h-8 w-8 rounded-full bg-[url(/logo.jpg)] bg-center bg-contain">
                             </div>
-                            <span className="ml-2 text-xl font-semibold text-gray-900">Beauty</span>
+                            <span className="ml-2 text-xl font-semibold text-gray-900">MG Estética 22</span>
                         </div>
                     </Link>
                 </div>
 
                 <div className="flex lg:hidden">
                     <Button size="sm" asChild className={"mr-2"}>
-                        <Link href="#">
+                        <Link href="/reservar">
                             <CalendarCheck className="mr-2 h-4 w-4"/> Reservar
                         </Link>
                     </Button>
@@ -69,12 +68,12 @@ export function SiteHeader() {
                 </div>
 
                 <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-4">
-                    <div className="flex items-center gap-1">
+                    {/*<div className="flex items-center gap-1">
                         <Phone className="h-4 w-4 text-yellow-600"/>
                         <span className="text-xs font-medium">11 1234-5678</span>
-                    </div>
+                    </div>*/}
                     <Button size="sm" asChild>
-                        <Link href="#">
+                        <Link href="/reservar">
                             <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
                         </Link>
                     </Button>
@@ -92,10 +91,9 @@ export function SiteHeader() {
                             <span className="sr-only">Centro de Estética</span>
                             <div className="flex items-center">
                                 <div
-                                    className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-500 to-amber-500 flex items-center justify-center">
-                                    <span className="text-white font-bold">B</span>
+                                    className="h-8 w-8 rounded-full bg-[url(/logo.jpg)] bg-center bg-contain">
                                 </div>
-                                <span className="ml-2 text-xl font-semibold text-gray-900">Beauty</span>
+                                <span className="ml-2 text-xl font-semibold text-gray-900">MG Estética 22</span>
                             </div>
                         </Link>
                         <button
@@ -130,7 +128,7 @@ export function SiteHeader() {
 
                             <div className="py-6">
                                 <Button className="w-full" asChild>
-                                    <Link href="#" onClick={() => setMobileMenuOpen(false)}>
+                                    <Link href="/reservar" onClick={() => setMobileMenuOpen(false)}>
                                         <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
                                     </Link>
                                 </Button>

@@ -1,3 +1,4 @@
+// eslint.config.mjs
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 import { FlatCompat } from "@eslint/eslintrc";
@@ -10,11 +11,21 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  // Reutilizamos las reglas de Next (Core Web Vitals + TypeScript)
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+
+  // Reglas puntuales para silenciar tus avisos/errores actuales
   {
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn", // o "off" si querés desactivarla completamente
-      "@typescript-eslint/no-unused-vars": "warn",  // o "off"
+      // Warnings que listaste
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+
+      // Mensaje de Next sobre <img>
+      "@next/next/no-img-element": "off",
+
+      // Comillas sin escapar en JSX
+      "react/no-unescaped-entities": "off",
     },
   },
 ];
