@@ -47,7 +47,6 @@ export default function PerfilPage() {
         <div className="mt-3 h-1 w-16 rounded bg-yellow-400" />
       </div>
 
-      {/* layout: botones (izq) | contenido (der) */}
       <div className="flex gap-6 w-full">
         {/* sidebar */}
         <aside className="w-[260px] shrink-0 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-4 h-max">
@@ -96,7 +95,9 @@ export default function PerfilPage() {
 
         {/* contenido */}
         <section className="flex-1 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-6 md:p-8 min-h-[420px]">
-          {tab === 'perfil' ? <PerfilView user={user} /> : <ReservasView token={token} />}
+          {tab === 'perfil'
+            ? <PerfilView user={user} />
+            : <ReservasView/>}
         </section>
       </div>
     </main>
@@ -146,22 +147,36 @@ function PerfilView({ user }: { user: { email: string; name?: string } }) {
   );
 }
 
-function ReservasView({ token }: { token: string | null }) {
+function ReservasView() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const { user, token, logout } = useAuth();
+
+  // 👇 normalizo IDs desde user (soporta _id/id y account como string u objeto)
+  const accountId = "670da3fe9274c1a418b19f41";
+  const clientId = user?._id;
+
+  console.log(accountId, clientId)
 
   useEffect(() => {
     const run = async () => {
-      if (!token) { setLoading(false); return; }
+      // debug para ver por qué no entra
+      // console.log({ token: !!token, accountId, clientId });
+
+      if (!token || !accountId || !clientId) {
+        // falta algo => mantené el loader corto y mostrás vacío
+        setLoading(false);
+        setErr(!token ? 'Falta token' : !accountId ? 'Falta accountId' : 'Falta clientId');
+        return;
+      }
       try {
         setLoading(true);
         setErr(null);
-        const r = await fetch(
-          `${API}/bookingmodule/public/clients/me/bookings?upcoming=1&limit=50`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        if (!r.ok) throw new Error(await r.text() || 'No se pudieron cargar tus reservaciones');
+        const url = `${API}/bookingmodule/public/clients/by-account/${accountId}/clients/${clientId}/bookings?upcoming=1&limit=50`;
+        const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+        // console.log('GET', url, r.status);
+        if (!r.ok) throw new Error((await r.text()) || 'No se pudieron cargar tus reservaciones');
         const data = await r.json();
         setItems(Array.isArray(data) ? data : (data.items ?? []));
       } catch (e: any) {
@@ -171,7 +186,7 @@ function ReservasView({ token }: { token: string | null }) {
       }
     };
     run();
-  }, [token]);
+  }, [token, accountId, clientId]);
 
   const fmt = (iso: string) =>
     new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));

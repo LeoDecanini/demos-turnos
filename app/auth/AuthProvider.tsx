@@ -2,7 +2,7 @@
 'use client';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-type User = { email: string; name?: string } | null;
+type User = { email: string; name?: string; _id: string } | null;
 type AuthCtx = {
     user: User;
     token: string | null;
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
             if (!r.ok) throw new Error();
             const me = await r.json();
-            setUser({ email: me.email, name: me.name });
+            setUser({ email: me.email, name: me.name, _id: me._id });
         } catch {
             setUser(null);
         }
