@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '../auth/AuthProvider';
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -21,16 +22,14 @@ export default function LoginPage() {
         try {
             setPending(true);
             setErr(null);
+
             const r = await fetch(`${API}/bookingmodule/public/clients/sessions`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             });
 
-            if (!r.ok) {
-                const msg = await r.text();
-                throw new Error(msg || 'Login inválido');
-            }
+            if (!r.ok) throw new Error((await r.text()) || 'Login inválido');
 
             const { token } = await r.json();
             localStorage.setItem('booking_client_jwt', token);
@@ -48,35 +47,33 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-800 flex items-center justify-center px-4">
-            <div className="w-full max-w-md">
-                {/* Card */}
-                <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-xl">
-                    {/* Glow */}
-                    <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-r from-fuchsia-500/10 via-cyan-500/10 to-emerald-500/10 blur-2xl pointer-events-none" />
-                    {/* Header */}
-                    <div className="relative z-10 space-y-2 text-center mb-6">
-                        <div className="mx-auto h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center border border-white/10">
-                            {/* Logo minimal */}
-                            <svg width="22" height="22" viewBox="0 0 24 24" className="text-white/90">
-                                <path fill="currentColor" d="M12 3l7 4v10l-7 4-7-4V7zM7 9v6l5 3 5-3V9l-5-3z" />
-                            </svg>
-                        </div>
-                        <h1 className="text-white text-2xl font-semibold tracking-tight">Ingresar</h1>
-                        <p className="text-white/60 text-sm">Accedé a tu cuenta de cliente</p>
-                    </div>
+        <main className=" pt-20 bg-white">
+            <div className="max-w-6xl mx-auto px-4 py-12">
+                {/* título con acento amarillo */}
+                <div className="text-center mb-10">
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">
+                        Ingresar a tu cuenta
+                    </h1>
+                    <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
+                    <p className="mt-4 text-slate-500">
+                        Accedé para reservar y gestionar tus turnos.
+                    </p>
+                </div>
 
-                    {/* Form */}
-                    <div className="relative z-10 space-y-4">
+                {/* card */}
+                <div className="max-w-md mx-auto">
+                    <div className="rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-6 md:p-8">
                         {err && (
-                            <div className="rounded-lg border border-red-500/30 bg-red-500/10 text-red-200 text-sm p-3">
+                            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm px-3 py-2">
                                 {err}
                             </div>
                         )}
 
-                        <label className="block">
-                            <span className="text-white/80 text-xs">Email</span>
-                            <div className="mt-1 relative">
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">
+                                    Email
+                                </label>
                                 <input
                                     type="email"
                                     value={email}
@@ -84,98 +81,87 @@ export default function LoginPage() {
                                     onKeyDown={onEnter}
                                     placeholder="nombre@correo.com"
                                     autoComplete="email"
-                                    className="w-full rounded-xl bg-white/10 border border-white/10 text-white placeholder-white/40 px-10 py-3 outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition"
-                                    aria-invalid={!!err}
+                                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
                                 />
-                                {/* icon */}
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" className="">
-                                        <path fill="currentColor" d="M12 13L2 6.76V18h20V6.76zM12 11L2 4h20z" />
-                                    </svg>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">
+                                    Contraseña
+                                </label>
+                                <div className="mt-1 relative">
+                                    <input
+                                        type={showPwd ? 'text' : 'password'}
+                                        value={password}
+                                        onChange={e => setPassword(e.target.value)}
+                                        onKeyDown={onEnter}
+                                        placeholder="••••••••"
+                                        autoComplete="current-password"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPwd(s => !s)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                    >
+                                        {showPwd ? (
+                                            // ojo abierto
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                                <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7Z" stroke="currentColor" strokeWidth="1.6" />
+                                                <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="1.6" />
+                                            </svg>
+                                        ) : (
+                                            // ojo tachado
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                                <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.6" />
+                                                <path d="M9.88 9.88A3.5 3.5 0 0012 15.5c1.93 0 3.5-1.57 3.5-3.5 0-.53-.12-1.02-.34-1.46M6.2 6.2C4.12 7.47 2.7 9.11 2 12c0 0 4 7 10 7 2.02 0 3.74-.6 5.14-1.48M18.9 15.7C20.52 14.35 22 12 22 12s-4-7-10-7c-1.34 0-2.56.25-3.66.67" stroke="currentColor" strokeWidth="1.6" />
+                                            </svg>
+                                        )}
+                                    </button>
                                 </div>
                             </div>
-                        </label>
 
-                        <label className="block">
-                            <span className="text-white/80 text-xs">Contraseña</span>
-                            <div className="mt-1 relative">
-                                <input
-                                    type={showPwd ? 'text' : 'password'}
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    onKeyDown={onEnter}
-                                    placeholder="••••••••"
-                                    autoComplete="current-password"
-                                    className="w-full rounded-xl bg-white/10 border border-white/10 text-white placeholder-white/40 px-10 py-3 pr-12 outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition"
-                                />
-                                {/* lock icon */}
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">
-                                    <svg width="18" height="18" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M12 1a5 5 0 00-5 5v3H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V11a2 2 0 00-2-2h-2V6a5 5 0 00-5-5zm3 8H9V6a3 3 0 116 0z" />
-                                    </svg>
-                                </div>
-                                {/* show/hide */}
+                            <button
+                                onClick={onSubmit}
+                                disabled={!email || !password || pending}
+                                className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                            >
+                                {pending ? 'Ingresando…' : 'Ingresar'}
+                            </button>
+
+                            <div className="flex items-center justify-between text-sm">
+                                <Link
+                                    href="/verify-client"
+                                    className="text-slate-600 hover:text-slate-900 underline underline-offset-4"
+                                >
+                                    Crear contraseña
+                                </Link>
                                 <button
                                     type="button"
-                                    onClick={() => setShowPwd(s => !s)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white/90 transition"
-                                    aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                    className="text-slate-400 hover:text-slate-700"
+                                    onClick={() => alert('Pronto activamos la recuperación 😉')}
                                 >
-                                    {showPwd ? (
-                                        <svg width="18" height="18" viewBox="0 0 24 24">
-                                            <path fill="currentColor" d="M12 7a5 5 0 015 5c0 1.1-.36 2.12-.97 2.94l3.02 3.02-1.41 1.41-3.02-3.02A5.97 5.97 0 0112 19c-5.52 0-10-5-10-7s4.48-7 10-7c1.35 0 2.62.35 3.75.97l-1.5 1.5A5.02 5.02 0 0012 7zm0 2c-.3 0-.59.03-.87.1l1.76 1.76c.07-.28.11-.57.11-.86a2 2 0 00-2-2zM4.59 5.17L5.99 3.76 20.24 18l-1.41 1.41-2.36-2.36c-1.35.9-3 .95-4.47.95-5.52 0-10-5-10-7 0-1.08 1.17-2.92 3.36-4.6z" />
-                                        </svg>
-                                    ) : (
-                                        <svg width="18" height="18" viewBox="0 0 24 24">
-                                            <path fill="currentColor" d="M12 5c-7 0-11 6.5-11 7s4 7 11 7 11-6.5 11-7-4-7-11-7zm0 12a5 5 0 115-5 5 5 0 01-5 5z" />
-                                        </svg>
-                                    )}
+                                    ¿Olvidaste tu contraseña?
                                 </button>
                             </div>
-                        </label>
-
-                        <button
-                            onClick={onSubmit}
-                            disabled={!email || !password || pending}
-                            className="w-full relative overflow-hidden rounded-xl bg-white text-slate-900 font-medium py-3 shadow-lg disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-white/40 transition"
-                        >
-                            <span className={`transition ${pending ? 'opacity-0' : 'opacity-100'}`}>
-                                Ingresar
-                            </span>
-                            {pending && (
-                                <span className="absolute inset-0 flex items-center justify-center">
-                                    <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24">
-                                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" className="opacity-25" fill="none" />
-                                        <path d="M21 12a9 9 0 00-9-9" stroke="currentColor" strokeWidth="3" className="opacity-90" fill="none" />
-                                    </svg>
-                                </span>
-                            )}
-                        </button>
-
-                        <div className="flex items-center justify-between text-sm">
-                            <a
-                                href="/verify-client"
-                                className="text-white/70 hover:text-white underline underline-offset-4"
-                            >
-                                Crear contraseña
-                            </a>
-                            {/* reservado para “olvidé mi contraseña” */}
-                            <button
-                                className="text-white/40 hover:text-white/80"
-                                onClick={() => alert('Pronto activamos la recuperación 😉')}
-                                type="button"
-                            >
-                                ¿Olvidaste tu contraseña?
-                            </button>
                         </div>
                     </div>
-                </div>
 
-                {/* Footer mini */}
-                <div className="mt-6 text-center text-white/40 text-xs">
-                    © {new Date().getFullYear()} MG Estética · Todos los derechos reservados
+                    {/* CTA secundaria similar a “Ver todos los servicios” */}
+                    <div className="text-center mt-6">
+                        <Link
+                            href="/reservar"
+                            className="inline-flex items-center gap-2 rounded-full border border-yellow-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-yellow-50 transition"
+                        >
+                            Ver tratamientos
+                            <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-900">
+                                <path fill="currentColor" d="M13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
+                            </svg>
+                        </Link>
+                    </div>
                 </div>
             </div>
-        </div>
+        </main>
     );
 }
