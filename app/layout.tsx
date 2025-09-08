@@ -4,8 +4,9 @@ import "./globals.css"
 import { WhatsAppButton } from "@/components/whatsapp-button"
 import { ScrollTopButton } from "@/components/scroll-to-top"
 import { Suspense } from "react"
-import {SiteFooter} from "@/components/site-footer";
-import {SiteHeader} from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { SiteHeader } from "@/components/site-header";
+import { AuthProvider } from "./auth/AuthProvider"
 
 export const metadata: Metadata = {
     title: "MG Estética 22 - Centro de Medicina Estética",
@@ -35,21 +36,23 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({
-                                       children,
-                                   }: {
+    children,
+}: {
     children: React.ReactNode
 }) {
     return (
         <html lang="es">
-        <body className="antialiased">
-        <Suspense fallback={null}>
-            <SiteHeader/>
-            {children}
-            <SiteFooter/>
-            <WhatsAppButton />
-            <ScrollTopButton />
-        </Suspense>
-        </body>
+            <body className="antialiased">
+                <Suspense fallback={null}>
+                    <AuthProvider>
+                    <SiteHeader />
+                        {children}
+                    </AuthProvider>
+                    <SiteFooter />
+                    <WhatsAppButton />
+                    <ScrollTopButton />
+                </Suspense>
+            </body>
         </html>
     )
 }

@@ -5,7 +5,7 @@ import Link from "next/link"
 import {Badge} from "@/components/ui/badge"
 import ReusableBadge from "@/components/reusable-badge";
 import {Button} from "@/components/ui/button";
-import {FaWhatsapp} from "react-icons/fa6";
+import { FaWhatsapp } from "react-icons/fa";
 
 export default function ReservarPage() {
     return (

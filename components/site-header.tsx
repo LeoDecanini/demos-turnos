@@ -1,23 +1,25 @@
 "use client"
 
-import {useState} from "react"
+import { useState } from "react"
 import Link from "next/link"
-import {usePathname} from "next/navigation"
-import {Button} from "@/components/ui/button"
-import {CalendarCheck, Menu, X, Phone} from "lucide-react"
-import {cn} from "@/lib/utils"
+import { usePathname } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { CalendarCheck, Menu, X, Phone } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useAuth } from "@/app/auth/AuthProvider"
 
 const navigation = [
-    {name: "Inicio", href: "/"},
-    {name: "Servicios", href: "/#servicios"},
-    {name: "Sobre Nosotros", href: "/#equipo"},
-    {name: "Contacto", href: "/#contacto"},
-    {name: "Reservar", href: "/reservar"},
+    { name: "Inicio", href: "/" },
+    { name: "Servicios", href: "/#servicios" },
+    { name: "Sobre Nosotros", href: "/#equipo" },
+    { name: "Contacto", href: "/#contacto" },
+    { name: "Reservar", href: "/reservar" },
 ]
 
 export function SiteHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const pathname = usePathname()
+    const { user, logout } = useAuth();
 
     return (
         <header className="bg-white shadow-sm fixed w-full top-0 z-50">
@@ -37,7 +39,7 @@ export function SiteHeader() {
                 <div className="flex lg:hidden">
                     <Button size="sm" asChild className={"mr-2"}>
                         <Link href="/reservar">
-                            <CalendarCheck className="mr-2 h-4 w-4"/> Reservar
+                            <CalendarCheck className="mr-2 h-4 w-4" /> Reservar
                         </Link>
                     </Button>
                     <button
@@ -46,7 +48,7 @@ export function SiteHeader() {
                         onClick={() => setMobileMenuOpen(true)}
                     >
                         <span className="sr-only">Abrir menú principal</span>
-                        <Menu className="h-6 w-6" aria-hidden="true"/>
+                        <Menu className="h-6 w-6" aria-hidden="true" />
                     </button>
                 </div>
 
@@ -72,9 +74,20 @@ export function SiteHeader() {
                         <Phone className="h-4 w-4 text-yellow-600"/>
                         <span className="text-xs font-medium">11 1234-5678</span>
                     </div>*/}
+                    <div className="flex items-center gap-3">
+                        {user ? (
+                            <>
+                                <span className="text-sm">Hola, <b>{user.name || user.email}</b></span>
+                                <Link href="/perfil" className="text-sm underline">Perfil</Link>
+                                <button className="text-sm" onClick={logout}>Salir</button>
+                            </>
+                        ) : (
+                            <Link href="/login" className="text-sm underline">Ingresar</Link>
+                        )}
+                    </div>
                     <Button size="sm" asChild>
                         <Link href="/reservar">
-                            <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
+                            <CalendarCheck className="mr-2 h-4 w-4" /> Reservar Cita
                         </Link>
                     </Button>
                 </div>
@@ -82,7 +95,7 @@ export function SiteHeader() {
 
             {/* Mobile menu */}
             <div className={cn("lg:hidden", mobileMenuOpen ? "fixed inset-0 z-50" : "hidden")}>
-                <div className="fixed inset-0 bg-gray-900/80" aria-hidden="true"/>
+                <div className="fixed inset-0 bg-gray-900/80" aria-hidden="true" />
 
                 <div
                     className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-gray-900/10">
@@ -102,7 +115,7 @@ export function SiteHeader() {
                             onClick={() => setMobileMenuOpen(false)}
                         >
                             <span className="sr-only">Cerrar menú</span>
-                            <X className="h-6 w-6" aria-hidden="true"/>
+                            <X className="h-6 w-6" aria-hidden="true" />
                         </button>
                     </div>
 
@@ -129,7 +142,7 @@ export function SiteHeader() {
                             <div className="py-6">
                                 <Button className="w-full" asChild>
                                     <Link href="/reservar" onClick={() => setMobileMenuOpen(false)}>
-                                        <CalendarCheck className="mr-2 h-4 w-4"/> Reservar Cita
+                                        <CalendarCheck className="mr-2 h-4 w-4" /> Reservar Cita
                                     </Link>
                                 </Button>
                             </div>
