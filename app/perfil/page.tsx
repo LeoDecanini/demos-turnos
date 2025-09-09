@@ -154,7 +154,7 @@ function ReservasView() {
   const { user, token, logout } = useAuth();
 
   // 👇 normalizo IDs desde user (soporta _id/id y account como string u objeto)
-  const accountId = "670da3fe9274c1a418b19f41";
+  const accountId = "68b4e6c5b13caf9d9b16949a";
   const clientId = user?._id;
 
   console.log(accountId, clientId)
