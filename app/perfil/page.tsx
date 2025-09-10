@@ -337,6 +337,16 @@ function ReservasView() {
                   </div>
                   <div className="flex gap-2 justify-end">
                     <button
+                      className={[
+                        'rounded-full border px-3 py-1.5 text-sm',
+                        false
+                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'border-green-300 text-green-600 hover:bg-green-50'
+                      ].join(' ')}
+                    >
+                      Reprogramar
+                    </button>
+                    <button
                       onClick={() => openCancel(b._id)}
                       disabled={b.status === 'canceled'}
                       className={[
@@ -378,6 +388,18 @@ function ReservasView() {
                     </div>
                   </div>
                   <div className="pt-1">
+                    <button
+                      onClick={() => openCancel(b._id)}
+                      disabled={b.status === 'canceled'}
+                      className={[
+                        'w-full rounded-xl border px-3 py-2 text-sm',
+                        b.status === 'canceled'
+                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'border-red-300 text-red-600 hover:bg-red-50'
+                      ].join(' ')}
+                    >
+                      Cancelar
+                    </button>
                     <button
                       onClick={() => openCancel(b._id)}
                       disabled={b.status === 'canceled'}
