@@ -1,271 +1,253 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
     Calendar,
     Clock,
     User,
-    Sparkles,
     CheckCircle,
     ArrowLeft,
-    Heart,
     ExternalLink,
     CreditCard,
     Users,
-} from "lucide-react"
-import Link from "next/link"
-import { toast } from "sonner"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { format } from "date-fns"
-import { es } from "date-fns/locale"
+    Heart,
+} from "lucide-react";
+import Link from "next/link";
+import { toast } from "sonner";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
-type Service = {
-    _id: string
-    name: string
-    description?: string
-    durationMin?: number
-    priceFrom?: number
-    popular?: boolean
-}
+// Lista reutilizable (agrupa por categoría)
+import ServiceList, { type ServiceItem } from "@/components/ServiceList";
+
+type Service = ServiceItem;
 
 type Professional = {
-    _id: string
-    name: string
-}
+    _id: string;
+    name: string;
+};
 
 type BookingResponse = {
-    success: boolean
+    success: boolean;
     booking: {
-        _id: string
-        status: string
-        paymentStatus: string
-        depositRequired: boolean
-        depositAmount?: number
-        depositCurrency?: string
-        depositStatus?: string
-        depositInitPoint?: string
-        depositSandboxInitPoint?: string
+        _id: string;
+        status: string;
+        paymentStatus: string;
+        depositRequired: boolean;
+        depositAmount?: number;
+        depositCurrency?: string;
+        depositStatus?: string;
+        depositInitPoint?: string;
+        depositSandboxInitPoint?: string;
         service: {
-            name: string
-            price: number
-            currency: string
-        }
+            name: string;
+            price: number;
+            currency: string;
+        };
         professional: {
-            name: string
-        }
-        start: string
-        end: string
-    }
+            name: string;
+        };
+        start: string;
+        end: string;
+    };
     payment?: {
-        required: boolean
-        amount: number
-        currency: string
-        initPoint: string
-        sandboxInitPoint: string
-    }
-    message: string
-}
+        required: boolean;
+        amount: number;
+        currency: string;
+        initPoint: string;
+        sandboxInitPoint: string;
+    };
+    message: string;
+};
 
-const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`
-const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID as string
+const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`;
+const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID as string;
 
 // helper para extraer data real desde data.data
-const getPayload = (raw: any) => raw?.data ?? raw
+const getPayload = (raw: any) => raw?.data ?? raw;
 
 export default function ReservarPage() {
     // -------- Steps --------
     // 1 Servicio -> 2 Profesional -> 3 Fecha/Hora -> 4 Datos -> 5 Confirmación
-    const [step, setStep] = useState(1)
+    const [step, setStep] = useState(1);
 
     // ---- Paso 1: Servicios ----
-    const [services, setServices] = useState<Service[]>([])
-    const [loadingServices, setLoadingServices] = useState(false)
-    const [selectedService, setSelectedService] = useState<string>("")
+    const [services, setServices] = useState<Service[]>([]);
+    const [loadingServices, setLoadingServices] = useState(true);
+    const [selectedService, setSelectedService] = useState<string>("");
 
     // ---- Paso 2: Profesional (con "Indistinto") ----
-    const [professionals, setProfessionals] = useState<Professional[]>([])
-    const [loadingProfessionals, setLoadingProfessionals] = useState(false)
-    const [selectedProfessional, setSelectedProfessional] = useState<string>("any") // "any" = indistinto
+    const [professionals, setProfessionals] = useState<Professional[]>([]);
+    const [loadingProfessionals, setLoadingProfessionals] = useState(false);
+    const [selectedProfessional, setSelectedProfessional] = useState<string>("any"); // "any" = indistinto
 
     // ---- Paso 3: Días y horarios ----
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>()
-    const [availableDays, setAvailableDays] = useState<string[]>([]) // YYYY-MM-DD[]
-    const [loadingDays, setLoadingDays] = useState(false)
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+    const [availableDays, setAvailableDays] = useState<string[]>([]); // YYYY-MM-DD[]
+    const [loadingDays, setLoadingDays] = useState(false);
 
-    const [timeSlots, setTimeSlots] = useState<string[]>([])
-    const [loadingSlots, setLoadingSlots] = useState(false)
-    const [selectedTime, setSelectedTime] = useState<string>("")
+    const [timeSlots, setTimeSlots] = useState<string[]>([]);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+    const [selectedTime, setSelectedTime] = useState<string>("");
 
     // ---- Paso 4: Datos cliente ----
-    const [firstName, setFirstName] = useState("")
-    const [lastName, setLastName] = useState("")
-    const [email, setEmail] = useState("")
-    const [phone, setPhone] = useState("")
-    const [dni, setDni] = useState("")
-    const [notes, setNotes] = useState("")
-    const [submitting, setSubmitting] = useState(false)
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [dni, setDni] = useState("");
+    const [notes, setNotes] = useState("");
+    const [submitting, setSubmitting] = useState(false);
 
     // ---- Paso 5: Confirmación ----
-    const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null)
+    const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
 
     // ------- Helpers -------
     const money = (n?: number) =>
         typeof n === "number"
             ? n.toLocaleString("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 })
-            : ""
+            : "";
 
-    const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService])
+    const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService]);
+
     const professionalChosen = useMemo(
         () => (selectedProfessional !== "any" ? professionals.find((p) => p._id === selectedProfessional) : undefined),
         [professionals, selectedProfessional],
-    )
+    );
 
-    const formatDateForAPI = (date: Date) => {
-        return format(date, "yyyy-MM-dd")
-    }
-
-    const getCurrentMonth = (date: Date) => {
-        return format(date, "yyyy-MM")
-    }
+    const formatDateForAPI = (date: Date) => format(date, "yyyy-MM-dd");
+    const getCurrentMonth = (date: Date) => format(date, "yyyy-MM");
 
     // ------- Fetch servicios al cargar -------
     useEffect(() => {
         const load = async () => {
-            setLoadingServices(true)
+            setLoadingServices(true);
             try {
-                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, { cache: "no-store" })
-                if (!res.ok) throw new Error("No se pudieron cargar los servicios")
-                const raw = await res.json()
-                const payload = getPayload(raw)
-                const list: Service[] = Array.isArray(payload) ? payload : (payload?.items ?? [])
-                setServices(list)
+                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, { cache: "no-store" });
+                if (!res.ok) throw new Error("No se pudieron cargar los servicios");
+                const raw = await res.json();
+                const payload = getPayload(raw);
+                const list: Service[] = Array.isArray(payload) ? payload : (payload?.items ?? []);
+                setServices(list);
                 if (list.length === 0) {
-                    toast.error("No hay servicios disponibles en este momento")
+                    toast.error("No hay servicios disponibles en este momento");
                 }
             } catch (e) {
-                console.error(e)
-                setServices([])
-                toast.error("Error al cargar los servicios")
+                console.error(e);
+                setServices([]);
+                toast.error("Error al cargar los servicios");
             } finally {
-                setLoadingServices(false)
+                setLoadingServices(false);
             }
-        }
-        load()
-    }, [])
+        };
+        load();
+    }, []);
 
-    const loadProfessionals = async () => {
-        if (!selectedService) return
-
-        setLoadingProfessionals(true)
+    // ------- Cargas asíncronas (no bloquean el cambio de step) -------
+    const loadProfessionals = async (serviceId: string) => {
+        if (!serviceId) return;
+        setLoadingProfessionals(true);
         try {
-            const res = await fetch(`${API_BASE}/services/${selectedService}/professionals?accountId=${ACCOUNT_ID}`, {
+            const res = await fetch(`${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`, {
                 cache: "no-store",
-            })
-            if (!res.ok) throw new Error("No se pudieron cargar los profesionales")
-            const raw = await res.json()
-            const payload = getPayload(raw)
-            const list: Professional[] = Array.isArray(payload) ? payload : (payload?.items ?? [])
-            setProfessionals(list)
-            setSelectedProfessional("any") // default indistinto
+            });
+            if (!res.ok) throw new Error("No se pudieron cargar los profesionales");
+            const raw = await res.json();
+            const payload = getPayload(raw);
+            const list: Professional[] = Array.isArray(payload) ? payload : (payload?.items ?? []);
+            setProfessionals(list);
+            setSelectedProfessional("any");
         } catch (e) {
-            console.error(e)
-            setProfessionals([])
-            setSelectedProfessional("any")
-            toast.error("Error al cargar los profesionales")
+            console.error(e);
+            setProfessionals([]);
+            setSelectedProfessional("any");
+            toast.error("Error al cargar los profesionales");
         } finally {
-            setLoadingProfessionals(false)
+            setLoadingProfessionals(false);
         }
-    }
+    };
 
-    const loadAvailableDays = async () => {
-        if (!selectedService) return
-
-        const currentDate = new Date()
-        const month = getCurrentMonth(currentDate)
-        setLoadingDays(true)
+    const loadAvailableDays = async (serviceId: string, professionalId: string | undefined) => {
+        if (!serviceId) return;
+        const currentDate = new Date();
+        const month = getCurrentMonth(currentDate);
+        setLoadingDays(true);
         try {
-            const params = new URLSearchParams()
-            params.set("accountId", ACCOUNT_ID)
-            params.set("service", selectedService)
-            params.set("month", month)
-            if (selectedProfessional && selectedProfessional !== "any") {
-                params.set("professional", selectedProfessional)
+            const params = new URLSearchParams();
+            params.set("accountId", ACCOUNT_ID);
+            params.set("service", serviceId);
+            params.set("month", month);
+            if (professionalId && professionalId !== "any") {
+                params.set("professional", professionalId);
             }
-            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" })
-            if (!res.ok) throw new Error("No se pudieron cargar los días disponibles")
-            const raw = await res.json()
-            const payload = getPayload(raw)
+            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" });
+            if (!res.ok) throw new Error("No se pudieron cargar los días disponibles");
+            const raw = await res.json();
+            const payload = getPayload(raw);
 
-            let dates: any[] = []
-            if (Array.isArray(payload)) {
-                dates = payload
-            } else if (Array.isArray(payload?.days)) {
-                dates = payload.days
-            } else if (Array.isArray(payload?.items)) {
-                dates = payload.items
-            }
+            let dates: any[] = [];
+            if (Array.isArray(payload)) dates = payload;
+            else if (Array.isArray(payload?.days)) dates = payload.days;
+            else if (Array.isArray(payload?.items)) dates = payload.items;
+
             if (dates.length && typeof dates[0] !== "string") {
-                dates = dates.map((d: any) => d?.date).filter(Boolean)
+                dates = dates.map((d: any) => d?.date).filter(Boolean);
             }
 
-            setAvailableDays(dates as string[])
+            setAvailableDays(dates as string[]);
         } catch (e) {
-            console.error(e)
-            setAvailableDays([])
-            toast.error("Error al cargar los días disponibles")
+            console.error(e);
+            setAvailableDays([]);
+            toast.error("Error al cargar los días disponibles");
         } finally {
-            setLoadingDays(false)
+            setLoadingDays(false);
         }
-    }
+    };
 
-    const loadTimeSlots = async (date: Date) => {
-        if (!selectedService) return
+    const loadTimeSlots = async (serviceId: string, professionalId: string | undefined, date: Date) => {
+        const dateStr = formatDateForAPI(date);
+        if (!serviceId || !availableDays.includes(dateStr)) return;
 
-        const dateStr = formatDateForAPI(date)
-        if (!availableDays.includes(dateStr)) return
-
-        setLoadingSlots(true)
+        setLoadingSlots(true);
         try {
-            const params = new URLSearchParams()
-            params.set("accountId", ACCOUNT_ID)
-            params.set("service", selectedService)
-            params.set("date", dateStr)
-            if (selectedProfessional && selectedProfessional !== "any") {
-                params.set("professional", selectedProfessional)
+            const params = new URLSearchParams();
+            params.set("accountId", ACCOUNT_ID);
+            params.set("service", serviceId);
+            params.set("date", dateStr);
+            if (professionalId && professionalId !== "any") {
+                params.set("professional", professionalId);
             }
-            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" })
-            if (!res.ok) throw new Error("No se pudieron cargar los horarios")
-            const raw = await res.json()
-            const payload = getPayload(raw)
-            const slots: string[] = Array.isArray(payload) ? payload : (payload?.slots ?? payload?.items ?? [])
-            setTimeSlots(slots)
-            setSelectedTime("")
-
-            if (slots.length === 0) {
-                toast.info("No hay horarios disponibles para esta fecha")
-            }
+            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" });
+            if (!res.ok) throw new Error("No se pudieron cargar los horarios");
+            const raw = await res.json();
+            const payload = getPayload(raw);
+            const slots: string[] = Array.isArray(payload) ? payload : (payload?.slots ?? payload?.items ?? []);
+            setTimeSlots(slots);
+            setSelectedTime("");
+            if (slots.length === 0) toast.info("No hay horarios disponibles para esta fecha");
         } catch (e) {
-            console.error(e)
-            setTimeSlots([])
-            setSelectedTime("")
-            toast.error("Error al cargar los horarios")
+            console.error(e);
+            setTimeSlots([]);
+            setSelectedTime("");
+            toast.error("Error al cargar los horarios");
         } finally {
-            setLoadingSlots(false)
+            setLoadingSlots(false);
         }
-    }
+    };
 
     // ------- Crear reserva (Paso 4 -> Paso 5) -------
     const createBooking = async () => {
-        if (!selectedService || !selectedDate || !selectedTime) return
-        const fullName = [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ").trim()
-        if (!fullName || !email || !phone || !dni) return
+        if (!selectedService || !selectedDate || !selectedTime) return;
+        const fullName = [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ").trim();
+        if (!fullName || !email || !phone || !dni) return;
 
-        setSubmitting(true)
+        setSubmitting(true);
         try {
-            const dateStr = formatDateForAPI(selectedDate)
+            const dateStr = formatDateForAPI(selectedDate);
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -277,35 +259,32 @@ export default function ReservarPage() {
                     client: { name: fullName, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
-            })
+            });
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}))
-                const msg = getPayload(err)?.message || err?.message || "No se pudo crear la reserva"
-                throw new Error(msg)
+                const err = await res.json().catch(() => ({}));
+                const msg = getPayload(err)?.message || err?.message || "No se pudo crear la reserva";
+                throw new Error(msg);
             }
 
-            const bookingResponse: BookingResponse = await res.json()
-            setBookingResult(bookingResponse)
+            const bookingResponse: BookingResponse = await res.json();
+            setBookingResult(bookingResponse);
 
             if (bookingResponse.booking.depositRequired) {
-                toast.success("¡Reserva creada! Necesitas pagar la seña para confirmar")
+                toast.success("¡Reserva creada! Necesitas pagar la seña para confirmar");
             } else {
-                toast.success("¡Reserva confirmada exitosamente!")
+                toast.success("¡Reserva confirmada exitosamente!");
             }
 
-            setStep(5)
+            setStep(5);
         } catch (e) {
-            console.error(e)
-            toast.error((e as Error).message)
+            console.error(e);
+            toast.error((e as Error).message);
         } finally {
-            setSubmitting(false)
+            setSubmitting(false);
         }
-    }
+    };
 
-    const isDateAvailable = (date: Date) => {
-        const dateStr = formatDateForAPI(date)
-        return availableDays.includes(dateStr)
-    }
+    const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date));
 
     // -------- UI --------
     return (
@@ -344,8 +323,8 @@ export default function ReservarPage() {
                 {/* Step 1: Servicios */}
                 {step === 1 && (
                     <div className="space-y-8">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-4">Elegí tu tratamiento</h2>
+                        <div className="text-center mb-6">
+                            <h2 className="text-3xl font-bold text-gray-900 mb-2">Elegí tu tratamiento</h2>
                             <p className="text-gray-600 text-lg">Seleccioná el servicio que te interesa</p>
                         </div>
 
@@ -354,61 +333,37 @@ export default function ReservarPage() {
                         ) : services.length === 0 ? (
                             <p className="text-center text-gray-600">No hay servicios disponibles.</p>
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {services.map((s) => (
-                                    <Card
-                                        key={s._id}
-                                        className={`group cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl border-2 ${
-                                            selectedService === s._id
-                                                ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-xl"
-                                                : "border-gray-200 hover:border-amber-300 bg-white/80 backdrop-blur-sm"
-                                        }`}
-                                        onClick={() => setSelectedService(s._id)}
-                                    >
-                                        <CardHeader className="pb-4">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <CardTitle className="text-xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
-                                                    {s.name}
-                                                </CardTitle>
-                                                {(s as any).popular && (
-                                                    <Badge className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-0 px-3 py-1 font-semibold shadow-lg">
-                                                        <Sparkles className="w-3 h-3 mr-1" />
-                                                        Popular
-                                                    </Badge>
-                                                )}
-                                            </div>
-                                            {s.description && (
-                                                <CardDescription className="text-gray-600 text-base leading-relaxed">
-                                                    {s.description}
-                                                </CardDescription>
-                                            )}
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="flex justify-between items-center">
-                                                <div className="flex items-center text-gray-600">
-                                                    <Clock className="h-4 w-4 mr-2 text-amber-500" />
-                                                    <span className="font-medium">
-                            {s.durationMin ? `${s.durationMin} min` : "Duración variable"}
-                          </span>
-                                                </div>
-                                                <div className="text-amber-600 font-bold text-lg">
-                                                    {s.priceFrom ? `Desde ${money(s.priceFrom)}` : ""}
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
+                            <ServiceList
+                                services={services}
+                                selectedId={selectedService}
+                                onSelect={(id) => {
+                                    // Avanza YA al paso 2 y muestra loading mientras trae profesionales
+                                    setSelectedService(id);
+                                    // limpiar estados de pasos posteriores
+                                    setProfessionals([]);
+                                    setSelectedProfessional("any");
+                                    setAvailableDays([]);
+                                    setSelectedDate(undefined);
+                                    setTimeSlots([]);
+                                    setSelectedTime("");
+
+                                    setStep(2);
+                                    setLoadingProfessionals(true);
+                                    void loadProfessionals(id);
+                                }}
+                            />
                         )}
 
-                        <div className="text-center mt-12">
+                        {/* Botón accesible (opcional) */}
+                        <div className="text-center mt-6">
                             <Button
                                 size="lg"
                                 disabled={!selectedService}
                                 className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                                onClick={async () => {
-                                    await loadProfessionals()
-                                    setStep(2)
+                                onClick={() => {
+                                    setStep(2);
+                                    setLoadingProfessionals(true);
+                                    void loadProfessionals(selectedService);
                                 }}
                             >
                                 Continuar
@@ -490,9 +445,15 @@ export default function ReservarPage() {
                                 size="lg"
                                 disabled={!selectedService || loadingProfessionals}
                                 className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105 disabled:opacity-50"
-                                onClick={async () => {
-                                    await loadAvailableDays()
-                                    setStep(3)
+                                onClick={() => {
+                                    // Avanza YA al paso 3 y muestra loading mientras trae días disponibles
+                                    setStep(3);
+                                    setAvailableDays([]);
+                                    setSelectedDate(undefined);
+                                    setTimeSlots([]);
+                                    setSelectedTime("");
+                                    setLoadingDays(true);
+                                    void loadAvailableDays(selectedService, selectedProfessional);
                                 }}
                             >
                                 Continuar
@@ -520,23 +481,28 @@ export default function ReservarPage() {
                                         <CalendarComponent
                                             mode="single"
                                             selected={selectedDate}
-                                            onSelect={async (date) => {
-                                                setSelectedDate(date)
+                                            onSelect={(date) => {
+                                                setSelectedDate(date);
                                                 if (date && isDateAvailable(date)) {
-                                                    await loadTimeSlots(date)
+                                                    setLoadingSlots(true);
+                                                    setTimeSlots([]);
+                                                    setSelectedTime("");
+                                                    void loadTimeSlots(selectedService, selectedProfessional, date);
                                                 } else {
-                                                    setTimeSlots([])
-                                                    setSelectedTime("")
+                                                    setTimeSlots([]);
+                                                    setSelectedTime("");
                                                 }
                                             }}
                                             disabled={(date) => {
-                                                // Disable past dates
-                                                if (date < new Date()) return true
-                                                // Only enable available days if we have them
-                                                if (availableDays.length > 0) {
-                                                    return !isDateAvailable(date)
-                                                }
-                                                return false
+                                                // Disable past dates (comparación a medianoche)
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                const d = new Date(date);
+                                                d.setHours(0, 0, 0, 0);
+                                                if (d < today) return true;
+                                                // Habilitar solo días disponibles si ya los tenemos
+                                                if (availableDays.length > 0) return !isDateAvailable(date);
+                                                return false;
                                             }}
                                             locale={es}
                                             className="rounded-xl border-2 border-amber-200"
@@ -773,8 +739,8 @@ export default function ReservarPage() {
                                             size="lg"
                                             className="w-full h-14 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
                                             onClick={() => {
-                                                window.open(bookingResult.payment!.initPoint, "_blank")
-                                                toast.success("Redirigiendo al pago...")
+                                                window.open(bookingResult.payment!.initPoint, "_blank");
+                                                toast.success("Redirigiendo al pago...");
                                             }}
                                         >
                                             <CreditCard className="mr-3 h-6 w-6" />
@@ -831,28 +797,28 @@ export default function ReservarPage() {
                                 className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-transparent"
                                 onClick={() => {
                                     // reset para nueva reserva
-                                    setStep(1)
-                                    setSelectedService("")
-                                    setProfessionals([])
-                                    setSelectedProfessional("any")
-                                    setSelectedDate(undefined)
-                                    setAvailableDays([])
-                                    setTimeSlots([])
-                                    setSelectedTime("")
-                                    setFirstName("")
-                                    setLastName("")
-                                    setEmail("")
-                                    setPhone("")
-                                    setDni("")
-                                    setNotes("")
-                                    setBookingResult(null)
+                                    setStep(1);
+                                    setSelectedService("");
+                                    setProfessionals([]);
+                                    setSelectedProfessional("any");
+                                    setSelectedDate(undefined);
+                                    setAvailableDays([]);
+                                    setTimeSlots([]);
+                                    setSelectedTime("");
+                                    setFirstName("");
+                                    setLastName("");
+                                    setEmail("");
+                                    setPhone("");
+                                    setDni("");
+                                    setNotes("");
+                                    setBookingResult(null);
                                 }}
                             >
                                 Nueva Reserva
                             </Button>
                             <Button
                                 size="lg"
-                                className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
+                                className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-emerald-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
                                 asChild
                             >
                                 <Link href="/">Volver al Inicio</Link>
@@ -862,5 +828,5 @@ export default function ReservarPage() {
                 )}
             </div>
         </div>
-    )
+    );
 }
