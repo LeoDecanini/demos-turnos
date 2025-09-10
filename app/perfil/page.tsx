@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../auth/AuthProvider';
+import axios from 'axios';
 
 type TabKey = 'perfil' | 'reservas';
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -97,7 +98,7 @@ export default function PerfilPage() {
         <section className="flex-1 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-6 md:p-8 min-h-[420px]">
           {tab === 'perfil'
             ? <PerfilView user={user} />
-            : <ReservasView/>}
+            : <ReservasView />}
         </section>
       </div>
     </main>
@@ -149,44 +150,53 @@ function PerfilView({ user }: { user: { email: string; name?: string } }) {
 
 function ReservasView() {
   const [items, setItems] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const { user, token, logout } = useAuth();
+  const { user, token } = useAuth();
 
-  // 👇 normalizo IDs desde user (soporta _id/id y account como string u objeto)
-  const accountId = "68b4e6c5b13caf9d9b16949a";
+  const accountId = '68b4e6c5b13caf9d9b16949a';
   const clientId = user?._id;
 
-  console.log(accountId, clientId)
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   useEffect(() => {
-    const run = async () => {
-      // debug para ver por qué no entra
-      // console.log({ token: !!token, accountId, clientId });
+    if (!token || !accountId || !clientId) {
+      setLoading(false);
+      setErr(!token ? 'Falta token' : !accountId ? 'Falta accountId' : 'Falta clientId');
+      return;
+    }
 
-      if (!token || !accountId || !clientId) {
-        // falta algo => mantené el loader corto y mostrás vacío
-        setLoading(false);
-        setErr(!token ? 'Falta token' : !accountId ? 'Falta accountId' : 'Falta clientId');
-        return;
-      }
+    const ctrl = new AbortController();
+    const run = async () => {
       try {
         setLoading(true);
         setErr(null);
-        const url = `${API}/bookingmodule/public/clients/by-account/${accountId}/clients/${clientId}/bookings?upcoming=1&limit=50`;
-        const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-        // console.log('GET', url, r.status);
-        if (!r.ok) throw new Error((await r.text()) || 'No se pudieron cargar tus reservaciones');
-        const data = await r.json();
-        setItems(Array.isArray(data) ? data : (data.items ?? []));
+        const url = `${API}/bookingmodule/public/clients/by-account/${accountId}/clients/${clientId}/bookings`;
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { upcoming: 1, page, limit },
+          signal: ctrl.signal,
+        });
+
+        if (ctrl.signal.aborted) return;
+
+        setItems(Array.isArray(data?.items) ? data.items : []);
+        setTotal(Number(data?.total ?? 0));
+        if (Number.isFinite(data?.page)) setPage(Number(data.page));
       } catch (e: any) {
-        setErr(e.message || 'Error');
+        if (axios.isCancel(e)) return;
+        setErr(e?.response?.data?.message || e.message || 'Error');
       } finally {
-        setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false);
       }
     };
     run();
-  }, [token, accountId, clientId]);
+
+    return () => ctrl.abort();
+  }, [token, accountId, clientId, page, limit]);
 
   const fmt = (iso: string) =>
     new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
@@ -196,7 +206,30 @@ function ReservasView() {
       <h2 className="text-xl font-semibold text-slate-900">Tus reservaciones</h2>
       <p className="text-slate-500 text-sm mt-1">Acá verás tus próximos turnos.</p>
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="text-sm text-slate-600">Total: {total}</div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-600">Por página</span>
+          <select
+            value={limit}
+            onChange={(e) => {
+              const v = parseInt(e.target.value, 10);
+              if (v !== limit) {
+                setPage(1);
+                setLimit(v);
+              }
+            }}
+            className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
         <div className="grid grid-cols-4 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
           <div>Fecha</div>
           <div>Servicio</div>
@@ -222,6 +255,26 @@ function ReservasView() {
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page <= 1 || loading}
+          className="rounded-full border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50"
+        >
+          Anterior
+        </button>
+        <div className="text-sm text-slate-700">
+          Página {page} de {Math.max(1, Math.ceil(total / Math.max(1, limit)))}
+        </div>
+        <button
+          onClick={() => setPage((p) => p + 1)}
+          disabled={page >= Math.max(1, Math.ceil(total / Math.max(1, limit))) || loading}
+          className="rounded-full border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50"
+        >
+          Siguiente
+        </button>
       </div>
 
       <div className="mt-6">
