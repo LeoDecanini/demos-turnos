@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 type PublicClientInfo = { name: string; email: string; hasUser: boolean };
+const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
 export default function VerifyClientPage() {
     const search = useSearchParams();
@@ -19,7 +20,7 @@ export default function VerifyClientPage() {
         const run = async () => {
             if (!email) { setError('Falta el email en la URL'); setLoading(false); return; }
             try {
-                const res = await fetch(`http://localhost:3000/bookingmodule/public/clients/${encodeURIComponent(email)}`);
+                const res = await fetch(`${API}/bookingmodule/public/clients/${encodeURIComponent(email)}`);
                 if (!res.ok) throw new Error('No pudimos obtener el cliente');
                 const data = await res.json();
                 setInfo(data);
@@ -34,7 +35,7 @@ export default function VerifyClientPage() {
 
     const submit = async () => {
         try {
-            const res = await fetch(`http://localhost:3000/bookingmodule/public/clients/${encodeURIComponent(email)}/set-password`, {
+            const res = await fetch(`${API}/bookingmodule/public/clients/${encodeURIComponent(email)}/set-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password }),
