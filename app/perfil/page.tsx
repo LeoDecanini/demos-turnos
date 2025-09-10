@@ -1,11 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../auth/AuthProvider';
 import axios from 'axios';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from 'sonner';
+import { format } from "date-fns";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Calendar,
+  Clock,
+  User,
+  CheckCircle,
+  ArrowLeft,
+  ExternalLink,
+  CreditCard,
+  Users,
+  Heart,
+} from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 type TabKey = 'perfil' | 'reservas';
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -184,58 +201,177 @@ function PerfilView({ user }: { user: { email: string; name?: string } }) {
   );
 }
 
+type Professional = {
+  _id: string;
+  name: string;
+};
+
 function ReservasView() {
+  // ----------------- State -----------------
   const [items, setItems] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
+
+  // Cancelación
   const [cancelingId, setCancelingId] = useState<string | null>(null)
   const [reason, setReason] = useState("")
   const [submittingCancel, setSubmittingCancel] = useState(false)
   const [cancelErr, setCancelErr] = useState<string | null>(null)
+
+  // Reprogramación (pasos 2 → 4)
+  type Professional = { _id: string; name: string }
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null)
+  const [selectedService, setSelectedService] = useState<string>("")
+  const [step, setStep] = useState(2)
+
+  const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [loadingProfessionals, setLoadingProfessionals] = useState(false)
+  const [selectedProfessional, setSelectedProfessional] = useState<string>("any") // "any" = indistinto
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>()
+  const [availableDays, setAvailableDays] = useState<string[]>([]) // YYYY-MM-DD[]
+  const [loadingDays, setLoadingDays] = useState(false)
+
+  const [timeSlots, setTimeSlots] = useState<string[]>([])
+  const [loadingSlots, setLoadingSlots] = useState(false)
+  const [selectedTime, setSelectedTime] = useState<string>("")
+  const [rescheduling, setRescheduling] = useState(false)
+  const [rescheduleErr, setRescheduleErr] = useState<string | null>(null)
+
   const { user, token } = useAuth()
 
-  const accountId = '68b4e6c5b13caf9d9b16949a'
+  // ----------------- Consts & helpers -----------------
+  const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`
+  const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID || ""
   const clientId = user?._id
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
-  useEffect(() => {
-    if (!token || !accountId || !clientId) {
-      setLoading(false)
-      setErr(!token ? 'Falta token' : !accountId ? 'Falta accountId' : 'Falta clientId')
-      return
-    }
-    const ctrl = new AbortController()
-    const run = async () => {
-      try {
-        setLoading(true)
-        setErr(null)
-        const url = `${API}/bookingmodule/public/clients/by-account/${accountId}/clients/${clientId}/bookings`
-        const { data } = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { upcoming: 1, page, limit },
-          signal: ctrl.signal,
-        })
-        if (ctrl.signal.aborted) return
-        setItems(Array.isArray(data?.items) ? data.items : [])
-        setTotal(Number(data?.total ?? 0))
-        if (Number.isFinite(data?.page)) setPage(Number(data.page))
-      } catch (e: any) {
-        if (axios.isCancel(e)) return
-        setErr(e?.response?.data?.message || e.message || 'Error')
-      } finally {
-        if (!ctrl.signal.aborted) setLoading(false)
-      }
-    }
-    run()
-    return () => ctrl.abort()
-  }, [token, accountId, clientId, page, limit])
+  const getPayload = (raw: any) => raw?.data ?? raw
+  const formatDateForAPI = (date: Date) => format(date, "yyyy-MM-dd")
+  const getCurrentMonth = (date: Date) => format(date, "yyyy-MM")
+  const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date))
 
   const fmt = (iso: string) =>
-    new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+    new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso))
 
+  // ----------------- Fetch bookings (reusable) -----------------
+  const fetchBookings = useCallback(async () => {
+    if (!token || !ACCOUNT_ID || !clientId) {
+      setLoading(false)
+      setErr(!token ? "Falta token" : !ACCOUNT_ID ? "Falta NEXT_PUBLIC_ACCOUNT_ID" : "Falta clientId")
+      return
+    }
+    try {
+      setLoading(true)
+      setErr(null)
+      const url = `${API_BASE}/clients/by-account/${ACCOUNT_ID}/clients/${clientId}/bookings`
+      const { data } = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { upcoming: 1, page, limit },
+      })
+      setItems(Array.isArray(data?.items) ? data.items : [])
+      setTotal(Number(data?.total ?? 0))
+      if (Number.isFinite(data?.page)) setPage(Number(data.page))
+    } catch (e: any) {
+      setErr(e?.response?.data?.message || e.message || "Error")
+    } finally {
+      setLoading(false)
+    }
+  }, [token, ACCOUNT_ID, clientId, page, limit, API_BASE])
+
+  useEffect(() => {
+    void fetchBookings()
+  }, [fetchBookings])
+
+  // ----------------- Load for reschedule -----------------
+  const loadProfessionals = async (serviceId: string) => {
+    if (!serviceId) return
+    setLoadingProfessionals(true)
+    try {
+      const res = await fetch(`${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`, {
+        cache: "no-store",
+      })
+      if (!res.ok) throw new Error("No se pudieron cargar los profesionales")
+      const raw = await res.json()
+      const payload = getPayload(raw)
+      const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? []
+      setProfessionals(list)
+      setSelectedProfessional("any")
+    } catch (e) {
+      console.error(e)
+      setProfessionals([])
+      setSelectedProfessional("any")
+    } finally {
+      setLoadingProfessionals(false)
+    }
+  }
+
+  const loadAvailableDays = async (serviceId: string, professionalId: string | undefined) => {
+    if (!serviceId) return
+    const currentDate = new Date()
+    const month = getCurrentMonth(currentDate)
+    setLoadingDays(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("accountId", ACCOUNT_ID)
+      params.set("service", serviceId)
+      params.set("month", month)
+      if (professionalId && professionalId !== "any") params.set("professional", professionalId)
+
+      const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" })
+      if (!res.ok) throw new Error("No se pudieron cargar los días disponibles")
+      const raw = await res.json()
+      const payload = getPayload(raw)
+
+      let dates: any[] = []
+      if (Array.isArray(payload)) dates = payload
+      else if (Array.isArray(payload?.days)) dates = payload.days
+      else if (Array.isArray(payload?.items)) dates = payload.items
+
+      if (dates.length && typeof dates[0] !== "string") {
+        dates = dates.map((d: any) => d?.date).filter(Boolean)
+      }
+      setAvailableDays(dates as string[])
+    } catch (e) {
+      console.error(e)
+      setAvailableDays([])
+    } finally {
+      setLoadingDays(false)
+    }
+  }
+
+  const loadTimeSlots = async (serviceId: string, professionalId: string | undefined, date: Date) => {
+    const dateStr = formatDateForAPI(date)
+    if (!serviceId || !availableDays.includes(dateStr)) return
+
+    setLoadingSlots(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("accountId", ACCOUNT_ID)
+      params.set("service", serviceId)
+      params.set("date", dateStr)
+      if (professionalId && professionalId !== "any") params.set("professional", professionalId)
+
+      const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" })
+      if (!res.ok) throw new Error("No se pudieron cargar los horarios")
+      const raw = await res.json()
+      const payload = getPayload(raw)
+      const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? []
+      setTimeSlots(slots)
+      setSelectedTime("")
+    } catch (e) {
+      console.error(e)
+      setTimeSlots([])
+      setSelectedTime("")
+    } finally {
+      setLoadingSlots(false)
+    }
+  }
+
+  // ----------------- Cancel -----------------
   const openCancel = (id: string) => {
     setCancelErr(null)
     setReason("")
@@ -254,20 +390,82 @@ function ReservasView() {
     try {
       setSubmittingCancel(true)
       setCancelErr(null)
-      const url = `${API}/bookingmodule/public/cancel/${cancelingId}`
+      const url = `${API_BASE}/cancel/${cancelingId}`
       await axios.post(
         url,
         reason ? { reason } : {},
-        { headers: { Authorization: `Bearer ${token}` }, params: { accountId } }
+        { headers: { Authorization: `Bearer ${token}` }, params: { accountId: ACCOUNT_ID } }
       )
-      setItems(prev => prev.map(it => it._id === cancelingId ? { ...it, status: 'canceled' } : it))
+      // 🔁 Refetch lista
+      await fetchBookings()
       closeCancel()
     } catch (e: any) {
-      setCancelErr(e?.response?.data?.message || e.message || 'No se pudo cancelar')
+      setCancelErr(e?.response?.data?.message || e.message || "No se pudo cancelar")
       setSubmittingCancel(false)
     }
   }
 
+  // ----------------- Reschedule -----------------
+  const openReschedule = (booking: any) => {
+    setRescheduleErr(null)
+    setRescheduling(false)
+    setStep(2)
+    setReschedulingId(String(booking._id))
+    setSelectedService(String(booking?.service?._id || ""))
+
+    // reset selección
+    setSelectedProfessional("any")
+    setSelectedDate(undefined)
+    setAvailableDays([])
+    setTimeSlots([])
+    setSelectedTime("")
+
+    if (booking?.service?._id) {
+      void loadProfessionals(String(booking.service._id))
+    }
+  }
+
+  const closeReschedule = () => {
+    setRescheduling(false)
+    setRescheduleErr(null)
+    setReschedulingId(null)
+  }
+
+  const confirmReschedule = async () => {
+    if (!reschedulingId || !token) return
+    if (!ACCOUNT_ID) {
+      setRescheduleErr("Falta NEXT_PUBLIC_ACCOUNT_ID en el entorno")
+      return
+    }
+    if (!selectedDate || !selectedTime) {
+      setRescheduleErr("Elegí fecha y horario")
+      return
+    }
+    try {
+      setRescheduling(true)
+      setRescheduleErr(null)
+
+      const day = formatDateForAPI(selectedDate) // "YYYY-MM-DD"
+      const hour = selectedTime                    // "HH:mm"
+      const professional = selectedProfessional === "any" ? null : selectedProfessional
+
+      const url = `${API_BASE}/reschedule/${reschedulingId}`
+      await axios.post(
+        url,
+        { day, hour, professional },
+        { headers: { Authorization: `Bearer ${token}` }, params: { accountId: ACCOUNT_ID } }
+      )
+
+      // 🔁 Refetch lista
+      await fetchBookings()
+      closeReschedule()
+    } catch (e: any) {
+      setRescheduleErr(e?.response?.data?.message || e.message || "No se pudo reprogramar")
+      setRescheduling(false)
+    }
+  }
+
+  // ----------------- Render -----------------
   return (
     <div className="w-full">
       <h2 className="text-lg md:text-xl font-semibold text-slate-900">Tus reservaciones</h2>
@@ -317,98 +515,102 @@ function ReservasView() {
               <li key={b._id} className="px-4 py-3">
                 <div className="hidden md:grid grid-cols-5 text-sm items-center">
                   <div className="font-medium text-slate-900">{fmt(b.start)}</div>
-                  <div className="text-slate-700">{b.service?.name || '—'}</div>
-                  <div className="text-slate-700">{b.professional?.name || 'A asignar'}</div>
+                  <div className="text-slate-700">{b.service?.name || "—"}</div>
+                  <div className="text-slate-700">{b.professional?.name || "A asignar"}</div>
                   <div>
                     <span
                       className={[
-                        'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium text-background',
-                        b.status === 'confirmed' ? 'bg-emerald-600' : b.status === 'pending' ? 'bg-amber-600' : 'bg-rose-600',
-                      ].join(' ')}
+                        "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium text-background",
+                        b.status === "confirmed" ? "bg-emerald-600" : b.status === "pending" ? "bg-amber-600" : "bg-rose-600",
+                      ].join(" ")}
                     >
-                      {b.status === 'canceled'
-                        ? 'Cancelada'
-                        : b.status === 'confirmed'
-                          ? 'Confirmada'
-                          : b.status === 'pending'
-                            ? 'Pendiente'
-                            : 'Desconocido'}
+                      {b.status === "canceled"
+                        ? "Cancelada"
+                        : b.status === "confirmed"
+                          ? "Confirmada"
+                          : b.status === "pending"
+                            ? "Pendiente"
+                            : "Desconocido"}
                     </span>
                   </div>
                   <div className="flex gap-2 justify-end">
                     <button
+                      onClick={() => openReschedule(b)}
+                      disabled={b.status === "canceled"}
                       className={[
-                        'rounded-full border px-3 py-1.5 text-sm',
-                        false
-                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'border-green-300 text-green-600 hover:bg-green-50'
-                      ].join(' ')}
+                        "rounded-full border px-3 py-1.5 text-sm",
+                        b.status === "canceled"
+                          ? "border-slate-200 text-slate-400 cursor-not-allowed"
+                          : "border-green-300 text-green-600 hover:bg-green-50",
+                      ].join(" ")}
                     >
                       Reprogramar
                     </button>
+
                     <button
                       onClick={() => openCancel(b._id)}
-                      disabled={b.status === 'canceled'}
+                      disabled={b.status === "canceled"}
                       className={[
-                        'rounded-full border px-3 py-1.5 text-sm',
-                        b.status === 'canceled'
-                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'border-red-300 text-red-600 hover:bg-red-50'
-                      ].join(' ')}
+                        "rounded-full border px-3 py-1.5 text-sm",
+                        b.status === "canceled"
+                          ? "border-slate-200 text-slate-400 cursor-not-allowed"
+                          : "border-red-300 text-red-600 hover:bg-red-50",
+                      ].join(" ")}
                     >
                       Cancelar
                     </button>
                   </div>
                 </div>
 
+                {/* Mobile row */}
                 <div className="md:hidden space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="font-medium text-slate-900">{fmt(b.start)}</div>
                     <span
                       className={[
-                        'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-background',
-                        b.status === 'confirmed' ? 'bg-emerald-600' : b.status === 'pending' ? 'bg-amber-600' : 'bg-rose-600',
-                      ].join(' ')}
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-background",
+                        b.status === "confirmed" ? "bg-emerald-600" : b.status === "pending" ? "bg-amber-600" : "bg-rose-600",
+                      ].join(" ")}
                     >
-                      {b.status === 'canceled'
-                        ? 'Cancelada'
-                        : b.status === 'confirmed'
-                          ? 'Confirmada'
-                          : b.status === 'pending'
-                            ? 'Pendiente'
-                            : 'Desconocido'}
+                      {b.status === "canceled"
+                        ? "Cancelada"
+                        : b.status === "confirmed"
+                          ? "Confirmada"
+                          : b.status === "pending"
+                            ? "Pendiente"
+                            : "Desconocido"}
                     </span>
                   </div>
                   <div className="text-sm text-slate-700">
                     <div className="grid grid-cols-3 gap-2">
                       <span className="col-span-1 text-slate-500">Servicio</span>
-                      <span className="col-span-2">{b.service?.name || '—'}</span>
+                      <span className="col-span-2">{b.service?.name || "—"}</span>
                       <span className="col-span-1 text-slate-500">Profesional</span>
-                      <span className="col-span-2">{b.professional?.name || 'A asignar'}</span>
+                      <span className="col-span-2">{b.professional?.name || "A asignar"}</span>
                     </div>
                   </div>
-                  <div className="pt-1">
+                  <div className="pt-1 grid grid-cols-2 gap-2">
                     <button
-                      onClick={() => openCancel(b._id)}
-                      disabled={b.status === 'canceled'}
+                      onClick={() => openReschedule(b)}
+                      disabled={b.status === "canceled"}
                       className={[
-                        'w-full rounded-xl border px-3 py-2 text-sm',
-                        b.status === 'canceled'
-                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'border-red-300 text-red-600 hover:bg-red-50'
-                      ].join(' ')}
+                        "w-full rounded-xl border px-3 py-2 text-sm",
+                        b.status === "canceled"
+                          ? "border-slate-200 text-slate-400 cursor-not-allowed"
+                          : "border-green-300 text-green-600 hover:bg-green-50",
+                      ].join(" ")}
                     >
-                      Cancelar
+                      Reprogramar
                     </button>
                     <button
                       onClick={() => openCancel(b._id)}
-                      disabled={b.status === 'canceled'}
+                      disabled={b.status === "canceled"}
                       className={[
-                        'w-full rounded-xl border px-3 py-2 text-sm',
-                        b.status === 'canceled'
-                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'border-red-300 text-red-600 hover:bg-red-50'
-                      ].join(' ')}
+                        "w-full rounded-xl border px-3 py-2 text-sm",
+                        b.status === "canceled"
+                          ? "border-slate-200 text-slate-400 cursor-not-allowed"
+                          : "border-red-300 text-red-600 hover:bg-red-50",
+                      ].join(" ")}
                     >
                       Cancelar
                     </button>
@@ -420,6 +622,7 @@ function ReservasView() {
         )}
       </div>
 
+      {/* Pagination */}
       <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:justify-between">
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -440,6 +643,7 @@ function ReservasView() {
         </button>
       </div>
 
+      {/* CTA reservar */}
       <div className="mt-6">
         <Link
           href="/reservar"
@@ -452,6 +656,7 @@ function ReservasView() {
         </Link>
       </div>
 
+      {/* Dialog cancelar */}
       <Dialog open={!!cancelingId} onOpenChange={(o) => (o ? null : closeCancel())}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -485,9 +690,220 @@ function ReservasView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog reprogramar */}
+      <Dialog open={!!reschedulingId} onOpenChange={(o) => (o ? null : closeReschedule())}>
+        <DialogContent className="!max-w-4xl !w-full">
+          <DialogHeader>
+            <DialogTitle>Reprogramar turno</DialogTitle>
+            <DialogDescription />
+          </DialogHeader>
+
+          {/* Step 2: Profesional */}
+          {step === 2 && (
+            <div className="space-y-8">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Elegí el profesional</h2>
+                <p className="text-gray-600">
+                  Podés seleccionar <b>Indistinto</b> para que asignemos uno automáticamente
+                </p>
+              </div>
+
+              {loadingProfessionals ? (
+                <p className="text-center text-gray-600">Cargando profesionales…</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Card
+                    className={`cursor-pointer border-2 ${selectedProfessional === "any" ? "border-amber-500 bg-amber-50" : "border-gray-200"
+                      }`}
+                    onClick={() => setSelectedProfessional("any")}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base">Indistinto</CardTitle>
+                        <Badge>Automático</Badge>
+                      </div>
+                      <CardDescription>Asignamos el mejor disponible</CardDescription>
+                    </CardHeader>
+                  </Card>
+
+                  {professionals.map((p) => (
+                    <Card
+                      key={p._id}
+                      className={`cursor-pointer border-2 ${selectedProfessional === p._id ? "border-amber-500 bg-amber-50" : "border-gray-200"
+                        }`}
+                      onClick={() => setSelectedProfessional(p._id)}
+                    >
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">{p.name}</CardTitle>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex justify-between">
+                <Button variant="outline" className="border-2" onClick={() => closeReschedule()}>
+                  Cerrar
+                </Button>
+                <Button
+                  disabled={!selectedService || loadingProfessionals}
+                  onClick={() => {
+                    setStep(3)
+                    setAvailableDays([])
+                    setSelectedDate(undefined)
+                    setTimeSlots([])
+                    setSelectedTime("")
+                    setLoadingDays(true)
+                    void loadAvailableDays(selectedService, selectedProfessional)
+                  }}
+                >
+                  Continuar
+                  <Calendar className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Fecha y hora */}
+          {step === 3 && (
+            <div className="space-y-8">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Elegí fecha y horario</h2>
+                <p className="text-gray-600">Seleccioná una fecha disponible y luego el horario</p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Seleccionar fecha</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex justify-center">
+                      <CalendarComponent
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          setSelectedDate(date)
+                          if (date && isDateAvailable(date)) {
+                            setLoadingSlots(true)
+                            setTimeSlots([])
+                            setSelectedTime("")
+                            void loadTimeSlots(selectedService, selectedProfessional, date)
+                          } else {
+                            setTimeSlots([])
+                            setSelectedTime("")
+                          }
+                        }}
+                        disabled={(date) => {
+                          const today = new Date()
+                          today.setHours(0, 0, 0, 0)
+                          const d = new Date(date)
+                          d.setHours(0, 0, 0, 0)
+                          if (d < today) return true
+                          if (availableDays.length > 0) return !isDateAvailable(date)
+                          return false
+                        }}
+                        /* locale={es} */
+                        className="rounded-xl border-2 border-amber-200"
+                      />
+                    </div>
+                    {loadingDays && <p className="text-sm text-gray-500 text-center mt-2">Verificando disponibilidad…</p>}
+                    {selectedDate && availableDays.length > 0 && !isDateAvailable(selectedDate) && (
+                      <p className="text-sm text-red-500 text-center mt-2">Esta fecha no está disponible</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center">
+                      <Clock className="mr-2 h-4 w-4 text-amber-500" />
+                      Horarios disponibles
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingSlots ? (
+                      <p className="text-gray-600">Cargando horarios…</p>
+                    ) : !selectedDate ? (
+                      <p className="text-gray-600">Elegí una fecha para ver los horarios.</p>
+                    ) : !isDateAvailable(selectedDate) ? (
+                      <p className="text-gray-600">Esta fecha no está disponible.</p>
+                    ) : timeSlots.length === 0 ? (
+                      <p className="text-gray-600">No hay horarios disponibles.</p>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {timeSlots.map((time) => (
+                          <Button
+                            key={time}
+                            variant={selectedTime === time ? "default" : "outline"}
+                            className={selectedTime === time ? "" : "border-2 border-amber-200"}
+                            onClick={() => setSelectedTime(time)}
+                          >
+                            {time}
+                          </Button>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex justify-between">
+                <Button variant="outline" className="border-2" onClick={() => setStep(2)}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Volver
+                </Button>
+                <Button
+                  disabled={!selectedService || !selectedDate || !selectedTime || !isDateAvailable(selectedDate)}
+                  onClick={() => setStep(4)}
+                >
+                  Continuar
+                  <User className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Confirmar */}
+          {step === 4 && (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-slate-900">Confirmar reprogramación</h3>
+              <div className="text-sm text-slate-700 space-y-1">
+                <div>
+                  <span className="text-slate-500">Fecha:</span>{" "}
+                  {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "—"}
+                </div>
+                <div>
+                  <span className="text-slate-500">Hora:</span> {selectedTime || "—"}
+                </div>
+                <div>
+                  <span className="text-slate-500">Profesional:</span>{" "}
+                  {selectedProfessional === "any"
+                    ? "Indistinto"
+                    : professionals.find((p) => p._id === selectedProfessional)?.name || "—"}
+                </div>
+              </div>
+
+              {rescheduleErr && <div className="text-sm text-red-600">{rescheduleErr}</div>}
+
+              <div className="flex justify-between">
+                <Button variant="outline" className="border-2" onClick={() => setStep(3)} disabled={rescheduling}>
+                  Volver
+                </Button>
+                <Button onClick={confirmReschedule} disabled={rescheduling || !selectedDate || !selectedTime}>
+                  {rescheduling ? "Reprogramando…" : "Confirmar"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
+
+
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
