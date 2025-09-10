@@ -2,6 +2,7 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react"
+import LoginStartButton from "./LoginStartButton"
 
 type Booking = {
     _id: string
@@ -139,7 +140,7 @@ export default async function BookingDetailPage({ params }: { params: { id: stri
     const isReservaConfirmada = booking.depositStatus === "paid"
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden pt-20">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]" />
             <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
                 <div className="text-center space-y-6">
@@ -186,6 +187,13 @@ export default async function BookingDetailPage({ params }: { params: { id: stri
                                 <span className="text-xl font-semibold">
                                     {start.time} - {end.time}
                                 </span>
+                            </div>
+
+                            <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+                                <div className="mt-8 flex justify-center">
+                                    <LoginStartButton email={booking.client?.email} />
+                                </div>
+                                {booking.client?.email}
                             </div>
                         </div>
                     </CardContent>

@@ -106,7 +106,7 @@ export default function VerifyClientPage() {
     if (!info) return <div className="p-6">No se encontró el cliente.</div>;
 
     return (
-        <div className="max-w-md mx-auto p-6 space-y-5">
+        <div className="max-w-md mx-auto p-6 space-y-5 pt-20">
             <h1 className="text-2xl font-semibold">Crear contraseña</h1>
             <p className="text-sm text-gray-600">
                 {info.name ? `Hola ${info.name},` : 'Hola,'} vamos a crear tu contraseña para{' '}
