@@ -184,8 +184,8 @@ export default async function BookingDetailPage({ params }: { params: { id: stri
                             <div className="flex items-center justify-center gap-2 text-gray-700">
                                 <Clock className="w-5 h-5 text-amber-600" />
                                 <span className="text-xl font-semibold">
-                  {start.time} - {end.time}
-                </span>
+                                    {start.time} - {end.time}
+                                </span>
                             </div>
                         </div>
                     </CardContent>
