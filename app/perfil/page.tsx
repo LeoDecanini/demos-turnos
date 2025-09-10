@@ -18,12 +18,12 @@ export default function PerfilPage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen pt-32">
+      <main className="min-h-screen pt-24 md:pt-32 px-4">
         <div className="text-center">
-          <h1 className="text-3xl font-extrabold text-slate-900">Tu cuenta</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Tu cuenta</h1>
           <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
           <p className="mt-6 text-slate-600">
-            No estás logueado.{' '}
+            No estás logueado{' '}
             <Link href="/login" className="underline text-slate-900 hover:text-slate-700">
               Ingresar
             </Link>
@@ -42,15 +42,14 @@ export default function PerfilPage() {
   })();
 
   return (
-    <main className="min-h-screen max-w-7xl mx-auto pt-32 flex items-center flex-col w-full">
-      <div className="mb-8 flex items-center flex-col w-full">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Tu cuenta</h1>
-        <div className="mt-3 h-1 w-16 rounded bg-yellow-400" />
+    <main className="min-h-screen max-w-7xl mx-auto pt-24 lg:pt-32 px-4 lg:px-6 flex items-start flex-col w-full">
+      <div className="mb-6 lg:mb-8 w-full">
+        <h1 className="text-2xl lg:text-4xl font-extrabold text-slate-900 text-center lg:text-left">Tu cuenta</h1>
+        <div className="mt-3 h-1 w-16 rounded bg-yellow-400 mx-auto lg:mx-0" />
       </div>
 
-      <div className="flex gap-6 w-full">
-        {/* sidebar */}
-        <aside className="w-[260px] shrink-0 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-4 h-max">
+      <div className="flex w-full gap-6">
+        <aside className="hidden lg:block w-[260px] shrink-0 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-4 h-max">
           <div className="flex items-center gap-3 mb-4">
             <div className="h-10 w-10 rounded-full bg-yellow-400/30 text-slate-900 flex items-center justify-center font-semibold">
               {initials}
@@ -60,7 +59,6 @@ export default function PerfilPage() {
               <div className="text-xs text-slate-500 truncate">{user.email}</div>
             </div>
           </div>
-
           <nav className="space-y-2">
             <SidebarBtn
               active={tab === 'perfil'}
@@ -83,9 +81,7 @@ export default function PerfilPage() {
               }
             />
           </nav>
-
           <hr className="my-4 border-slate-200" />
-
           <button
             onClick={logout}
             className="w-full rounded-xl border border-red-200 bg-white text-red-600 hover:bg-red-50 py-2 font-medium transition"
@@ -94,18 +90,45 @@ export default function PerfilPage() {
           </button>
         </aside>
 
-        {/* contenido */}
-        <section className="flex-1 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-6 md:p-8 min-h-[420px]">
-          {tab === 'perfil'
-            ? <PerfilView user={user} />
-            : <ReservasView />}
+        <section className="flex-1 rounded-2xl lg:bg-white lg:shadow-xl lg:ring-1 lg:ring-slate-100 p-0 lg:p-8 min-h-[420px] w-full">
+          <div className="lg:hidden -mt-2 -mx-2 mb-4">
+            <div className="flex flex-wrap gap-2 overflow-x-auto px-2 pb-1">
+              <MobileTab
+                active={tab === 'perfil'}
+                onClick={() => setTab('perfil')}
+                label="Perfil"
+              />
+              <MobileTab
+                active={tab === 'reservas'}
+                onClick={() => setTab('reservas')}
+                label="Reservaciones"
+              />
+              <div className="ml-auto">
+                <button
+                  onClick={logout}
+                  className="whitespace-nowrap rounded-xl border border-red-200 bg-white text-red-600 px-3 py-1.5 text-sm"
+                >
+                  Cerrar sesión
+                </button>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center gap-3 px-2">
+              <div className="h-9 w-9 rounded-full bg-yellow-400/30 text-slate-900 flex items-center justify-center text-sm font-semibold">
+                {initials}
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-slate-900 truncate">{user.name || 'Usuario'}</div>
+                <div className="text-xs text-slate-500 truncate">{user.email}</div>
+              </div>
+            </div>
+          </div>
+
+          {tab === 'perfil' ? <PerfilView user={user} /> : <ReservasView />}
         </section>
       </div>
     </main>
   );
 }
-
-/* ---------- componentes ---------- */
 
 function SidebarBtn({
   active,
@@ -123,9 +146,7 @@ function SidebarBtn({
       onClick={onClick}
       className={[
         'w-full flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition',
-        active
-          ? 'border-yellow-400 bg-yellow-50 text-slate-900'
-          : 'border-slate-200 text-slate-600 hover:bg-slate-50',
+        active ? 'border-yellow-400 bg-yellow-50 text-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50',
       ].join(' ')}
     >
       <span className="text-slate-500">{icon}</span>
@@ -134,12 +155,25 @@ function SidebarBtn({
   );
 }
 
+function MobileTab({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        'shrink-0 rounded-full px-3 py-1.5 text-sm border',
+        active ? 'border-yellow-400 bg-yellow-50 text-slate-900' : 'border-slate-200 text-slate-600',
+      ].join(' ')}
+    >
+      {label}
+    </button>
+  );
+}
+
 function PerfilView({ user }: { user: { email: string; name?: string } }) {
   return (
     <div>
-      <h2 className="text-xl font-semibold text-slate-900">Perfil</h2>
-      <p className="text-slate-500 text-sm mt-1">Tu información de contacto</p>
-
+      <h2 className="text-lg md:text-xl font-semibold text-slate-900">Perfil</h2>
+      <p className="text-slate-500 text-xs md:text-sm mt-1">Tu información de contacto</p>
       <div className="mt-6 space-y-5">
         <Row label="Nombre" value={user.name || '—'} />
         <Row label="Email" value={user.email} />
@@ -159,7 +193,6 @@ function ReservasView() {
 
   const accountId = '68b4e6c5b13caf9d9b16949a';
   const clientId = user?._id;
-
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   useEffect(() => {
@@ -180,9 +213,7 @@ function ReservasView() {
           params: { upcoming: 1, page, limit },
           signal: ctrl.signal,
         });
-
         if (ctrl.signal.aborted) return;
-
         setItems(Array.isArray(data?.items) ? data.items : []);
         setTotal(Number(data?.total ?? 0));
         if (Number.isFinite(data?.page)) setPage(Number(data.page));
@@ -194,7 +225,6 @@ function ReservasView() {
       }
     };
     run();
-
     return () => ctrl.abort();
   }, [token, accountId, clientId, page, limit]);
 
@@ -202,11 +232,11 @@ function ReservasView() {
     new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-slate-900">Tus reservaciones</h2>
-      <p className="text-slate-500 text-sm mt-1">Acá verás tus próximos turnos.</p>
+    <div className="w-full">
+      <h2 className="text-lg md:text-xl font-semibold text-slate-900">Tus reservaciones</h2>
+      <p className="text-slate-500 text-xs md:text-sm mt-1">Acá verás tus próximos turnos.</p>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
         <div className="text-sm text-slate-600">Total: {total}</div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-600">Por página</span>
@@ -219,7 +249,7 @@ function ReservasView() {
                 setLimit(v);
               }
             }}
-            className="rounded-lg border border-slate-300 px-2 py-1 text-sm"
+            className="h-9 rounded-lg border border-slate-300 px-2 py-1 text-sm"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
@@ -229,8 +259,8 @@ function ReservasView() {
         </div>
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
-        <div className="grid grid-cols-4 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
+      <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
+        <div className="hidden md:grid grid-cols-4 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
           <div>Fecha</div>
           <div>Servicio</div>
           <div>Profesional</div>
@@ -246,32 +276,77 @@ function ReservasView() {
         ) : (
           <ul className="divide-y divide-slate-100">
             {items.map((b: any) => (
-              <li key={b._id} className="grid grid-cols-4 px-4 py-3 text-sm">
-                <div className="font-medium text-slate-900">{fmt(b.start)}</div>
-                <div className="text-slate-700">{b.service?.name || '—'}</div>
-                <div className="text-slate-700">{b.professional?.name || 'A asignar'}</div>
-                <div className="text-slate-700 capitalize">{b.status || '—'}</div>
+              <li key={b._id} className="px-4 py-3">
+                <div className="hidden md:grid grid-cols-4 text-sm">
+                  <div className="font-medium text-slate-900">{fmt(b.start)}</div>
+                  <div className="text-slate-700">{b.service?.name || '—'}</div>
+                  <div className="text-slate-700">{b.professional?.name || 'A asignar'}</div>
+                  <div>
+                    <span
+                      className={[
+                        'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium text-background',
+                        b.status === 'confirmed' ? 'bg-emerald-600' : b.status === 'pending' ? 'bg-amber-600' : 'bg-rose-600',
+                      ].join(' ')}
+                    >
+                      {b.status === 'canceled'
+                        ? 'Cancelada'
+                        : b.status === 'confirmed'
+                          ? 'Confirmada'
+                          : b.status === 'pending'
+                            ? 'Pendiente'
+                            : 'Desconocido'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="md:hidden space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-slate-900">{fmt(b.start)}</div>
+                    <span
+                      className={[
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-background',
+                        b.status === 'confirmed' ? 'bg-emerald-600' : b.status === 'pending' ? 'bg-amber-600' : 'bg-rose-600',
+                      ].join(' ')}
+                    >
+                      {b.status === 'canceled'
+                        ? 'Cancelada'
+                        : b.status === 'confirmed'
+                          ? 'Confirmada'
+                          : b.status === 'pending'
+                            ? 'Pendiente'
+                            : 'Desconocido'}
+                    </span>
+                  </div>
+                  <div className="text-sm text-slate-700">
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="col-span-1 text-slate-500">Servicio</span>
+                      <span className="col-span-2">{b.service?.name || '—'}</span>
+                      <span className="col-span-1 text-slate-500">Profesional</span>
+                      <span className="col-span-2">{b.professional?.name || 'A asignar'}</span>
+                    </div>
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:justify-between">
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page <= 1 || loading}
-          className="rounded-full border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50"
+          className="rounded-full border border-slate-300 px-4 py-2 text-sm disabled:opacity-50"
         >
           Anterior
         </button>
-        <div className="text-sm text-slate-700">
+        <div className="text-sm text-slate-700 text-center">
           Página {page} de {Math.max(1, Math.ceil(total / Math.max(1, limit)))}
         </div>
         <button
           onClick={() => setPage((p) => p + 1)}
           disabled={page >= Math.max(1, Math.ceil(total / Math.max(1, limit))) || loading}
-          className="rounded-full border border-slate-300 px-3 py-1.5 text-sm disabled:opacity-50"
+          className="rounded-full border border-slate-300 px-4 py-2 text-sm disabled:opacity-50"
         >
           Siguiente
         </button>
@@ -280,7 +355,7 @@ function ReservasView() {
       <div className="mt-6">
         <Link
           href="/reservar"
-          className="inline-flex items-center gap-2 rounded-full border border-yellow-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-yellow-50 transition"
+          className="inline-flex items-center gap-2 rounded-full border border-yellow-400 px-4 py-2 text-sm md:text-base font-medium text-slate-900 hover:bg-yellow-50 transition"
         >
           Reservar nueva cita
           <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-900">
@@ -294,9 +369,9 @@ function ReservasView() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
       <div className="text-slate-500">{label}</div>
-      <div className="col-span-2 font-medium text-slate-900">{value}</div>
+      <div className="md:col-span-2 font-medium text-slate-900">{value}</div>
     </div>
   );
 }
