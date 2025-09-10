@@ -1,8 +1,15 @@
-import type { NextConfig } from "next";
+import type {NextConfig} from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-    // output: 'export',
+    images: {
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "cdn.moveup.digital",
+                pathname: "/**", // podés restringirlo más si querés
+            },
+        ],
+    },
 };
 
 export default nextConfig;

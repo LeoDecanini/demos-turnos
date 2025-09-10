@@ -1,5 +1,5 @@
 import type React from "react"
-import {cn} from "@/utils/utils"
+import {cn} from "@/lib/utils"
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
     variant?: "default" | "shimmer" | "pulse" | "wave"
