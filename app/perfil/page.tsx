@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../auth/AuthProvider';
 import axios from 'axios';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 
 type TabKey = 'perfil' | 'reservas';
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -183,53 +185,88 @@ function PerfilView({ user }: { user: { email: string; name?: string } }) {
 }
 
 function ReservasView() {
-  const [items, setItems] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  const { user, token } = useAuth();
+  const [items, setItems] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(10)
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState<string | null>(null)
+  const [cancelingId, setCancelingId] = useState<string | null>(null)
+  const [reason, setReason] = useState("")
+  const [submittingCancel, setSubmittingCancel] = useState(false)
+  const [cancelErr, setCancelErr] = useState<string | null>(null)
+  const { user, token } = useAuth()
 
-  const accountId = '68b4e6c5b13caf9d9b16949a';
-  const clientId = user?._id;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const accountId = '68b4e6c5b13caf9d9b16949a'
+  const clientId = user?._id
+  const totalPages = Math.max(1, Math.ceil(total / limit))
 
   useEffect(() => {
     if (!token || !accountId || !clientId) {
-      setLoading(false);
-      setErr(!token ? 'Falta token' : !accountId ? 'Falta accountId' : 'Falta clientId');
-      return;
+      setLoading(false)
+      setErr(!token ? 'Falta token' : !accountId ? 'Falta accountId' : 'Falta clientId')
+      return
     }
-
-    const ctrl = new AbortController();
+    const ctrl = new AbortController()
     const run = async () => {
       try {
-        setLoading(true);
-        setErr(null);
-        const url = `${API}/bookingmodule/public/clients/by-account/${accountId}/clients/${clientId}/bookings`;
+        setLoading(true)
+        setErr(null)
+        const url = `${API}/bookingmodule/public/clients/by-account/${accountId}/clients/${clientId}/bookings`
         const { data } = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
           params: { upcoming: 1, page, limit },
           signal: ctrl.signal,
-        });
-        if (ctrl.signal.aborted) return;
-        setItems(Array.isArray(data?.items) ? data.items : []);
-        setTotal(Number(data?.total ?? 0));
-        if (Number.isFinite(data?.page)) setPage(Number(data.page));
+        })
+        if (ctrl.signal.aborted) return
+        setItems(Array.isArray(data?.items) ? data.items : [])
+        setTotal(Number(data?.total ?? 0))
+        if (Number.isFinite(data?.page)) setPage(Number(data.page))
       } catch (e: any) {
-        if (axios.isCancel(e)) return;
-        setErr(e?.response?.data?.message || e.message || 'Error');
+        if (axios.isCancel(e)) return
+        setErr(e?.response?.data?.message || e.message || 'Error')
       } finally {
-        if (!ctrl.signal.aborted) setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false)
       }
-    };
-    run();
-    return () => ctrl.abort();
-  }, [token, accountId, clientId, page, limit]);
+    }
+    run()
+    return () => ctrl.abort()
+  }, [token, accountId, clientId, page, limit])
 
   const fmt = (iso: string) =>
-    new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+    new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso))
+
+  const openCancel = (id: string) => {
+    setCancelErr(null)
+    setReason("")
+    setCancelingId(id)
+  }
+
+  const closeCancel = () => {
+    setSubmittingCancel(false)
+    setCancelErr(null)
+    setReason("")
+    setCancelingId(null)
+  }
+
+  const confirmCancel = async () => {
+    if (!cancelingId || !token) return
+    try {
+      setSubmittingCancel(true)
+      setCancelErr(null)
+      const url = `${API}/bookingmodule/public/cancel/${cancelingId}`
+      await axios.post(
+        url,
+        reason ? { reason } : {},
+        { headers: { Authorization: `Bearer ${token}` }, params: { accountId } }
+      )
+      setItems(prev => prev.map(it => it._id === cancelingId ? { ...it, status: 'canceled' } : it))
+      closeCancel()
+    } catch (e: any) {
+      setCancelErr(e?.response?.data?.message || e.message || 'No se pudo cancelar')
+      setSubmittingCancel(false)
+    }
+  }
 
   return (
     <div className="w-full">
@@ -243,10 +280,10 @@ function ReservasView() {
           <select
             value={limit}
             onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
+              const v = parseInt(e.target.value, 10)
               if (v !== limit) {
-                setPage(1);
-                setLimit(v);
+                setPage(1)
+                setLimit(v)
               }
             }}
             className="h-9 rounded-lg border border-slate-300 px-2 py-1 text-sm"
@@ -260,11 +297,12 @@ function ReservasView() {
       </div>
 
       <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200">
-        <div className="hidden md:grid grid-cols-4 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
+        <div className="hidden md:grid grid-cols-5 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700">
           <div>Fecha</div>
           <div>Servicio</div>
           <div>Profesional</div>
           <div>Estado</div>
+          <div>Acciones</div>
         </div>
 
         {loading ? (
@@ -277,7 +315,7 @@ function ReservasView() {
           <ul className="divide-y divide-slate-100">
             {items.map((b: any) => (
               <li key={b._id} className="px-4 py-3">
-                <div className="hidden md:grid grid-cols-4 text-sm">
+                <div className="hidden md:grid grid-cols-5 text-sm items-center">
                   <div className="font-medium text-slate-900">{fmt(b.start)}</div>
                   <div className="text-slate-700">{b.service?.name || '—'}</div>
                   <div className="text-slate-700">{b.professional?.name || 'A asignar'}</div>
@@ -297,9 +335,23 @@ function ReservasView() {
                             : 'Desconocido'}
                     </span>
                   </div>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => openCancel(b._id)}
+                      disabled={b.status === 'canceled'}
+                      className={[
+                        'rounded-full border px-3 py-1.5 text-sm',
+                        b.status === 'canceled'
+                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'border-red-300 text-red-600 hover:bg-red-50'
+                      ].join(' ')}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
 
-                <div className="md:hidden space-y-2">
+                <div className="md:hidden space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="font-medium text-slate-900">{fmt(b.start)}</div>
                     <span
@@ -325,6 +377,20 @@ function ReservasView() {
                       <span className="col-span-2">{b.professional?.name || 'A asignar'}</span>
                     </div>
                   </div>
+                  <div className="pt-1">
+                    <button
+                      onClick={() => openCancel(b._id)}
+                      disabled={b.status === 'canceled'}
+                      className={[
+                        'w-full rounded-xl border px-3 py-2 text-sm',
+                        b.status === 'canceled'
+                          ? 'border-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'border-red-300 text-red-600 hover:bg-red-50'
+                      ].join(' ')}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
               </li>
             ))}
@@ -341,11 +407,11 @@ function ReservasView() {
           Anterior
         </button>
         <div className="text-sm text-slate-700 text-center">
-          Página {page} de {Math.max(1, Math.ceil(total / Math.max(1, limit)))}
+          Página {page} de {totalPages}
         </div>
         <button
           onClick={() => setPage((p) => p + 1)}
-          disabled={page >= Math.max(1, Math.ceil(total / Math.max(1, limit))) || loading}
+          disabled={page >= totalPages || loading}
           className="rounded-full border border-slate-300 px-4 py-2 text-sm disabled:opacity-50"
         >
           Siguiente
@@ -363,8 +429,42 @@ function ReservasView() {
           </svg>
         </Link>
       </div>
+
+      <Dialog open={!!cancelingId} onOpenChange={(o) => (o ? null : closeCancel())}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancelar reservación</DialogTitle>
+            <DialogDescription>Podés agregar una nota para explicar el motivo.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Motivo de la cancelación (opcional)"
+              rows={4}
+            />
+            {cancelErr && <div className="text-sm text-red-600">{cancelErr}</div>}
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              onClick={closeCancel}
+              disabled={submittingCancel}
+              className="rounded-xl border border-slate-300 px-4 py-2 text-sm"
+            >
+              Cerrar
+            </button>
+            <button
+              onClick={confirmCancel}
+              disabled={submittingCancel}
+              className="rounded-xl border border-red-300 bg-red-600 text-white px-4 py-2 text-sm hover:bg-red-700 disabled:opacity-50"
+            >
+              {submittingCancel ? "Cancelando…" : "Cancelar turno"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }
 
 function Row({ label, value }: { label: string; value: string }) {
