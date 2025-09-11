@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { Check, Clock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {money} from "@/app/reservar/page";
 
 export type ServiceCategory = {
     _id: string;
@@ -27,6 +26,9 @@ export type ServiceItem = {
     popular?: boolean;
     /** Categoría populada */
     category?: ServiceCategory | null;
+    depositRequired?: boolean;
+    depositValue?: number;
+    depositType?: 'percent' | 'fixed' | null;
 };
 
 type Props = {
@@ -42,6 +44,18 @@ type Props = {
  * Lista de servicios agrupada por CATEGORÍA (sticky headers).
  * Muestra: duración (min), sesiones, precio y badge “Popular”.
  */
+
+const money = (n?: number, currency = "ARS") =>
+    typeof n === "number"
+        ? n
+            .toLocaleString("es-AR", {
+                style: "currency",
+                currency,
+                maximumFractionDigits: 0,
+            })
+            .replace(/\s/g, "") // elimina cualquier espacio
+        : ""
+
 export default function ServiceList({
                                         services,
                                         selectedId,
@@ -133,6 +147,14 @@ export default function ServiceList({
                             {money(s.price, s.currency)}
                           </span>
                                                 )}
+                                                {
+                                                    s.depositRequired && s.depositValue != null && s.depositType != null && (
+                                                        <span className="inline-flex items-center text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-semibold">
+                                                            <Clock className="w-3 h-3 mr-1" />
+                                                           Seña: {s.depositType === 'percent' ? `${s.depositValue}%` : money(s.depositValue, s.currency)}
+                                                        </span>
+                                                    )
+                                                }
                                             </div>
                                         </div>
 

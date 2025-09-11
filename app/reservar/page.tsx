@@ -856,7 +856,7 @@ export default function ReservarPage() {
     );
 }
 
-export const money = (n?: number, currency = "ARS") =>
+const money = (n?: number, currency = "ARS") =>
     typeof n === "number"
         ? n
             .toLocaleString("es-AR", {
