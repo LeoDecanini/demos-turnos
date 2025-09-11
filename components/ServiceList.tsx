@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Check, Clock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {money} from "@/app/reservar/page";
 
 export type ServiceCategory = {
     _id: string;
@@ -63,15 +64,6 @@ export default function ServiceList({
                     [cat, arr.sort((a, b) => a.name.localeCompare(b.name))] as const
             );
     }, [services]);
-
-    const money = (n?: number, currency?: string) =>
-        typeof n === "number"
-            ? new Intl.NumberFormat("es-AR", {
-                style: "currency",
-                currency: currency || "ARS",
-                maximumFractionDigits: 0,
-            }).format(n)
-            : "";
 
     return (
         <div className="max-w-3xl mx-auto bg-white rounded-xl shadow border overflow-hidden">

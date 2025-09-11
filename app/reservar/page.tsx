@@ -26,6 +26,7 @@ import ServiceList, {type ServiceItem} from "@/components/ServiceList";
 import ProfessionalList from "@/components/ProfessionalList";
 import {Skeleton} from "@/components/ui/skeleton";
 import {SiMercadopago} from "react-icons/si";
+import {BookingStepper} from "@/components/BookingStepper";
 
 type Service = ServiceItem;
 
@@ -74,6 +75,17 @@ const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID as string;
 // helper para extraer data real desde data.data
 const getPayload = (raw: any) => raw?.data ?? raw;
 
+export const money = (n?: number, currency = "ARS") =>
+    typeof n === "number"
+        ? n
+            .toLocaleString("es-AR", {
+                style: "currency",
+                currency,
+                maximumFractionDigits: 0,
+            })
+            .replace(/\s/g, "") // elimina cualquier espacio
+        : ""
+
 export default function ReservarPage() {
     // -------- Steps --------
     // 1 Servicio -> 2 Profesional -> 3 Fecha/Hora -> 4 Datos -> 5 Confirmación
@@ -109,19 +121,6 @@ export default function ReservarPage() {
 
     // ---- Paso 5: Confirmación ----
     const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
-
-    // ------- Helpers -------
-    const money = (n?: number) =>
-        typeof n === "number"
-            ? n
-                .toLocaleString("es-AR", {
-                    style: "currency",
-                    currency: "ARS",
-                    maximumFractionDigits: 0,
-                })
-                .replace(/\s/g, "") // elimina cualquier espacio
-            : ""
-
 
     const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService]);
 
@@ -310,34 +309,8 @@ export default function ReservarPage() {
                 className="absolute inset-0 bg--[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"/>
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Steps */}
-                <div className="flex justify-center mb-8">
-                    <div className="flex items-center space-x-4">
-                        {[
-                            {number: 1, title: "Servicio", icon: Heart},
-                            {number: 2, title: "Profesional", icon: User},
-                            {number: 3, title: "Fecha y Hora", icon: Calendar},
-                            {number: 4, title: "Datos", icon: User},
-                            {number: 5, title: "Confirmación", icon: CheckCircle},
-                        ].map((s, i) => (
-                            <div key={i} className="flex items-center">
-                                <div
-                                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300 ${
-                                        step >= s.number
-                                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 border-amber-500 text-white shadow-lg"
-                                            : "border-gray-300 text-gray-400 bg-white"
-                                    }`}
-                                >
-                                    <s.icon className="h-5 w-5"/>
-                                </div>
-                                <span
-                                    className={`ml-2 font-medium ${step >= s.number ? "text-amber-600" : "text-gray-400"}`}>
-                  {s.title}
-                </span>
-                                {i < 4 && <div
-                                    className={`w-8 h-0.5 mx-4 ${step > s.number ? "bg-amber-500" : "bg-gray-300"}`}/>}
-                            </div>
-                        ))}
-                    </div>
+                <div className={"mb-4"}>
+                    <BookingStepper step={step}/>
                 </div>
 
                 {/* Step 1: Servicios */}
@@ -566,7 +539,7 @@ export default function ReservarPage() {
                                 <CardContent>
                                     {loadingSlots ? (
                                         <div className="grid grid-cols-3 gap-3">
-                                        {/*array de 24 skeletons*/}
+                                            {/*array de 24 skeletons*/}
                                             {Array.from({length: 18}).map((_, i) =>
                                                 <Skeleton key={i} className="h-9 w-full"/>)
                                             }
@@ -802,7 +775,7 @@ export default function ReservarPage() {
                                                 toast.success("Redirigiendo al pago...");
                                             }}
                                         >
-                                            <img src={"/mercadopago.png"} alt={"Mercado Pago Logo"} className={"h-4"} />
+                                            <img src={"/mercadopago.png"} alt={"Mercado Pago Logo"} className={"h-4"}/>
                                             Pagar con Mercado Pago
                                         </Button>
                                     </div>
