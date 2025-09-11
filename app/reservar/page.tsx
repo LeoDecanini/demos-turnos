@@ -75,17 +75,6 @@ const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID as string;
 // helper para extraer data real desde data.data
 const getPayload = (raw: any) => raw?.data ?? raw;
 
-export const money = (n?: number, currency = "ARS") =>
-    typeof n === "number"
-        ? n
-            .toLocaleString("es-AR", {
-                style: "currency",
-                currency,
-                maximumFractionDigits: 0,
-            })
-            .replace(/\s/g, "") // elimina cualquier espacio
-        : ""
-
 export default function ReservarPage() {
     // -------- Steps --------
     // 1 Servicio -> 2 Profesional -> 3 Fecha/Hora -> 4 Datos -> 5 Confirmación
@@ -866,3 +855,14 @@ export default function ReservarPage() {
         </div>
     );
 }
+
+export const money = (n?: number, currency = "ARS") =>
+    typeof n === "number"
+        ? n
+            .toLocaleString("es-AR", {
+                style: "currency",
+                currency,
+                maximumFractionDigits: 0,
+            })
+            .replace(/\s/g, "") // elimina cualquier espacio
+        : ""
