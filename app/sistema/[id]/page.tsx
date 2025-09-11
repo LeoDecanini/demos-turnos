@@ -91,9 +91,13 @@ const BadgeTone = ({ label, tone }: { label: string; tone: "success" | "warn" | 
     return <Badge className={`px-3 ${classes}`}>{label}</Badge>
 }
 
-export default async function BookingDetailPage({ params }: { params: { id: string } }) {
-    const { id } = params
+type Params = { id: string };
 
+export default async function Page(
+    props: { params: Promise<Params> | Params }
+) {
+    const { id } = await props.params;
+    if (!id) return <div>No se indicó ID de reserva</div>
     // Endpoint base: modificalo si querés otra ruta (ej: `/booking/${id}`)
     const url = `${API_BASE}/${id}?accountId=${ACCOUNT_ID}`
     console.log({ url })
