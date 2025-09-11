@@ -94,8 +94,10 @@ const BadgeTone = ({ label, tone }: { label: string; tone: "success" | "warn" | 
 
 type Params = { id: string };
 
-export default async function Page(props: { params: { id: string } }) {
-    const { id } = props.params;
+export default async function Page(
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params;
     if (!id) return <div>No se indicó ID de reserva</div>
     // Endpoint base: modificalo si querés otra ruta (ej: `/booking/${id}`)
     const url = `${API_BASE}/${id}?accountId=${ACCOUNT_ID}`
