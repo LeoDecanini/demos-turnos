@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, Clock, CheckCircle, AlertCircle } from "lucide-react"
 import LoginStartButton from "./LoginStartButton"
+// Remove incorrect import, define type inline below
 
 type Booking = {
     _id: string
@@ -93,10 +94,8 @@ const BadgeTone = ({ label, tone }: { label: string; tone: "success" | "warn" | 
 
 type Params = { id: string };
 
-export default async function Page(
-    props: { params: Promise<Params> | Params }
-) {
-    const { id } = await props.params;
+export default async function Page(props: { params: { id: string } }) {
+    const { id } = props.params;
     if (!id) return <div>No se indicó ID de reserva</div>
     // Endpoint base: modificalo si querés otra ruta (ej: `/booking/${id}`)
     const url = `${API_BASE}/${id}?accountId=${ACCOUNT_ID}`
