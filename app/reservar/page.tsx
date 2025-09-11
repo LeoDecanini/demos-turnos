@@ -310,7 +310,7 @@ export default function ReservarPage() {
                 className="absolute inset-0 bg--[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"/>
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Steps */}
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center mb-8">
                     <div className="flex items-center space-x-4">
                         {[
                             {number: 1, title: "Servicio", icon: Heart},
