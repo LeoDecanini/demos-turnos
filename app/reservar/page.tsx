@@ -719,7 +719,7 @@ export default function ReservarPage() {
                             <Button
                                 variant="outline"
                                 size="lg"
-                                diisabled={submitting}
+                                disabled={submitting}
                                 className="h-14 px-8 border-2 border-gray-300 hover:bg-gray-50 bg-transparent"
                                 onClick={() => {
                                     setStep(3)
