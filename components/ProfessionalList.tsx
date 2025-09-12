@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import {Check} from "lucide-react";
-import {cn} from "@/lib/utils";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type ProfessionalItem = {
     _id: string;
@@ -26,12 +26,12 @@ type Props = {
  * - Item seleccionable con check a la derecha.
  */
 export default function ProfessionalList({
-                                             professionals,
-                                             selectedId,
-                                             onSelect,
-                                             backendBaseUrl,
-                                             heightClassName,
-                                         }: Props) {
+    professionals,
+    selectedId,
+    onSelect,
+    backendBaseUrl,
+    heightClassName,
+}: Props) {
     const normBase = (backendBaseUrl || "").replace(/\/+$/, "");
 
     const srcFor = (path?: string) => {
@@ -97,7 +97,7 @@ export default function ProfessionalList({
                                         selected ? "bg-amber-500 border-amber-500" : "border-gray-300"
                                     )}
                                 >
-                                    {selected && <Check className="w-4 h-4 text-white"/>}
+                                    {selected && <Check className="w-4 h-4 text-white" />}
                                 </div>
                             </li>
                         );

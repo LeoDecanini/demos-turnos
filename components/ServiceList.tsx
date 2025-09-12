@@ -57,11 +57,11 @@ const money = (n?: number, currency = "ARS") =>
         : ""
 
 export default function ServiceList({
-                                        services,
-                                        selectedId,
-                                        onSelect,
-                                        heightClassName,
-                                    }: Props) {
+    services,
+    selectedId,
+    onSelect,
+    heightClassName,
+}: Props) {
     const groups = useMemo(() => {
         // Agrupar por categoría (nombre); fallback "Sin categoría"
         const byCat: Record<string, ServiceItem[]> = {};
@@ -109,14 +109,14 @@ export default function ServiceList({
                                     >
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 truncate">
-                          {s.name}
-                        </span>
+                                                <span className="font-medium text-gray-900 truncate">
+                                                    {s.name}
+                                                </span>
                                                 {s.popular && (
                                                     <span className="inline-flex items-center text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-semibold">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            Popular
-                          </span>
+                                                        <Sparkles className="w-3 h-3 mr-1" />
+                                                        Popular
+                                                    </span>
                                                 )}
                                             </div>
 
@@ -127,31 +127,31 @@ export default function ServiceList({
                                             )}
 
                                             <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-700">
-                        <span className="inline-flex items-center">
-                          <Clock className="w-4 h-4 mr-1 text-amber-500" />
-                            {s.sessionDuration
-                                ? `${s.sessionDuration} min`
-                                : "Duración variable"}
-                        </span>
+                                                <span className="inline-flex items-center">
+                                                    <Clock className="w-4 h-4 mr-1 text-amber-500" />
+                                                    {s.sessionDuration
+                                                        ? `${s.sessionDuration} min`
+                                                        : "Duración variable"}
+                                                </span>
 
                                                 {s.sessionsCount != null && s.sessionsCount > 0 && (
                                                     <span className="inline-flex items-center">
-                            {s.sessionsCount === 1
-                                ? "1 sesión"
-                                : `${s.sessionsCount} sesiones`}
-                          </span>
+                                                        {s.sessionsCount === 1
+                                                            ? "1 sesión"
+                                                            : `${s.sessionsCount} sesiones`}
+                                                    </span>
                                                 )}
 
                                                 {s.price != null && (
                                                     <span className="font-semibold text-amber-700">
-                            {money(s.price, s.currency)}
-                          </span>
+                                                        {money(s.price, s.currency)}
+                                                    </span>
                                                 )}
                                                 {
                                                     s.depositRequired && s.depositValue != null && s.depositType != null && (
                                                         <span className="inline-flex items-center text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full font-semibold">
                                                             <Clock className="w-3 h-3 mr-1" />
-                                                           Seña: {s.depositType === 'percent' ? `${s.depositValue}%` : money(s.depositValue, s.currency)}
+                                                            Seña: {s.depositType === 'percent' ? `${s.depositValue}%` : money(s.depositValue, s.currency)}
                                                         </span>
                                                     )
                                                 }
