@@ -1,6 +1,6 @@
 "use client";
 
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
@@ -110,6 +110,15 @@ export default function ReservarPage() {
 
     // ---- Paso 5: Confirmación ----
     const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
+
+    const timeSectionRef = useRef<HTMLDivElement | null>(null);
+
+    const scrollToTimes = () => {
+        const el = timeSectionRef.current;
+        if (!el) return;
+        const y = el.getBoundingClientRect().top + window.scrollY - 86;
+        window.scrollTo({top: y, behavior: "smooth"});
+    };
 
     const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService]);
 
@@ -386,7 +395,11 @@ export default function ReservarPage() {
                                             ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
                                             : "border-gray-200 hover:border-amber-300 bg-white/80"
                                     }`}
-                                    onClick={() => setSelectedProfessional("any")}
+                                    onClick={() => {
+                                        setSelectedProfessional("any")
+                                        setStep(3)
+                                        scrollToTop()
+                                    }}
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="font-semibold text-gray-900">Indistinto</div>
@@ -402,7 +415,11 @@ export default function ReservarPage() {
                                 <ProfessionalList
                                     professionals={professionals}
                                     selectedId={selectedProfessional === "any" ? undefined : selectedProfessional}
-                                    onSelect={(id) => setSelectedProfessional(id)}
+                                    onSelect={(id) => {
+                                        setSelectedProfessional(id)
+                                        setStep(3)
+                                        scrollToTop()
+                                    }}
                                     backendBaseUrl={process.env.NEXT_PUBLIC_CDN_URL || ""}
                                 />
                             </div>
@@ -468,13 +485,16 @@ export default function ReservarPage() {
                                             <CalendarComponent
                                                 mode="single"
                                                 selected={selectedDate}
-                                                onSelect={(date) => {
+                                                onSelect={async (date) => {
                                                     setSelectedDate(date);
                                                     if (date && isDateAvailable(date)) {
+                                                        // 1) muestro la zona de horarios ya mismo
+                                                        scrollToTimes();
+                                                        // 2) cargo los horarios
                                                         setLoadingSlots(true);
                                                         setTimeSlots([]);
                                                         setSelectedTime("");
-                                                        void loadTimeSlots(selectedService, selectedProfessional, date);
+                                                        await loadTimeSlots(selectedService, selectedProfessional, date);
                                                     } else {
                                                         setTimeSlots([]);
                                                         setSelectedTime("");
@@ -518,7 +538,7 @@ export default function ReservarPage() {
 
                             {/* Horarios */}
                             {/*<Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl">*/}
-                            <Card className="">
+                            <Card className="" ref={timeSectionRef}>
                                 <CardHeader>
                                     <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
                                         <Clock className="h-5 w-5 mr-2 text-amber-500"/>
@@ -746,7 +766,7 @@ export default function ReservarPage() {
                                 <p className="text-lg text-gray-600 mb-4">{bookingResult.message}</p>
 
                                 {bookingResult.booking.depositRequired && bookingResult.payment && (
-                                    <div className="rounded-2xl p-6 mt-0 pt-0">
+                                    <div className="rounded-2xl bg-red-500">
                                         <div className="flex items-center justify-center mb-4">
                                             <CreditCard className="h-6 w-6 text-amber-500 mr-2"/>
                                             <h3 className="font-semibold text-gray-900 text-lg">Seña: {money(bookingResult.payment.amount)}</h3>
@@ -757,8 +777,8 @@ export default function ReservarPage() {
                                                 className="font-bold text-amber-600">{money(bookingResult.payment.amount)}</span>
                                         </p>*/}
                                         <Button
-                                            size="lg"
-                                            className="w-full h-14 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
+                                            className="h-14 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
+                                            style={{width: "fit-content"}}
                                             onClick={() => {
                                                 window.open(bookingResult.payment!.initPoint, "_blank");
                                                 toast.success("Redirigiendo al pago...");
