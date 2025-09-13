@@ -1,9 +1,9 @@
 "use client";
 
-import {useEffect, useMemo, useRef, useState} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
     Calendar,
     Clock,
@@ -16,17 +16,17 @@ import {
     Heart,
 } from "lucide-react";
 import Link from "next/link";
-import {toast} from "sonner";
-import {Calendar as CalendarComponent} from "@/components/ui/calendar";
-import {format} from "date-fns";
-import {es} from "date-fns/locale";
+import { toast } from "sonner";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 // Lista reutilizable (agrupa por categoría)
-import ServiceList, {type ServiceItem} from "@/components/ServiceList";
+import ServiceList, { type ServiceItem } from "@/components/ServiceList";
 import ProfessionalList from "@/components/ProfessionalList";
-import {Skeleton} from "@/components/ui/skeleton";
-import {SiMercadopago} from "react-icons/si";
-import {BookingStepper} from "@/components/BookingStepper";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SiMercadopago } from "react-icons/si";
+import { BookingStepper } from "@/components/BookingStepper";
 
 type Service = ServiceItem;
 
@@ -35,6 +35,48 @@ type Professional = {
     name: string;
     photo?: { path?: string };
 };
+
+type DepositType = "FIXED" | "PERCENT"
+
+type ServiceWithDeposit = Service & {
+    depositRequired?: boolean
+    depositType?: DepositType
+    depositValue?: number
+    usesGlobalDepositConfig?: boolean
+}
+
+type DepositCfg = {
+    allowOverrideOnService: boolean
+    defaultRequired: boolean
+    defaultType: DepositType
+    defaultValue: number
+    rounding?: { enabled?: boolean; decimals?: number }
+}
+
+const applyDepositPolicy = (list: ServiceWithDeposit[], cfg?: DepositCfg) => {
+    if (!cfg) return list
+    if (cfg.allowOverrideOnService === false) return list.map((s) =>
+        true
+            ? {
+                ...s,
+                depositRequired: cfg.defaultRequired,
+                depositType: cfg.defaultType,
+                depositValue: cfg.defaultValue,
+            }
+            : s
+    )
+
+    return list.map((s) =>
+        s.usesGlobalDepositConfig
+            ? {
+                ...s,
+                depositRequired: cfg.defaultRequired,
+                depositType: cfg.defaultType,
+                depositValue: cfg.defaultValue,
+            }
+            : s
+    )
+}
 
 type BookingResponse = {
     success: boolean;
@@ -117,7 +159,7 @@ export default function ReservarPage() {
         const el = timeSectionRef.current;
         if (!el) return;
         const y = el.getBoundingClientRect().top + window.scrollY - 86;
-        window.scrollTo({top: y, behavior: "smooth"});
+        window.scrollTo({ top: y, behavior: "smooth" });
     };
 
     const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService]);
@@ -131,29 +173,61 @@ export default function ReservarPage() {
     const getCurrentMonth = (date: Date) => format(date, "yyyy-MM");
 
     // ------- Fetch servicios al cargar -------
+    /*  useEffect(() => {
+         const load = async () => {
+             setLoadingServices(true);
+             try {
+                 const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, { cache: "no-store" });
+                 if (!res.ok) throw new Error("No se pudieron cargar los servicios");
+                 const raw = await res.json();
+                 const payload = getPayload(raw);
+                 const list: Service[] = Array.isArray(payload) ? payload : (payload?.items ?? []);
+ 
+                 console.log(raw)
+ 
+                 setServices(list);
+                 if (list.length === 0) {
+                     toast.error("No hay servicios disponibles en este momento");
+                 }
+             } catch (e) {
+                 console.error(e);
+                 setServices([]);
+                 toast.error("Error al cargar los servicios");
+             } finally {
+                 setLoadingServices(false);
+             }
+         };
+         load();
+     }, []); */
+
     useEffect(() => {
         const load = async () => {
-            setLoadingServices(true);
+            setLoadingServices(true)
             try {
-                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, {cache: "no-store"});
-                if (!res.ok) throw new Error("No se pudieron cargar los servicios");
-                const raw = await res.json();
-                const payload = getPayload(raw);
-                const list: Service[] = Array.isArray(payload) ? payload : (payload?.items ?? []);
-                setServices(list);
-                if (list.length === 0) {
-                    toast.error("No hay servicios disponibles en este momento");
-                }
+                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, { cache: "no-store" })
+                if (!res.ok) throw new Error("No se pudieron cargar los servicios")
+                const raw = await res.json()
+
+                const cfg: DepositCfg | undefined = raw?.config?.deposit
+                const payload = getPayload(raw)
+                const list: ServiceWithDeposit[] = Array.isArray(payload) ? payload : (payload?.items ?? [])
+                const listWithDeposit = applyDepositPolicy(list, cfg)
+
+                console.log(raw)
+
+                /* @ts-ignore */
+                setServices(listWithDeposit)
+                if (listWithDeposit.length === 0) toast.error("No hay servicios disponibles en este momento")
             } catch (e) {
-                console.error(e);
-                setServices([]);
-                toast.error("Error al cargar los servicios");
+                console.error(e)
+                setServices([])
+                toast.error("Error al cargar los servicios")
             } finally {
-                setLoadingServices(false);
+                setLoadingServices(false)
             }
-        };
-        load();
-    }, []);
+        }
+        load()
+    }, [])
 
     // ------- Cargas asíncronas (no bloquean el cambio de step) -------
     const loadProfessionals = async (serviceId: string) => {
@@ -168,7 +242,7 @@ export default function ReservarPage() {
             const payload = getPayload(raw);
             const list: Professional[] = Array.isArray(payload) ? payload : (payload?.items ?? []);
             setProfessionals(list);
-            console.log({proffs: list})
+            console.log({ proffs: list })
             setSelectedProfessional("any");
         } catch (e) {
             console.error(e);
@@ -193,7 +267,7 @@ export default function ReservarPage() {
             if (professionalId && professionalId !== "any") {
                 params.set("professional", professionalId);
             }
-            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, {cache: "no-store"});
+            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" });
             if (!res.ok) throw new Error("No se pudieron cargar los días disponibles");
             const raw = await res.json();
             const payload = getPayload(raw);
@@ -230,7 +304,7 @@ export default function ReservarPage() {
             if (professionalId && professionalId !== "any") {
                 params.set("professional", professionalId);
             }
-            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, {cache: "no-store"});
+            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" });
             if (!res.ok) throw new Error("No se pudieron cargar los horarios");
             const raw = await res.json();
             const payload = getPayload(raw);
@@ -259,13 +333,13 @@ export default function ReservarPage() {
             const dateStr = formatDateForAPI(selectedDate);
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     service: selectedService,
                     professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
                     day: dateStr,
                     hour: selectedTime,
-                    client: {name: fullName, email, phone, dni},
+                    client: { name: fullName, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
             });
@@ -297,18 +371,18 @@ export default function ReservarPage() {
     const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date));
 
     const scrollToTop = () => {
-        window.scrollTo({top: 0, behavior: "smooth"});
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     // -------- UI --------
     return (
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
             <div
-                className="absolute inset-0 bg--[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"/>
+                className="absolute inset-0 bg--[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]" />
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Steps */}
                 <div className={"mb-4"}>
-                    <BookingStepper step={step}/>
+                    <BookingStepper step={step} />
                 </div>
 
                 {/* Step 1: Servicios */}
@@ -321,7 +395,7 @@ export default function ReservarPage() {
 
                         {loadingServices ? (
                             <div className="max-w-3xl mx-auto bg-white rounded-xl shadow border overflow-hidden">
-                                <Skeleton className={"h-[760px] w-full"}/>
+                                <Skeleton className={"h-[760px] w-full"} />
                             </div>
                         ) : services.length === 0 ? (
                             <p className="text-center text-gray-600">No hay servicios disponibles.</p>
@@ -361,7 +435,7 @@ export default function ReservarPage() {
                                 }}
                             >
                                 Continuar
-                                <User className="ml-3 h-6 w-6"/>
+                                <User className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -379,11 +453,11 @@ export default function ReservarPage() {
 
                         {loadingProfessionals ? (
                             <div className={"max-w-3xl mx-auto"}>
-                                <Skeleton className={"h-20 w-full"}/>
+                                <Skeleton className={"h-20 w-full"} />
                                 <div className="mt-4 bg-white rounded-xl shadow border overflow-hidden">
-                                    <Skeleton className={"h-20 border rounded-bl-none rounded-br-none w-full"}/>
-                                    <Skeleton className={"h-20 border rounded-none w-full"}/>
-                                    <Skeleton className={"h-20 border rounded-tl-none rounded-tr-none w-full"}/>
+                                    <Skeleton className={"h-20 border rounded-bl-none rounded-br-none w-full"} />
+                                    <Skeleton className={"h-20 border rounded-none w-full"} />
+                                    <Skeleton className={"h-20 border rounded-tl-none rounded-tr-none w-full"} />
                                 </div>
                             </div>
                         ) : (
@@ -393,7 +467,7 @@ export default function ReservarPage() {
                                     className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
                                         ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
                                         : "border-gray-200 hover:border-amber-300 bg-white/80"
-                                    }`}
+                                        }`}
                                     onClick={() => {
                                         setSelectedProfessional("any")
                                         setStep(3)
@@ -450,7 +524,7 @@ export default function ReservarPage() {
                                     scrollToTop();
                                 }}
                             >
-                                <ArrowLeft className="mr-2 h-5 w-5"/>
+                                <ArrowLeft className="mr-2 h-5 w-5" />
                                 Volver
                             </Button>
                             <Button
@@ -469,7 +543,7 @@ export default function ReservarPage() {
                                 }}
                             >
                                 Continuar
-                                <Calendar className="ml-3 h-6 w-6"/>
+                                <Calendar className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -488,7 +562,7 @@ export default function ReservarPage() {
                             <Card className="">
                                 <CardHeader>
                                     <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                        <Calendar className="h-5 w-5 mr-2 text-amber-500"/>
+                                        <Calendar className="h-5 w-5 mr-2 text-amber-500" />
                                         Seleccionar Fecha
                                     </CardTitle>
                                 </CardHeader>
@@ -537,7 +611,7 @@ export default function ReservarPage() {
                                                 }}
                                             /> : <>
                                                 <div className={"w-full"}>
-                                                    <Skeleton className={"h-[248px] w-full"}/>
+                                                    <Skeleton className={"h-[248px] w-full"} />
                                                 </div>
                                             </>
                                         }
@@ -554,7 +628,7 @@ export default function ReservarPage() {
                             <Card className="" ref={timeSectionRef}>
                                 <CardHeader>
                                     <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                        <Clock className="h-5 w-5 mr-2 text-amber-500"/>
+                                        <Clock className="h-5 w-5 mr-2 text-amber-500" />
                                         Horarios Disponibles
                                     </CardTitle>
                                 </CardHeader>
@@ -562,8 +636,8 @@ export default function ReservarPage() {
                                     {loadingSlots ? (
                                         <div className="grid grid-cols-3 gap-3">
                                             {/*array de 24 skeletons*/}
-                                            {Array.from({length: 18}).map((_, i) =>
-                                                <Skeleton key={i} className="h-9 w-full"/>)
+                                            {Array.from({ length: 18 }).map((_, i) =>
+                                                <Skeleton key={i} className="h-9 w-full" />)
                                             }
                                         </div>
                                     ) : !selectedDate ? (
@@ -581,7 +655,7 @@ export default function ReservarPage() {
                                                     className={`h-12 transition-all duration-300 ${selectedTime === time
                                                         ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
                                                         : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                                                    }`}
+                                                        }`}
                                                     onClick={() => setSelectedTime(time)}
                                                 >
                                                     {time}
@@ -603,7 +677,7 @@ export default function ReservarPage() {
                                     scrollToTop();
                                 }}
                             >
-                                <ArrowLeft className="mr-2 h-5 w-5"/>
+                                <ArrowLeft className="mr-2 h-5 w-5" />
                                 Volver
                             </Button>
                             <Button
@@ -616,7 +690,7 @@ export default function ReservarPage() {
                                 }}
                             >
                                 Continuar
-                                <User className="ml-3 h-6 w-6"/>
+                                <User className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -720,7 +794,7 @@ export default function ReservarPage() {
                                     scrollToTop();
                                 }}
                             >
-                                <ArrowLeft className="mr-2 h-5 w-5"/>
+                                <ArrowLeft className="mr-2 h-5 w-5" />
                                 Volver
                             </Button>
                             <Button
@@ -740,7 +814,7 @@ export default function ReservarPage() {
                                 onClick={createBooking}
                             >
                                 {submitting ? "Creando…" : "Confirmar Reserva"}
-                                <CheckCircle className="ml-3 h-6 w-6"/>
+                                <CheckCircle className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -754,7 +828,7 @@ export default function ReservarPage() {
                                 className={`rounded-3xl p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
                                     ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
                                     : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
-                                }`}
+                                    }`}
                             >
                                 {/* Ícono principal */}
                                 <div className="flex items-center justify-center">
@@ -762,12 +836,12 @@ export default function ReservarPage() {
                                         className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired
                                             ? "bg-gradient-to-r from-amber-500 to-yellow-600"
                                             : "bg-gradient-to-r from-green-500 to-emerald-600"
-                                        }`}
+                                            }`}
                                     >
                                         {bookingResult.booking.depositRequired ? (
-                                            <CreditCard className="h-10 w-10 text-white"/>
+                                            <CreditCard className="h-10 w-10 text-white" />
                                         ) : (
-                                            <CheckCircle className="h-10 w-10 text-white"/>
+                                            <CheckCircle className="h-10 w-10 text-white" />
                                         )}
                                     </div>
                                 </div>
@@ -778,7 +852,7 @@ export default function ReservarPage() {
                                         className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired
                                             ? "bg-amber-100 text-amber-900 ring-amber-200"
                                             : "bg-emerald-100 text-emerald-900 ring-emerald-200"
-                                        }`}
+                                            }`}
                                     >
                                         {bookingResult.booking.depositRequired ? "Acción requerida" : "Listo"}
                                     </div>
