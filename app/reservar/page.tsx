@@ -1,9 +1,9 @@
 "use client";
 
-import {useEffect, useMemo, useRef, useState} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
     Calendar,
     Clock,
@@ -16,17 +16,17 @@ import {
     Heart,
 } from "lucide-react";
 import Link from "next/link";
-import {toast} from "sonner";
-import {Calendar as CalendarComponent} from "@/components/ui/calendar";
-import {format} from "date-fns";
-import {es} from "date-fns/locale";
+import { toast } from "sonner";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 // Lista reutilizable (agrupa por categoría)
-import ServiceList, {type ServiceItem} from "@/components/ServiceList";
+import ServiceList, { type ServiceItem } from "@/components/ServiceList";
 import ProfessionalList from "@/components/ProfessionalList";
-import {Skeleton} from "@/components/ui/skeleton";
-import {SiMercadopago} from "react-icons/si";
-import {BookingStepper} from "@/components/BookingStepper";
+import { Skeleton } from "@/components/ui/skeleton";
+import { SiMercadopago } from "react-icons/si";
+import { BookingStepper } from "@/components/BookingStepper";
 
 type Service = ServiceItem;
 
@@ -117,7 +117,7 @@ export default function ReservarPage() {
         const el = timeSectionRef.current;
         if (!el) return;
         const y = el.getBoundingClientRect().top + window.scrollY - 86;
-        window.scrollTo({top: y, behavior: "smooth"});
+        window.scrollTo({ top: y, behavior: "smooth" });
     };
 
     const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService]);
@@ -135,7 +135,7 @@ export default function ReservarPage() {
         const load = async () => {
             setLoadingServices(true);
             try {
-                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, {cache: "no-store"});
+                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, { cache: "no-store" });
                 if (!res.ok) throw new Error("No se pudieron cargar los servicios");
                 const raw = await res.json();
                 const payload = getPayload(raw);
@@ -168,7 +168,7 @@ export default function ReservarPage() {
             const payload = getPayload(raw);
             const list: Professional[] = Array.isArray(payload) ? payload : (payload?.items ?? []);
             setProfessionals(list);
-            console.log({proffs: list})
+            console.log({ proffs: list })
             setSelectedProfessional("any");
         } catch (e) {
             console.error(e);
@@ -193,7 +193,7 @@ export default function ReservarPage() {
             if (professionalId && professionalId !== "any") {
                 params.set("professional", professionalId);
             }
-            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, {cache: "no-store"});
+            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" });
             if (!res.ok) throw new Error("No se pudieron cargar los días disponibles");
             const raw = await res.json();
             const payload = getPayload(raw);
@@ -230,7 +230,7 @@ export default function ReservarPage() {
             if (professionalId && professionalId !== "any") {
                 params.set("professional", professionalId);
             }
-            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, {cache: "no-store"});
+            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" });
             if (!res.ok) throw new Error("No se pudieron cargar los horarios");
             const raw = await res.json();
             const payload = getPayload(raw);
@@ -259,13 +259,13 @@ export default function ReservarPage() {
             const dateStr = formatDateForAPI(selectedDate);
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     service: selectedService,
                     professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
                     day: dateStr,
                     hour: selectedTime,
-                    client: {name: fullName, email, phone, dni},
+                    client: { name: fullName, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
             });
@@ -297,18 +297,18 @@ export default function ReservarPage() {
     const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date));
 
     const scrollToTop = () => {
-        window.scrollTo({top: 0, behavior: "smooth"});
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     // -------- UI --------
     return (
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
             <div
-                className="absolute inset-0 bg--[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"/>
+                className="absolute inset-0 bg--[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]" />
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Steps */}
                 <div className={"mb-4"}>
-                    <BookingStepper step={step}/>
+                    <BookingStepper step={step} />
                 </div>
 
                 {/* Step 1: Servicios */}
@@ -321,7 +321,7 @@ export default function ReservarPage() {
 
                         {loadingServices ? (
                             <div className="max-w-3xl mx-auto bg-white rounded-xl shadow border overflow-hidden">
-                                <Skeleton className={"h-[760px] w-full"}/>
+                                <Skeleton className={"h-[760px] w-full"} />
                             </div>
                         ) : services.length === 0 ? (
                             <p className="text-center text-gray-600">No hay servicios disponibles.</p>
@@ -361,7 +361,7 @@ export default function ReservarPage() {
                                 }}
                             >
                                 Continuar
-                                <User className="ml-3 h-6 w-6"/>
+                                <User className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -379,22 +379,21 @@ export default function ReservarPage() {
 
                         {loadingProfessionals ? (
                             <div className={"max-w-3xl mx-auto"}>
-                                <Skeleton className={"h-20 w-full"}/>
+                                <Skeleton className={"h-20 w-full"} />
                                 <div className="mt-4 bg-white rounded-xl shadow border overflow-hidden">
-                                    <Skeleton className={"h-20 border rounded-bl-none rounded-br-none w-full"}/>
-                                    <Skeleton className={"h-20 border rounded-none w-full"}/>
-                                    <Skeleton className={"h-20 border rounded-tl-none rounded-tr-none w-full"}/>
+                                    <Skeleton className={"h-20 border rounded-bl-none rounded-br-none w-full"} />
+                                    <Skeleton className={"h-20 border rounded-none w-full"} />
+                                    <Skeleton className={"h-20 border rounded-tl-none rounded-tr-none w-full"} />
                                 </div>
                             </div>
                         ) : (
                             <div className="max-w-3xl mx-auto">
                                 {/* Opción “Indistinto” arriba de la lista */}
                                 <div
-                                    className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${
-                                        selectedProfessional === "any"
-                                            ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                                            : "border-gray-200 hover:border-amber-300 bg-white/80"
-                                    }`}
+                                    className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
+                                        ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
+                                        : "border-gray-200 hover:border-amber-300 bg-white/80"
+                                        }`}
                                     onClick={() => {
                                         setSelectedProfessional("any")
                                         setStep(3)
@@ -405,8 +404,8 @@ export default function ReservarPage() {
                                         <div className="font-semibold text-gray-900">Indistinto</div>
                                         <span
                                             className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
-                                              Automático
-                                            </span>
+                                            Automático
+                                        </span>
                                     </div>
                                     <p className="text-sm text-gray-600 mt-1">
                                         Podés seleccionar Indistinto para que asignemos uno automáticamente </p>
@@ -436,7 +435,7 @@ export default function ReservarPage() {
                                     scrollToTop();
                                 }}
                             >
-                                <ArrowLeft className="mr-2 h-5 w-5"/>
+                                <ArrowLeft className="mr-2 h-5 w-5" />
                                 Volver
                             </Button>
                             <Button
@@ -456,7 +455,7 @@ export default function ReservarPage() {
                                 }}
                             >
                                 Continuar
-                                <Calendar className="ml-3 h-6 w-6"/>
+                                <Calendar className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -475,7 +474,7 @@ export default function ReservarPage() {
                             <Card className="">
                                 <CardHeader>
                                     <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                        <Calendar className="h-5 w-5 mr-2 text-amber-500"/>
+                                        <Calendar className="h-5 w-5 mr-2 text-amber-500" />
                                         Seleccionar Fecha
                                     </CardTitle>
                                 </CardHeader>
@@ -524,7 +523,7 @@ export default function ReservarPage() {
                                                 }}
                                             /> : <>
                                                 <div className={"w-full"}>
-                                                    <Skeleton className={"h-[248px] w-full"}/>
+                                                    <Skeleton className={"h-[248px] w-full"} />
                                                 </div>
                                             </>
                                         }
@@ -541,7 +540,7 @@ export default function ReservarPage() {
                             <Card className="" ref={timeSectionRef}>
                                 <CardHeader>
                                     <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                        <Clock className="h-5 w-5 mr-2 text-amber-500"/>
+                                        <Clock className="h-5 w-5 mr-2 text-amber-500" />
                                         Horarios Disponibles
                                     </CardTitle>
                                 </CardHeader>
@@ -549,8 +548,8 @@ export default function ReservarPage() {
                                     {loadingSlots ? (
                                         <div className="grid grid-cols-3 gap-3">
                                             {/*array de 24 skeletons*/}
-                                            {Array.from({length: 18}).map((_, i) =>
-                                                <Skeleton key={i} className="h-9 w-full"/>)
+                                            {Array.from({ length: 18 }).map((_, i) =>
+                                                <Skeleton key={i} className="h-9 w-full" />)
                                             }
                                         </div>
                                     ) : !selectedDate ? (
@@ -565,11 +564,10 @@ export default function ReservarPage() {
                                                 <Button
                                                     key={time}
                                                     variant={selectedTime === time ? "default" : "outline"}
-                                                    className={`h-12 transition-all duration-300 ${
-                                                        selectedTime === time
-                                                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                                                            : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                                                    }`}
+                                                    className={`h-12 transition-all duration-300 ${selectedTime === time
+                                                        ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                                                        : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                                                        }`}
                                                     onClick={() => setSelectedTime(time)}
                                                 >
                                                     {time}
@@ -591,7 +589,7 @@ export default function ReservarPage() {
                                     scrollToTop();
                                 }}
                             >
-                                <ArrowLeft className="mr-2 h-5 w-5"/>
+                                <ArrowLeft className="mr-2 h-5 w-5" />
                                 Volver
                             </Button>
                             <Button
@@ -604,7 +602,7 @@ export default function ReservarPage() {
                                 }}
                             >
                                 Continuar
-                                <User className="ml-3 h-6 w-6"/>
+                                <User className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -708,7 +706,7 @@ export default function ReservarPage() {
                                     scrollToTop();
                                 }}
                             >
-                                <ArrowLeft className="mr-2 h-5 w-5"/>
+                                <ArrowLeft className="mr-2 h-5 w-5" />
                                 Volver
                             </Button>
                             <Button
@@ -728,7 +726,7 @@ export default function ReservarPage() {
                                 onClick={createBooking}
                             >
                                 {submitting ? "Creando…" : "Confirmar Reserva"}
-                                <CheckCircle className="ml-3 h-6 w-6"/>
+                                <CheckCircle className="ml-3 h-6 w-6" />
                             </Button>
                         </div>
                     </div>
@@ -739,108 +737,135 @@ export default function ReservarPage() {
                     <div className="text-center space-y-8">
                         <div className="max-w-2xl mx-auto">
                             <div
-                                className={`rounded-3xl p-12 border ${
-                                    bookingResult.booking.depositRequired
-                                        ? "bg-gradient-to-r from-amber-100/15 to-yellow-100/15 border-amber-200"
-                                        : "bg-gradient-to-r from-green-100/15 to-emerald-100/15 border-green-200"
-                                }`}
-                            >
-                                <div
-                                    className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg ${
-                                        bookingResult.booking.depositRequired
-                                            ? "bg-gradient-to-r from-amber-500 to-yellow-600"
-                                            : "bg-gradient-to-r from-green-500 to-emerald-600"
+                                className={`rounded-3xl p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
+                                        ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
+                                        : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
                                     }`}
-                                >
-                                    {bookingResult.booking.depositRequired ? (
-                                        <CreditCard className="h-10 w-10 text-white"/>
-                                    ) : (
-                                        <CheckCircle className="h-10 w-10 text-white"/>
-                                    )}
+                            >
+                                {/* Ícono principal */}
+                                <div className="flex items-center justify-center">
+                                    <div
+                                        className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired
+                                                ? "bg-gradient-to-r from-amber-500 to-yellow-600"
+                                                : "bg-gradient-to-r from-green-500 to-emerald-600"
+                                            }`}
+                                    >
+                                        {bookingResult.booking.depositRequired ? (
+                                            <CreditCard className="h-10 w-10 text-white" />
+                                        ) : (
+                                            <CheckCircle className="h-10 w-10 text-white" />
+                                        )}
+                                    </div>
                                 </div>
 
-                                <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                                    {bookingResult.booking.depositRequired ? "¡Reserva Creada!" : "¡Reserva Confirmada!"}
-                                </h2>
+                                {/* Header */}
+                                <div className="space-y-2">
+                                    <div
+                                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired
+                                                ? "bg-amber-100 text-amber-900 ring-amber-200"
+                                                : "bg-emerald-100 text-emerald-900 ring-emerald-200"
+                                            }`}
+                                    >
+                                        {bookingResult.booking.depositRequired ? "Acción requerida" : "Listo"}
+                                    </div>
 
-                                <p className="text-lg text-gray-600 mb-4">{bookingResult.message}</p>
+                                    <h2 className="text-3xl font-extrabold text-gray-900">
+                                        {bookingResult.booking.depositRequired
+                                            ? "¡Reserva creada!"
+                                            : "¡Reserva confirmada!"}
+                                    </h2>
 
+                                    <p className="text-base text-gray-600">{bookingResult.message}</p>
+                                </div>
+
+                                {/* Pago con seña */}
                                 {bookingResult.booking.depositRequired && bookingResult.payment && (
-                                    <div className="rounded-2xl bg-red-500">
-                                        <div className="flex items-center justify-center mb-4">
-                                            <CreditCard className="h-6 w-6 text-amber-500 mr-2"/>
-                                            <h3 className="font-semibold text-gray-900 text-lg">Seña: {money(bookingResult.payment.amount)}</h3>
+                                    <div className="mt-8 rounded-2xl border border-amber-200 bg-white/80 p-6 text-left">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-sm text-gray-600">Seña a abonar</p>
+                                                <p className="text-2xl font-bold text-gray-900">
+                                                    {money(bookingResult.payment.amount)}
+                                                </p>
+                                            </div>
+                                            <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                                                Mercado Pago
+                                            </span>
                                         </div>
-                                        {/*<p className="text-gray-600 mb-4">
-                                            Para confirmar tu reserva, necesitas pagar una seña de{" "}
-                                            <span
-                                                className="font-bold text-amber-600">{money(bookingResult.payment.amount)}</span>
-                                        </p>*/}
-                                        <Button
-                                            className="h-14 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
-                                            style={{width: "fit-content"}}
-                                            onClick={() => {
-                                                window.open(bookingResult.payment!.initPoint, "_blank");
-                                                toast.success("Redirigiendo al pago...");
-                                            }}
-                                        >
-                                            <img src={"/mercadopago.png"} alt={"Mercado Pago Logo"} className={"h-4"}/>
-                                            Pagar con Mercado Pago
-                                        </Button>
+
+                                        <div className="mt-5">
+                                            <Button
+                                                className="h-12 w-full sm:w-auto px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
+                                                onClick={() => {
+                                                    window.open(bookingResult.payment!.initPoint, "_blank");
+                                                    toast.success("Redirigiendo al pago...");
+                                                }}
+                                            >
+                                                <img
+                                                    src="/mercadopago.png"
+                                                    alt="Mercado Pago"
+                                                    className="h-4 mr-2"
+                                                />
+                                                Pagar seña
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
 
-                                <div className="bg-white border rounded-2xl p-6">
-                                    <h3 className="font-semibold text-gray-900 mb-4">Resumen de tu reserva:</h3>
-                                    <div className="space-y-3 text-left">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Servicio:</span>
-                                            <span className="font-semibold">{bookingResult.booking.service.name}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Profesional:</span>
-                                            <span
-                                                className="font-semibold">{bookingResult.booking.professional.name}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Fecha:</span>
-                                            <span className="font-semibold">
-                        {format(new Date(bookingResult.booking.start), "PPP", {locale: es})}
-                      </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Hora:</span>
-                                            <span
-                                                className="font-semibold">{format(new Date(bookingResult.booking.start), "HH:mm")}</span>
-                                        </div>
-                                        {/*<div className="flex justify-between">
-                                            <span className="text-gray-600">Estado:</span>
-                                            <Badge
-                                                variant={bookingResult.booking.status === "confirmed" ? "default" : "secondary"}>
-                                                {bookingResult.booking.status === "pending" ? "Pendiente" : "Confirmada"}
-                                            </Badge>
-                                        </div>
-                                        {bookingResult.booking.depositRequired && (
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Estado del pago:</span>
-                                                <Badge
-                                                    variant={bookingResult.booking.depositStatus === "paid" ? "default" : "destructive"}>
-                                                    {bookingResult.booking.depositStatus === "unpaid" ? "Pendiente" : "Pagado"}
-                                                </Badge>
+                                {/* Resumen */}
+                                <div className="mt-8 grid gap-6">
+                                    <div className="rounded-2xl bg-white border p-6 text-left">
+                                        <h3 className="font-semibold text-gray-900 mb-4">
+                                            Resumen de tu reserva
+                                        </h3>
+                                        <div className="divide-y divide-gray-100">
+                                            <div className="py-3 flex items-center justify-between">
+                                                <span className="text-gray-600">Servicio</span>
+                                                <span className="font-semibold text-gray-900">
+                                                    {bookingResult.booking.service.name}
+                                                </span>
                                             </div>
-                                        )}*/}
+                                            <div className="py-3 flex items-center justify-between">
+                                                <span className="text-gray-600">Profesional</span>
+                                                <span className="font-semibold text-gray-900">
+                                                    {bookingResult.booking.professional.name}
+                                                </span>
+                                            </div>
+                                            <div className="py-3 flex items-center justify-between">
+                                                <span className="text-gray-600">Fecha</span>
+                                                <span className="font-semibold text-gray-900">
+                                                    {format(new Date(bookingResult.booking.start), "PPP", {
+                                                        locale: es,
+                                                    })}
+                                                </span>
+                                            </div>
+                                            <div className="py-3 flex items-center justify-between">
+                                                <span className="text-gray-600">Hora</span>
+                                                <span className="font-semibold text-gray-900">
+                                                    {format(new Date(bookingResult.booking.start), "HH:mm")}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    {!bookingResult.booking.depositRequired && (
+                                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
+                                            <p className="text-sm text-emerald-800">
+                                                Tu turno quedó confirmado. Te enviamos un correo con el detalle.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-center space-x-4">
+                        {/* Botones inferiores */}
+                        <div className="flex justify-center gap-3">
                             <Button
                                 size="lg"
                                 variant="outline"
-                                className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-transparent"
+                                className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-white"
                                 onClick={() => {
-                                    // reset para nueva reserva
                                     setStep(1);
                                     setSelectedService("");
                                     setProfessionals([]);
@@ -859,14 +884,15 @@ export default function ReservarPage() {
                                     scrollToTop();
                                 }}
                             >
-                                Nueva Reserva
+                                Nueva reserva
                             </Button>
+
                             <Button
                                 size="lg"
-                                className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
+                                className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0 transition-transform hover:scale-[1.02]"
                                 asChild
                             >
-                                <Link href="/">Volver al Inicio</Link>
+                                <Link href="/">Volver al inicio</Link>
                             </Button>
                         </div>
                     </div>
