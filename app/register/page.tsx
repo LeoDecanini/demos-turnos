@@ -43,7 +43,7 @@ export default function RegisterPage() {
             loginWithToken(token);
             router.replace('/perfil');
         } catch (e: any) {
-            setErr(e.message || 'Error');
+            setErr('Error, intenta nuevamente');
         } finally {
             setPending(false);
         }

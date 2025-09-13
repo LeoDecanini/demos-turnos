@@ -36,7 +36,7 @@ export default function LoginPage() {
             loginWithToken(token);
             router.replace('/perfil');
         } catch (e: any) {
-            setErr(e.message || 'Error');
+            setErr('Error, intenta nuevamente');
         } finally {
             setPending(false);
         }
@@ -137,13 +137,12 @@ export default function LoginPage() {
                                 >
                                     Crear usuario
                                 </Link>
-                                <button
-                                    type="button"
-                                    className="text-slate-400 hover:text-slate-700"
-                                    onClick={() => alert('Pronto activamos la recuperación 😉')}
+                                <Link
+                                    href="/recuperate"
+                                    className="text-slate-600 hover:text-slate-900 underline underline-offset-4"
                                 >
-                                    ¿Olvidaste tu contraseña?
-                                </button>
+                                    ¿Olvidate la contraseña?
+                                </Link>
                             </div>
                         </div>
                     </div>
