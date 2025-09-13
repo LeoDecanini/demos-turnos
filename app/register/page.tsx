@@ -1,4 +1,4 @@
-// app/login/page.tsx
+// app/register/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -7,13 +7,19 @@ import Link from 'next/link';
 import { useAuth } from '../auth/AuthProvider';
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+const ACCOUNTID = process.env.NEXT_PUBLIC_ACCOUNT_ID || '';
 
-export default function LoginPage() {
+export default function RegisterPage() {
     const router = useRouter();
     const { loginWithToken } = useAuth();
+
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [dni, setDni] = useState('');
     const [password, setPassword] = useState('');
     const [showPwd, setShowPwd] = useState(false);
+
     const [err, setErr] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
 
@@ -23,13 +29,14 @@ export default function LoginPage() {
             setPending(true);
             setErr(null);
 
-            const r = await fetch(`${API}/bookingmodule/public/clients/sessions`, {
+            const r = await fetch(`${API}/bookingmodule/public/clients/register/${ACCOUNTID}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
+                // ⬇️ Importante: enviar phone y dni (requeridos por el modelo)
+                body: JSON.stringify({ name, email, phone, dni, password }),
             });
 
-            if (!r.ok) throw new Error((await r.text()) || 'Login inválido');
+            if (!r.ok) throw new Error((await r.text()) || 'No se pudo crear la cuenta');
 
             const { token } = await r.json();
             localStorage.setItem('booking_client_jwt', token);
@@ -43,21 +50,25 @@ export default function LoginPage() {
     };
 
     const onEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') onSubmit();
+        if (e.key === 'Enter' && canSubmit) onSubmit();
     };
 
+    const canSubmit =
+        name.trim().length >= 2 &&
+        /\S+@\S+\.\S+/.test(email) &&
+        phone.trim().length >= 6 &&
+        dni.trim().length >= 6 &&
+        password.length >= 6 &&
+        !pending;
+
     return (
-        <main className=" pt-20 bg-white">
+        <main className="pt-20 bg-white">
             <div className="max-w-6xl mx-auto px-4 py-12">
                 {/* título con acento amarillo */}
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">
-                        Ingresar a tu cuenta
-                    </h1>
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Crear cuenta</h1>
                     <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
-                    <p className="mt-4 text-slate-500">
-                        Accedé para reservar y gestionar tus turnos.
-                    </p>
+                    <p className="mt-4 text-slate-500">Registrate para reservar y gestionar tus turnos.</p>
                 </div>
 
                 {/* card */}
@@ -71,9 +82,19 @@ export default function LoginPage() {
 
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700">
-                                    Email
-                                </label>
+                                <label className="block text-sm font-medium text-slate-700">Nombre</label>
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={e => setName(e.target.value)}
+                                    onKeyDown={onEnter}
+                                    placeholder="Tu nombre y apellido"
+                                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">Email</label>
                                 <input
                                     type="email"
                                     value={email}
@@ -86,17 +107,40 @@ export default function LoginPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700">
-                                    Contraseña
-                                </label>
+                                <label className="block text-sm font-medium text-slate-700">Teléfono</label>
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={e => setPhone(e.target.value)}
+                                    onKeyDown={onEnter}
+                                    placeholder="+54 11 1234-5678"
+                                    autoComplete="tel"
+                                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">DNI</label>
+                                <input
+                                    type="text"
+                                    value={dni}
+                                    onChange={e => setDni(e.target.value)}
+                                    onKeyDown={onEnter}
+                                    placeholder="Tu DNI"
+                                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700">Contraseña</label>
                                 <div className="mt-1 relative">
                                     <input
                                         type={showPwd ? 'text' : 'password'}
                                         value={password}
                                         onChange={e => setPassword(e.target.value)}
                                         onKeyDown={onEnter}
-                                        placeholder="••••••••"
-                                        autoComplete="current-password"
+                                        placeholder="Mínimo 6 caracteres"
+                                        autoComplete="new-password"
                                         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
                                     />
                                     <button
@@ -124,31 +168,24 @@ export default function LoginPage() {
 
                             <button
                                 onClick={onSubmit}
-                                disabled={!email || !password || pending}
+                                disabled={!canSubmit}
                                 className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
                             >
-                                {pending ? 'Ingresando…' : 'Ingresar'}
+                                {pending ? 'Creando…' : 'Crear cuenta'}
                             </button>
 
                             <div className="flex items-center justify-between text-sm">
-                                <Link
-                                    href="/register"
-                                    className="text-slate-600 hover:text-slate-900 underline underline-offset-4"
-                                >
-                                    Crear usuario
+                                <Link href="/login" className="text-slate-600 hover:text-slate-900 underline underline-offset-4">
+                                    Ya tengo cuenta
                                 </Link>
-                                <button
-                                    type="button"
-                                    className="text-slate-400 hover:text-slate-700"
-                                    onClick={() => alert('Pronto activamos la recuperación 😉')}
-                                >
+                                <Link href="/recuperate" className="text-slate-400 hover:text-slate-700">
                                     ¿Olvidaste tu contraseña?
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
 
-                    {/* CTA secundaria similar a “Ver todos los servicios” */}
+                    {/* CTA secundaria */}
                     <div className="text-center mt-6">
                         <Link
                             href="/reservar"
