@@ -177,8 +177,8 @@ export default async function BookingPublicPage({
 
     if (!booking) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30 grid place-items-center px-6 py-24">
-                <Card className="max-w-xl w-full border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+            <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 grid place-items-center px-6 py-24">
+                <Card className="max-w-xl w-full border-0 shadow--xl bg-white">
                     <CardHeader>
                         <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                             <AlertTriangle className="w-6 h-6 text-amber-600" />
@@ -245,7 +245,7 @@ export default async function BookingPublicPage({
                                 <CheckCircle2 className="w-16 h-16 text-emerald-500" />
                             </div>
                             {/* ↓ achicado en móviles */}
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900">
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900">
                                 ¡Reserva confirmada!
                             </h1>
                             <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-xl">
@@ -288,12 +288,12 @@ export default async function BookingPublicPage({
             </section>
 
             {/* Content */}
-            <section className="relative max-w-5xl mx-auto px-0 sm:px-6 lg:px-8 pb-16">
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+            <section className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+                <div className="grid gap-8">
                     {/* Principal */}
                     <div className="lg:col-span-3 space-y-8">
                         {/* Resumen turno */}
-                        <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/85 md:backdrop-blur md:rounded-2xl">
+                        <Card className="border shadow bg-white md:rounded-2xl">
                             <CardHeader className="pb-0">
                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                                     <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-2xl">
@@ -301,7 +301,7 @@ export default async function BookingPublicPage({
                                         Detalle de la reserva
                                     </CardTitle>
 
-                                    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                                    {/*<div className="flex flex-wrap items-center gap-2 sm:justify-end">
                                         <StatusBadge label={`Estado: ${booking.status || "—"}`} kind={statusTone} />
                                         <StatusBadge
                                             label={`Pago: ${booking.paymentStatus || "—"}`}
@@ -315,7 +315,7 @@ export default async function BookingPublicPage({
                                         ) : (
                                             <StatusBadge label="Sin seña" kind="neutral" />
                                         )}
-                                    </div>
+                                    </div>*/}
                                 </div>
                             </CardHeader>
 
@@ -360,7 +360,7 @@ export default async function BookingPublicPage({
                         </Card>
 
                         {/* Cliente */}
-                        <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/85 md:backdrop-blur md:rounded-2xl">
+                        <Card className="border shadow bg-white md:rounded-2xl">
                             <CardHeader className="pb-2">
                                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                                     <User className="w-5 h-5 text-amber-600" />
@@ -441,7 +441,7 @@ export default async function BookingPublicPage({
                         )}
 
                         {/* Utilitarios */}
-                        <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/90 md:backdrop-blur md:rounded-2xl">
+                      {/*  <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/90 md:backdrop-blur md:rounded-2xl">
                             <CardHeader>
                                 <CardTitle className="text-base sm:text-lg">Acciones</CardTitle>
                             </CardHeader>
@@ -455,7 +455,7 @@ export default async function BookingPublicPage({
                                     />
                                 </form>
 
-                                {/*  <button
+                                  <button
                                     className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                                     onClick={async () => {
                                         "use client";
@@ -466,7 +466,7 @@ export default async function BookingPublicPage({
                                 >
                                     <Copy className="w-4 h-4" />
                                     Copiar ID de reserva
-                                </button> */}
+                                </button>
 
                                 <Link
                                     href="/"
@@ -476,7 +476,7 @@ export default async function BookingPublicPage({
                                     Volver al inicio
                                 </Link>
                             </CardContent>
-                        </Card>
+                        </Card>*/}
                     </div>
                 </div>
             </section>

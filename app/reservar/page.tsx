@@ -875,7 +875,7 @@ export default function ReservarPage() {
                         <div className="text-center space-y-8">
                             <div className="max-w-2xl mx-auto">
                                 <div
-                                    className={`rounded-3xl p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
+                                    className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
                                             ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
                                             : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
                                         }`}
@@ -926,7 +926,7 @@ export default function ReservarPage() {
                                                 </span>
                                             </div>
 
-                                            <div className="mt-5 flex gap-2">
+                                            <div className="mt-5 flex flex-col sm:flex-row gap-2">
                                                 <Button
                                                     className="h-12 w-full sm:w-auto px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
                                                     onClick={() => {
@@ -947,7 +947,6 @@ export default function ReservarPage() {
                                                             .catch(() => toast.error("No se pudo copiar el link"));
                                                     }}
                                                 >
-                                                    <img src="/mercadopago.png" alt="Mercado Pago" className="h-4 mr-2" />
                                                     Copiar link de pago
                                                 </Button>
                                             </div>
@@ -980,6 +979,12 @@ export default function ReservarPage() {
                                                     <span className="text-gray-600">Hora</span>
                                                     <span className="font-semibold text-gray-900">
                                                         {format(new Date(bookingResult.booking.start), "HH:mm")}
+                                                    </span>
+                                                </div>
+                                                <div className="py-3 flex items-center justify-between">
+                                                    <span className="text-gray-600">Dirección</span>
+                                                    <span className="font-semibold text-gray-900">
+                                                       Paraná 1315, PB 4, Recoleta, CABA
                                                     </span>
                                                 </div>
                                             </div>
