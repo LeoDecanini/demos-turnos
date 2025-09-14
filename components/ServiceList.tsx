@@ -143,6 +143,7 @@ export default function ServiceList({
                                                 )}
 
                                                 {s.price != null && (
+                                                    s.price === 0 ? <span className="font-semibold text-amber-700">Gratis</span> :
                                                     <span className="font-semibold text-amber-700">
                                                         {money(s.price, s.currency)}
                                                     </span>
