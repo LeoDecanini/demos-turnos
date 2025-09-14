@@ -926,9 +926,19 @@ export default function ReservarPage() {
                                                 </span>
                                             </div>
 
-                                            <div className="mt-5">
+                                            <div className="mt-5 flex gap-2">
                                                 <Button
                                                     className="h-12 w-full sm:w-auto px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
+                                                    onClick={() => {
+                                                        const link = bookingResult.payment!.initPoint;
+                                                        window.open(link, "_blank")?.focus();
+                                                    }}
+                                                >
+                                                    <img src="/mercadopago.png" alt="Mercado Pago" className="h-4 mr-2" />
+                                                    Abrir Mercado Pago
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
                                                     onClick={() => {
                                                         const link = bookingResult.payment!.initPoint;
                                                         navigator.clipboard
