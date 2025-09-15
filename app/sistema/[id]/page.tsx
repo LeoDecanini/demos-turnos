@@ -18,6 +18,7 @@ import {
     Copy,
     ExternalLink,
     ArrowLeft,
+    UserPlus,
 } from "lucide-react";
 
 type Booking = {
@@ -230,6 +231,8 @@ export default async function BookingPublicPage({
                 ? `${booking.depositAmount}%`
                 : fmtMoney(booking.depositAmount, booking.depositCurrency || booking.currency);
 
+    const isConfirmed = (booking.status || "").toLowerCase() === "confirmed";
+
     return (
         <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden pt-16">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.12),transparent_55%)]" />
@@ -392,6 +395,28 @@ export default async function BookingPublicPage({
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {isConfirmed && booking.client?.email ? (
+                            <div className="pt-2">
+                                <Link
+                                    href={`/verify-client?email=${encodeURIComponent(booking.client.email)}`}
+                                    className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl 
+                 bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white 
+                 shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
+                 transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl 
+                 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                                >
+                                    <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+                                    <UserPlus className="h-5 w-5 shrink-0" />
+                                    <span>Crear cuenta</span>
+                                </Link>
+
+                                <p className="mt-2 text-xs text-gray-500">
+                                    Creá tu cuenta para ver y gestionar tus reservas más rápido.
+                                </p>
+                            </div>
+                        ) : null}
+
                     </div>
 
                     {/* Lateral */}
@@ -441,7 +466,7 @@ export default async function BookingPublicPage({
                         )}
 
                         {/* Utilitarios */}
-                      {/*  <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/90 md:backdrop-blur md:rounded-2xl">
+                        {/*  <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/90 md:backdrop-blur md:rounded-2xl">
                             <CardHeader>
                                 <CardTitle className="text-base sm:text-lg">Acciones</CardTitle>
                             </CardHeader>

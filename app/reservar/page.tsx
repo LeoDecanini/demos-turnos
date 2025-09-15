@@ -1,8 +1,8 @@
 "use client";
 
-import React, {useEffect, useMemo, useRef, useState} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Calendar,
     Clock,
@@ -10,16 +10,17 @@ import {
     CheckCircle,
     ArrowLeft,
     CreditCard,
+    UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import {toast} from "sonner";
-import {Calendar as CalendarComponent} from "@/components/ui/calendar";
-import {format} from "date-fns";
-import {es} from "date-fns/locale";
-import ServiceList, {type ServiceItem} from "@/components/ServiceList";
+import { toast } from "sonner";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import ServiceList, { type ServiceItem } from "@/components/ServiceList";
 import ProfessionalList from "@/components/ProfessionalList";
-import {Skeleton} from "@/components/ui/skeleton";
-import {BookingStepper} from "@/components/BookingStepper";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BookingStepper } from "@/components/BookingStepper";
 
 type Service = ServiceItem;
 
@@ -161,7 +162,7 @@ export default function ReservarPage() {
             const digits = v.replace(/\D/g, "");
             if (digits.length < 6) msg = "Ingresá un DNI válido";
         }
-        setErrors((prev) => ({...prev, [name]: msg || undefined}));
+        setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
         return !msg;
     };
 
@@ -180,7 +181,7 @@ export default function ReservarPage() {
         const el = timeSectionRef.current;
         if (!el) return;
         const y = el.getBoundingClientRect().top + window.scrollY - 86;
-        window.scrollTo({top: y, behavior: "smooth"});
+        window.scrollTo({ top: y, behavior: "smooth" });
     };
 
     const serviceChosen = useMemo(
@@ -233,7 +234,7 @@ export default function ReservarPage() {
         try {
             const res = await fetch(
                 `${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`,
-                {cache: "no-store"}
+                { cache: "no-store" }
             );
             if (!res.ok) throw new Error("No se pudieron cargar los profesionales");
             const raw = await res.json();
@@ -335,7 +336,7 @@ export default function ReservarPage() {
         availableDays.includes(formatDateForAPI(date));
 
     const scrollToTop = () => {
-        window.scrollTo({top: 0, behavior: "smooth"});
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const createBooking = async () => {
@@ -355,14 +356,14 @@ export default function ReservarPage() {
             const dateStr = formatDateForAPI(selectedDate);
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     service: selectedService,
                     professional:
                         selectedProfessional !== "any" ? selectedProfessional : undefined,
                     day: dateStr,
                     hour: selectedTime,
-                    client: {name: fullName, email, phone, dni},
+                    client: { name: fullName, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
             });
@@ -392,7 +393,7 @@ export default function ReservarPage() {
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-4">
-                    <BookingStepper step={step}/>
+                    <BookingStepper step={step} />
                 </div>
 
                 {step === 1 && (
@@ -405,7 +406,7 @@ export default function ReservarPage() {
 
                             {loadingServices ? (
                                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow border overflow-hidden">
-                                    <Skeleton className="h-[760px] w-full"/>
+                                    <Skeleton className="h-[760px] w-full" />
                                 </div>
                             ) : services.length === 0 ? (
                                 <p className="text-center text-gray-600">No hay servicios disponibles.</p>
@@ -442,7 +443,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <User className="ml-3 h-6 w-6"/>
+                                    <User className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -461,11 +462,11 @@ export default function ReservarPage() {
 
                             {loadingProfessionals ? (
                                 <div className="max-w-3xl mx-auto">
-                                    <Skeleton className="h-20 w-full"/>
+                                    <Skeleton className="h-20 w-full" />
                                     <div className="mt-4 bg-white rounded-xl shadow border overflow-hidden">
-                                        <Skeleton className="h-20 border rounded-bl-none rounded-br-none w-full"/>
-                                        <Skeleton className="h-20 border rounded-none w-full"/>
-                                        <Skeleton className="h-20 border rounded-tl-none rounded-tr-none w-full"/>
+                                        <Skeleton className="h-20 border rounded-bl-none rounded-br-none w-full" />
+                                        <Skeleton className="h-20 border rounded-none w-full" />
+                                        <Skeleton className="h-20 border rounded-tl-none rounded-tr-none w-full" />
                                     </div>
                                 </div>
                             ) : (
@@ -474,7 +475,7 @@ export default function ReservarPage() {
                                         className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
                                             ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
                                             : "border-gray-200 hover:border-amber-300 bg-white/80"
-                                        }`}
+                                            }`}
                                         onClick={() => {
                                             setSelectedProfessional("any");
                                             setStep(3);
@@ -529,7 +530,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -548,7 +549,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <Calendar className="ml-3 h-6 w-6"/>
+                                    <Calendar className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -568,7 +569,7 @@ export default function ReservarPage() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                            <Calendar className="h-5 w-5 mr-2 text-amber-500"/>
+                                            <Calendar className="h-5 w-5 mr-2 text-amber-500" />
                                             Seleccionar Fecha
                                         </CardTitle>
                                     </CardHeader>
@@ -617,7 +618,7 @@ export default function ReservarPage() {
                                                 />
                                             ) : (
                                                 <div className="w-full">
-                                                    <Skeleton className="h-[248px] w-full"/>
+                                                    <Skeleton className="h-[248px] w-full" />
                                                 </div>
                                             )}
                                         </div>
@@ -631,15 +632,15 @@ export default function ReservarPage() {
                                 <Card ref={timeSectionRef}>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                            <Clock className="h-5 w-5 mr-2 text-amber-500"/>
+                                            <Clock className="h-5 w-5 mr-2 text-amber-500" />
                                             Horarios Disponibles
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         {loadingSlots ? (
                                             <div className="grid grid-cols-3 gap-3">
-                                                {Array.from({length: 18}).map((_, i) => (
-                                                    <Skeleton key={i} className="h-9 w-full"/>
+                                                {Array.from({ length: 18 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-9 w-full" />
                                                 ))}
                                             </div>
                                         ) : !selectedDate ? (
@@ -658,7 +659,7 @@ export default function ReservarPage() {
                                                         className={`h-12 transition-all duration-300 ${selectedTime === time
                                                             ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
                                                             : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                                                        }`}
+                                                            }`}
                                                         onClick={() => setSelectedTime(time)}
                                                     >
                                                         {time}
@@ -681,7 +682,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -700,7 +701,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <User className="ml-3 h-6 w-6"/>
+                                    <User className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -737,7 +738,7 @@ export default function ReservarPage() {
                                                     className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.firstName
                                                         ? "border-red-500 focus:ring-red-500"
                                                         : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                    }`}
+                                                        }`}
                                                     placeholder="Tu nombre"
                                                     value={firstName}
                                                     onChange={(e) => {
@@ -758,7 +759,7 @@ export default function ReservarPage() {
                                                     className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.lastName
                                                         ? "border-red-500 focus:ring-red-500"
                                                         : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                    }`}
+                                                        }`}
                                                     placeholder="Tu apellido"
                                                     value={lastName}
                                                     onChange={(e) => {
@@ -781,7 +782,7 @@ export default function ReservarPage() {
                                                 className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.email
                                                     ? "border-red-500 focus:ring-red-500"
                                                     : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                    }`}
                                                 placeholder="tu@email.com"
                                                 value={email}
                                                 onChange={(e) => {
@@ -803,7 +804,7 @@ export default function ReservarPage() {
                                                 className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.phone
                                                     ? "border-red-500 focus:ring-red-500"
                                                     : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                    }`}
                                                 placeholder="+54 11 1234-5678"
                                                 value={phone}
                                                 onChange={(e) => {
@@ -825,7 +826,7 @@ export default function ReservarPage() {
                                                 className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.dni
                                                     ? "border-red-500 focus:ring-red-500"
                                                     : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                    }`}
                                                 placeholder="Tu DNI"
                                                 value={dni}
                                                 onChange={(e) => {
@@ -864,7 +865,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -884,7 +885,7 @@ export default function ReservarPage() {
                                     onClick={createBooking}
                                 >
                                     {submitting ? "Creando…" : "Confirmar Reserva"}
-                                    <CheckCircle className="ml-3 h-6 w-6"/>
+                                    <CheckCircle className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -899,19 +900,19 @@ export default function ReservarPage() {
                                     className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
                                         ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
                                         : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center justify-center">
                                         <div
                                             className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired
                                                 ? "bg-gradient-to-r from-amber-500 to-yellow-600"
                                                 : "bg-gradient-to-r from-green-500 to-emerald-600"
-                                            }`}
+                                                }`}
                                         >
                                             {bookingResult.booking.depositRequired ? (
-                                                <CreditCard className="h-10 w-10 text-white"/>
+                                                <CreditCard className="h-10 w-10 text-white" />
                                             ) : (
-                                                <CheckCircle className="h-10 w-10 text-white"/>
+                                                <CheckCircle className="h-10 w-10 text-white" />
                                             )}
                                         </div>
                                     </div>
@@ -921,7 +922,7 @@ export default function ReservarPage() {
                                             className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired
                                                 ? "bg-amber-100 text-amber-900 ring-amber-200"
                                                 : "bg-emerald-100 text-emerald-900 ring-emerald-200"
-                                            }`}
+                                                }`}
                                         >
                                             {bookingResult.booking.depositRequired ? "Acción requerida" : "Listo"}
                                         </div>
@@ -958,7 +959,7 @@ export default function ReservarPage() {
                                                     }}
                                                 >
                                                     <img src="/mercadopago.png" alt="Mercado Pago"
-                                                         className="h-4 mr-2"/>
+                                                        className="h-4 mr-2" />
                                                     Abrir Mercado Pago
                                                 </Button>
                                                 <Button
@@ -996,7 +997,7 @@ export default function ReservarPage() {
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Fecha</span>
                                                     <span className="font-semibold text-gray-900">
-                                                        {format(new Date(bookingResult.booking.start), "PPP", {locale: es})}
+                                                        {format(new Date(bookingResult.booking.start), "PPP", { locale: es })}
                                                     </span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
@@ -1008,7 +1009,7 @@ export default function ReservarPage() {
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Dirección</span>
                                                     <span className="font-semibold text-gray-900">
-                                                       Paraná 1315, PB 4, Recoleta, CABA
+                                                        Paraná 1315, PB 4, Recoleta, CABA
                                                     </span>
                                                 </div>
                                             </div>
@@ -1021,6 +1022,25 @@ export default function ReservarPage() {
                                                 </p>
                                             </div>
                                         )}
+
+                                        <div className="pt-2">
+                                            <Link
+                                                href={`/verify-client?email=${encodeURIComponent(bookingResult.booking.client.email)}`}
+                                                className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl 
+                 bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white 
+                 shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
+                 transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl 
+                 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                                            >
+                                                <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+                                                <UserPlus className="h-5 w-5 shrink-0" />
+                                                <span>Crear cuenta</span>
+                                            </Link>
+
+                                            <p className="mt-2 text-xs text-gray-500">
+                                                Creá tu cuenta para ver y gestionar tus reservas más rápido.
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
