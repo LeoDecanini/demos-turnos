@@ -174,7 +174,7 @@ export default function VerifyClientPage() {
     }
 
     return (
-        <main className="pt-20 bg-white">
+        <main className="pt-20 bg-white min-h-svh">
             <div className="max-w-6xl mx-auto px-4 py-12">
                 <div className="text-center mb-10">
                     <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Crear contraseña</h1>
