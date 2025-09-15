@@ -1,8 +1,8 @@
 'use client';
 
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import {useAuth} from '../auth/AuthProvider';
+import { useAuth } from '../auth/AuthProvider';
 import axios from 'axios';
 import {
     Dialog,
@@ -13,11 +13,11 @@ import {
     DialogTitle,
     DialogTrigger
 } from "@/components/ui/dialog"
-import {Textarea} from "@/components/ui/textarea"
-import {toast} from 'sonner';
-import {format} from "date-fns";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from 'sonner';
+import { format } from "date-fns";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
     Calendar,
     Clock,
@@ -28,18 +28,25 @@ import {
     CreditCard,
     Users,
     Heart,
+    CalendarClock, XCircle
 } from "lucide-react";
-import {Button} from '@/components/ui/button';
-import {Calendar as CalendarComponent} from "@/components/ui/calendar";
+import { Button } from '@/components/ui/button';
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import ProfessionalList from "@/components/ProfessionalList";
-import {Skeleton} from "@/components/ui/skeleton";
-import {es} from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton";
+import { es } from "date-fns/locale";
+import {
+    TooltipProvider,
+    Tooltip,
+    TooltipTrigger,
+    TooltipContent,
+} from "@/components/ui/tooltip";
 
 type TabKey = 'perfil' | 'reservas';
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
 export default function PerfilPage() {
-    const {user, token, logout} = useAuth();
+    const { user, token, logout } = useAuth();
     const [hydrated, setHydrated] = useState(false);
     const [tab, setTab] = useState<TabKey>('reservas');
 
@@ -51,7 +58,7 @@ export default function PerfilPage() {
             <main className="min-h-screen pt-24 md:pt-32 px-4">
                 <div className="text-center">
                     <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Tu cuenta</h1>
-                    <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400"/>
+                    <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
                     <p className="mt-6 text-slate-600">
                         No estás logueado{' '}
                         <Link href="/login" className="underline text-slate-900 hover:text-slate-700">
@@ -62,6 +69,8 @@ export default function PerfilPage() {
             </main>
         );
     }
+
+    console.log("ESTE ES EL USER", user)
 
     const initials = (() => {
         const base = (user?.name || user?.email || '').trim();
@@ -76,7 +85,7 @@ export default function PerfilPage() {
             <div className="mb-6 lg:mb-8 w-full">
                 <h1 className="text-2xl lg:text-4xl font-extrabold text-slate-900 text-center lg:text-left">Tu
                     cuenta</h1>
-                <div className="mt-3 h-1 w-16 rounded bg-yellow-400 mx-auto lg:mx-0"/>
+                <div className="mt-3 h-1 w-16 rounded bg-yellow-400 mx-auto lg:mx-0" />
             </div>
 
             <div className="flex w-full gap-6">
@@ -100,7 +109,7 @@ export default function PerfilPage() {
                             icon={
                                 <svg width="18" height="18" viewBox="0 0 24 24">
                                     <path fill="currentColor"
-                                          d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/>
+                                        d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z" />
                                 </svg>
                             }
                         />
@@ -111,12 +120,12 @@ export default function PerfilPage() {
                             icon={
                                 <svg width="18" height="18" viewBox="0 0 24 24">
                                     <path fill="currentColor"
-                                          d="M7 2v2H5a2 2 0 0 0-2 2v2h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2ZM3 10v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8Zm4 2h4v4H7Z"/>
+                                        d="M7 2v2H5a2 2 0 0 0-2 2v2h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2ZM3 10v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8Zm4 2h4v4H7Z" />
                                 </svg>
                             }
                         />
                     </nav>
-                    <hr className="my-4 border-slate-200"/>
+                    <hr className="my-4 border-slate-200" />
                     <button
                         onClick={logout}
                         className="w-full rounded-xl border border-red-200 bg-white text-red-600 hover:bg-red-50 py-2 font-medium transition"
@@ -161,7 +170,7 @@ export default function PerfilPage() {
                         </div>
                     </div>
 
-                    {tab === 'perfil' ? <PerfilView user={user}/> : <ReservasView/>}
+                    {tab === 'perfil' ? <PerfilView user={user} /> : <ReservasView />}
                 </section>
             </div>
         </main>
@@ -169,11 +178,11 @@ export default function PerfilPage() {
 }
 
 function SidebarBtn({
-                        active,
-                        onClick,
-                        label,
-                        icon,
-                    }: {
+    active,
+    onClick,
+    label,
+    icon,
+}: {
     active: boolean;
     onClick: () => void;
     label: string;
@@ -193,7 +202,7 @@ function SidebarBtn({
     );
 }
 
-function MobileTab({active, label, onClick}: { active: boolean; label: string; onClick: () => void }) {
+function MobileTab({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
     return (
         <button
             onClick={onClick}
@@ -207,14 +216,14 @@ function MobileTab({active, label, onClick}: { active: boolean; label: string; o
     );
 }
 
-function PerfilView({user}: { user: { email: string; name?: string } }) {
+function PerfilView({ user }: { user: { email: string; name?: string } }) {
     return (
         <div>
             <h2 className="text-lg md:text-xl font-semibold text-slate-900">Perfil</h2>
             <p className="text-slate-500 text-xs md:text-sm mt-1">Tu información de contacto</p>
             <div className="mt-6 space-y-5">
-                <Row label="Nombre" value={user.name || '—'}/>
-                <Row label="Email" value={user.email}/>
+                <Row label="Nombre" value={user.name || '—'} />
+                <Row label="Email" value={user.email} />
             </div>
         </div>
     );
@@ -260,7 +269,7 @@ function ReservasView() {
     const [rescheduling, setRescheduling] = useState(false)
     const [rescheduleErr, setRescheduleErr] = useState<string | null>(null)
 
-    const {user, token} = useAuth()
+    const { user, token } = useAuth()
 
     // ----------------- Consts & helpers -----------------
     const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`
@@ -274,7 +283,7 @@ function ReservasView() {
     const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date))
 
     const fmt = (iso: string) =>
-        new Intl.DateTimeFormat("es-AR", {dateStyle: "medium", timeStyle: "short"}).format(new Date(iso))
+        new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso))
 
     // ----------------- Fetch bookings (reusable) -----------------
     const fetchBookings = useCallback(async () => {
@@ -287,10 +296,11 @@ function ReservasView() {
             setLoading(true)
             setErr(null)
             const url = `${API_BASE}/clients/by-account/${ACCOUNT_ID}/clients/${clientId}/bookings`
-            const {data} = await axios.get(url, {
-                headers: {Authorization: `Bearer ${token}`},
-                params: {upcoming: 1, page, limit},
+            const { data } = await axios.get(url, {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { upcoming: 1, page, limit },
             })
+            console.log(data)
             setItems(Array.isArray(data?.items) ? data.items : [])
             setTotal(Number(data?.total ?? 0))
             if (Number.isFinite(data?.page)) setPage(Number(data.page))
@@ -340,7 +350,7 @@ function ReservasView() {
             params.set("month", month)
             if (professionalId && professionalId !== "any") params.set("professional", professionalId)
 
-            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, {cache: "no-store"})
+            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" })
             if (!res.ok) throw new Error("No se pudieron cargar los días disponibles")
             const raw = await res.json()
             const payload = getPayload(raw)
@@ -374,7 +384,7 @@ function ReservasView() {
             params.set("date", dateStr)
             if (professionalId && professionalId !== "any") params.set("professional", professionalId)
 
-            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, {cache: "no-store"})
+            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" })
             if (!res.ok) throw new Error("No se pudieron cargar los horarios")
             const raw = await res.json()
             const payload = getPayload(raw)
@@ -412,8 +422,8 @@ function ReservasView() {
             const url = `${API_BASE}/cancel/${cancelingId}`
             await axios.post(
                 url,
-                reason ? {reason} : {},
-                {headers: {Authorization: `Bearer ${token}`}, params: {accountId: ACCOUNT_ID}}
+                reason ? { reason } : {},
+                { headers: { Authorization: `Bearer ${token}` }, params: { accountId: ACCOUNT_ID } }
             )
             // 🔁 Refetch lista
             await fetchBookings()
@@ -471,8 +481,8 @@ function ReservasView() {
             const url = `${API_BASE}/reschedule/${reschedulingId}`
             await axios.post(
                 url,
-                {day, hour, professional},
-                {headers: {Authorization: `Bearer ${token}`}, params: {accountId: ACCOUNT_ID}}
+                { day, hour, professional },
+                { headers: { Authorization: `Bearer ${token}` }, params: { accountId: ACCOUNT_ID } }
             )
 
             // 🔁 Refetch lista
@@ -537,48 +547,75 @@ function ReservasView() {
                                     <div className="text-slate-700">{b.service?.name || "—"}</div>
                                     <div className="text-slate-700">{b.professional?.name || "A asignar"}</div>
                                     <div>
-                    <span
-                        className={[
-                            "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium text-background",
-                            b.status === "confirmed" ? "bg-emerald-600" : b.status === "pending" ? "bg-amber-600" : "bg-rose-600",
-                        ].join(" ")}
-                    >
-                      {b.status === "canceled"
-                          ? "Cancelada"
-                          : b.status === "confirmed"
-                              ? "Confirmada"
-                              : b.status === "pending"
-                                  ? "Pendiente"
-                                  : "Desconocido"}
-                    </span>
-                                    </div>
-                                    <div className="flex gap-2 justify-end">
-                                        <button
-                                            onClick={() => openReschedule(b)}
-                                            disabled={b.status === "canceled"}
+                                        <span
                                             className={[
-                                                "rounded-full border px-3 py-1.5 text-sm",
-                                                b.status === "canceled"
-                                                    ? "border-slate-200 text-slate-400 cursor-not-allowed"
-                                                    : "border-green-300 text-green-600 hover:bg-green-50",
+                                                "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium text-background",
+                                                b.status === "confirmed" ? "bg-emerald-600" : b.status === "pending" ? "bg-amber-600" : "bg-rose-600",
                                             ].join(" ")}
                                         >
-                                            Reprogramar
-                                        </button>
+                                            {b.status === "canceled"
+                                                ? "Cancelada"
+                                                : b.status === "confirmed"
+                                                    ? "Confirmada"
+                                                    : b.status === "pending"
+                                                        ? "Pendiente"
+                                                        : "Desconocido"}
+                                        </span>
+                                    </div>
+                                    <TooltipProvider>
+                                        <div className="flex gap-2 justify-end">
+                                            {b.status === "pending" && b.depositInitPoint && (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button
+                                                            onClick={() => window.open(b.depositInitPoint, "_blank")}
+                                                            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm border-sky-300 text-sky-700 hover:bg-sky-50"
+                                                        >
+                                                            <CreditCard className="h-4 w-4" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Pagar y confirmar tu turno</TooltipContent>
+                                                </Tooltip>
+                                            )}
 
-                                        <button
-                                            onClick={() => openCancel(b._id)}
-                                            disabled={b.status === "canceled"}
-                                            className={[
-                                                "rounded-full border px-3 py-1.5 text-sm",
-                                                b.status === "canceled"
-                                                    ? "border-slate-200 text-slate-400 cursor-not-allowed"
-                                                    : "border-red-300 text-red-600 hover:bg-red-50",
-                                            ].join(" ")}
-                                        >
-                                            Cancelar
-                                        </button>
-                                    </div>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={() => openReschedule(b)}
+                                                        disabled={b.status === "canceled"}
+                                                        className={[
+                                                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
+                                                            b.status === "canceled"
+                                                                ? "border-slate-200 text-slate-400 cursor-not-allowed"
+                                                                : "border-emerald-300 text-emerald-700 hover:bg-emerald-50",
+                                                        ].join(" ")}
+                                                    >
+                                                        <CalendarClock className="h-4 w-4" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Cambiar fecha u horario</TooltipContent>
+                                            </Tooltip>
+
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <button
+                                                        onClick={() => openCancel(b._id)}
+                                                        disabled={b.status === "canceled"}
+                                                        className={[
+                                                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
+                                                            b.status === "canceled"
+                                                                ? "border-slate-200 text-slate-400 cursor-not-allowed"
+                                                                : "border-rose-300 text-rose-700 hover:bg-rose-50",
+                                                        ].join(" ")}
+                                                    >
+                                                        <XCircle className="h-4 w-4" />
+                                                    </button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>Cancelar la reserva</TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    </TooltipProvider>
+
                                 </div>
 
                                 {/* Mobile row */}
@@ -591,14 +628,14 @@ function ReservasView() {
                                                 b.status === "confirmed" ? "bg-emerald-600" : b.status === "pending" ? "bg-amber-600" : "bg-rose-600",
                                             ].join(" ")}
                                         >
-                      {b.status === "canceled"
-                          ? "Cancelada"
-                          : b.status === "confirmed"
-                              ? "Confirmada"
-                              : b.status === "pending"
-                                  ? "Pendiente"
-                                  : "Desconocido"}
-                    </span>
+                                            {b.status === "canceled"
+                                                ? "Cancelada"
+                                                : b.status === "confirmed"
+                                                    ? "Confirmada"
+                                                    : b.status === "pending"
+                                                        ? "Pendiente"
+                                                        : "Desconocido"}
+                                        </span>
                                     </div>
                                     <div className="text-sm text-slate-700">
                                         <div className="grid grid-cols-3 gap-2">
@@ -609,6 +646,14 @@ function ReservasView() {
                                         </div>
                                     </div>
                                     <div className="pt-1 grid grid-cols-2 gap-2">
+                                        {b.status === "pending" && b.depositInitPoint && (
+                                            <button
+                                                onClick={() => window.open(b.depositInitPoint, "_blank")}
+                                                className="w-full rounded-xl border px-3 py-2 text-sm border-sky-300 text-sky-600 hover:bg-sky-50"
+                                            >
+                                                Pagar seña
+                                            </button>
+                                        )}
                                         <button
                                             onClick={() => openReschedule(b)}
                                             disabled={b.status === "canceled"}
@@ -634,6 +679,7 @@ function ReservasView() {
                                             Cancelar
                                         </button>
                                     </div>
+
                                 </div>
                             </li>
                         ))}
@@ -670,7 +716,7 @@ function ReservasView() {
                 >
                     Reservar nueva cita
                     <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-900">
-                        <path fill="currentColor" d="M13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                        <path fill="currentColor" d="M13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
                     </svg>
                 </Link>
             </div>
@@ -715,7 +761,7 @@ function ReservasView() {
                 <DialogContent className="!max-w-4xl !w-full">
                     <DialogHeader>
                         <DialogTitle>Reprogramar turno</DialogTitle>
-                        <DialogDescription/>
+                        <DialogDescription />
                     </DialogHeader>
 
                     {/* Step 2: Profesional */}
@@ -730,12 +776,12 @@ function ReservasView() {
 
                             {loadingProfessionals ? (
                                 <div className="max-w-3xl mx-auto">
-                                  <Skeleton className="h-20 w-full"/>
-                                  <div className="mt-4 bg-white rounded-xl shadow border overflow-hidden">
-                                    <Skeleton className="h-20 border rounded-bl-none rounded-br-none w-full"/>
-                                    <Skeleton className="h-20 border rounded-none w-full"/>
-                                    <Skeleton className="h-20 border rounded-tl-none rounded-tr-none w-full"/>
-                                  </div>
+                                    <Skeleton className="h-20 w-full" />
+                                    <div className="mt-4 bg-white rounded-xl shadow border overflow-hidden">
+                                        <Skeleton className="h-20 border rounded-bl-none rounded-br-none w-full" />
+                                        <Skeleton className="h-20 border rounded-none w-full" />
+                                        <Skeleton className="h-20 border rounded-tl-none rounded-tr-none w-full" />
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="max-w-3xl mx-auto">
@@ -743,7 +789,7 @@ function ReservasView() {
                                         className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
                                             ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
                                             : "border-gray-200 hover:border-amber-300 bg-white/80"
-                                        }`}
+                                            }`}
                                         onClick={() => {
                                             setSelectedProfessional("any");
                                             setStep(3);
@@ -802,7 +848,7 @@ function ReservasView() {
                                     }}
                                 >
                                     Continuar
-                                    <Calendar className="ml-2 h-4 w-4"/>
+                                    <Calendar className="ml-2 h-4 w-4" />
                                 </Button>
                             </div>
                         </div>
@@ -816,114 +862,114 @@ function ReservasView() {
                                 <p className="text-gray-600">Seleccioná una fecha disponible y luego el horario</p>
                             </div>
 
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                  <Calendar className="h-5 w-5 mr-2 text-amber-500"/>
-                                  Seleccionar Fecha
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-6">
-                                <div className="flex justify-center">
-                                  {!loadingDays ? (
-                                      <CalendarComponent
-                                          mode="single"
-                                          selected={selectedDate}
-                                          onSelect={async (date) => {
-                                            setSelectedDate(date);
-                                            if (date && isDateAvailable(date)) {
-                                              setLoadingSlots(true);
-                                              setTimeSlots([]);
-                                              setSelectedTime("");
-                                              await loadTimeSlots(
-                                                  selectedService,
-                                                  selectedProfessional,
-                                                  date
-                                              );
-                                            } else {
-                                              setTimeSlots([]);
-                                              setSelectedTime("");
-                                            }
-                                          }}
-                                          disabled={(date) => {
-                                            const today = new Date();
-                                            today.setHours(0, 0, 0, 0);
-                                            const d = new Date(date);
-                                            d.setHours(0, 0, 0, 0);
-                                            if (d < today) return true;
-                                            if (availableDays.length > 0) return !isDateAvailable(date);
-                                            return false;
-                                          }}
-                                          locale={es}
-                                          className="rounded-xl border-2 border-amber-200 max-w-none w-full"
-                                          classNames={{
-                                            months:
-                                                "flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 flex-1",
-                                            month: "space-y-4 w-full flex flex-col",
-                                            table: "w-full h-full border-collapse space-y-1",
-                                            head_row: "",
-                                            row: "w-full mt-2",
-                                          }}
-                                      />
-                                  ) : (
-                                      <div className="w-full">
-                                        <Skeleton className="h-[248px] w-full"/>
-                                      </div>
-                                  )}
-                                </div>
-                                {selectedDate && availableDays.length > 0 && !isDateAvailable(selectedDate) && (
-                                    <p className="text-sm text-red-500 text-center">Esta fecha no está
-                                      disponible</p>
-                                )}
-                              </CardContent>
-                            </Card>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                                            <Calendar className="h-5 w-5 mr-2 text-amber-500" />
+                                            Seleccionar Fecha
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-6">
+                                        <div className="flex justify-center">
+                                            {!loadingDays ? (
+                                                <CalendarComponent
+                                                    mode="single"
+                                                    selected={selectedDate}
+                                                    onSelect={async (date) => {
+                                                        setSelectedDate(date);
+                                                        if (date && isDateAvailable(date)) {
+                                                            setLoadingSlots(true);
+                                                            setTimeSlots([]);
+                                                            setSelectedTime("");
+                                                            await loadTimeSlots(
+                                                                selectedService,
+                                                                selectedProfessional,
+                                                                date
+                                                            );
+                                                        } else {
+                                                            setTimeSlots([]);
+                                                            setSelectedTime("");
+                                                        }
+                                                    }}
+                                                    disabled={(date) => {
+                                                        const today = new Date();
+                                                        today.setHours(0, 0, 0, 0);
+                                                        const d = new Date(date);
+                                                        d.setHours(0, 0, 0, 0);
+                                                        if (d < today) return true;
+                                                        if (availableDays.length > 0) return !isDateAvailable(date);
+                                                        return false;
+                                                    }}
+                                                    locale={es}
+                                                    className="rounded-xl border-2 border-amber-200 max-w-none w-full"
+                                                    classNames={{
+                                                        months:
+                                                            "flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 flex-1",
+                                                        month: "space-y-4 w-full flex flex-col",
+                                                        table: "w-full h-full border-collapse space-y-1",
+                                                        head_row: "",
+                                                        row: "w-full mt-2",
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="w-full">
+                                                    <Skeleton className="h-[248px] w-full" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {selectedDate && availableDays.length > 0 && !isDateAvailable(selectedDate) && (
+                                            <p className="text-sm text-red-500 text-center">Esta fecha no está
+                                                disponible</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
 
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                  <Clock className="h-5 w-5 mr-2 text-amber-500"/>
-                                  Horarios Disponibles
-                                </CardTitle>
-                              </CardHeader>
-                              <CardContent>
-                                {loadingSlots ? (
-                                    <div className="grid grid-cols-3 gap-3">
-                                      {Array.from({length: 18}).map((_, i) => (
-                                          <Skeleton key={i} className="h-9 w-full"/>
-                                      ))}
-                                    </div>
-                                ) : !selectedDate ? (
-                                    <p className="text-gray-600">Elegí una fecha para ver los horarios.</p>
-                                ) : !isDateAvailable(selectedDate) ? (
-                                    <p className="text-gray-600">Esta fecha no está disponible.</p>
-                                ) : timeSlots.length === 0 ? (
-                                    <p className="text-gray-600">No hay horarios disponibles para esta
-                                      fecha.</p>
-                                ) : (
-                                    <div className="grid grid-cols-3 gap-3">
-                                      {timeSlots.map((time) => (
-                                          <Button
-                                              key={time}
-                                              variant={selectedTime === time ? "default" : "outline"}
-                                              className={`h-12 transition-all duration-300 ${selectedTime === time
-                                                  ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                                                  : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                                              }`}
-                                              onClick={() => setSelectedTime(time)}
-                                          >
-                                            {time}
-                                          </Button>
-                                      ))}
-                                    </div>
-                                )}
-                              </CardContent>
-                            </Card>
-                          </div>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                                            <Clock className="h-5 w-5 mr-2 text-amber-500" />
+                                            Horarios Disponibles
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {loadingSlots ? (
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {Array.from({ length: 18 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-9 w-full" />
+                                                ))}
+                                            </div>
+                                        ) : !selectedDate ? (
+                                            <p className="text-gray-600">Elegí una fecha para ver los horarios.</p>
+                                        ) : !isDateAvailable(selectedDate) ? (
+                                            <p className="text-gray-600">Esta fecha no está disponible.</p>
+                                        ) : timeSlots.length === 0 ? (
+                                            <p className="text-gray-600">No hay horarios disponibles para esta
+                                                fecha.</p>
+                                        ) : (
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {timeSlots.map((time) => (
+                                                    <Button
+                                                        key={time}
+                                                        variant={selectedTime === time ? "default" : "outline"}
+                                                        className={`h-12 transition-all duration-300 ${selectedTime === time
+                                                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                                                            : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                                                            }`}
+                                                        onClick={() => setSelectedTime(time)}
+                                                    >
+                                                        {time}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
 
                             <div className="flex justify-between">
                                 <Button variant="outline" className="border-2" onClick={() => setStep(2)}>
-                                    <ArrowLeft className="mr-2 h-4 w-4"/>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
                                     Volver
                                 </Button>
                                 <Button
@@ -931,7 +977,7 @@ function ReservasView() {
                                     onClick={() => setStep(4)}
                                 >
                                     Continuar
-                                    <User className="ml-2 h-4 w-4"/>
+                                    <User className="ml-2 h-4 w-4" />
                                 </Button>
                             </div>
                         </div>
@@ -961,11 +1007,11 @@ function ReservasView() {
 
                             <div className="flex justify-between">
                                 <Button variant="outline" className="border-2" onClick={() => setStep(3)}
-                                        disabled={rescheduling}>
+                                    disabled={rescheduling}>
                                     Volver
                                 </Button>
                                 <Button onClick={confirmReschedule}
-                                        disabled={rescheduling || !selectedDate || !selectedTime}>
+                                    disabled={rescheduling || !selectedDate || !selectedTime}>
                                     {rescheduling ? "Reprogramando…" : "Confirmar"}
                                 </Button>
                             </div>
@@ -978,7 +1024,7 @@ function ReservasView() {
 }
 
 
-function Row({label, value}: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: string }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
             <div className="text-slate-500">{label}</div>

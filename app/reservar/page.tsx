@@ -1,8 +1,8 @@
 "use client";
 
-import React, {useEffect, useMemo, useRef, useState} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Calendar,
     Clock,
@@ -13,14 +13,15 @@ import {
     UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import {toast} from "sonner";
-import {Calendar as CalendarComponent} from "@/components/ui/calendar";
-import {format} from "date-fns";
-import {es} from "date-fns/locale";
-import ServiceList, {type ServiceItem} from "@/components/ServiceList";
+import { toast } from "sonner";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import ServiceList, { type ServiceItem } from "@/components/ServiceList";
 import ProfessionalList from "@/components/ProfessionalList";
-import {Skeleton} from "@/components/ui/skeleton";
-import {BookingStepper} from "@/components/BookingStepper";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BookingStepper } from "@/components/BookingStepper";
+import { useAuth } from "../auth/AuthProvider";
 
 type Service = ServiceItem;
 
@@ -109,7 +110,7 @@ const getPayload = (raw: any) => raw?.data ?? raw;
 
 export default function ReservarPage() {
     const [step, setStep] = useState(1);
-
+    const { user, token, logout } = useAuth();
     const [services, setServices] = useState<Service[]>([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [selectedService, setSelectedService] = useState<string>("");
@@ -126,34 +127,41 @@ export default function ReservarPage() {
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [selectedTime, setSelectedTime] = useState<string>("");
 
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
+    const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [dni, setDni] = useState("");
     const [notes, setNotes] = useState("");
+
     const [submitting, setSubmitting] = useState(false);
 
     const [errors, setErrors] = useState<{
-        firstName?: string;
-        lastName?: string;
+        fullName?: string;
         email?: string;
         phone?: string;
         dni?: string;
     }>({});
+
+    useEffect(() => {
+        if (user) {
+            setFullName(user.name || "");
+            setEmail(user.email || "");
+            setPhone(user.phone || "");
+            setDni(user.dni || "");
+        }
+    }, [user]);
 
     const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
 
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const validateField = (
-        name: "firstName" | "lastName" | "email" | "phone" | "dni",
+        name: "fullName" | "email" | "phone" | "dni",
         value: string
     ) => {
         let msg = "";
         const v = value?.trim() || "";
-        if (name === "firstName" && v.length < 2) msg = "Ingresá un nombre válido";
-        if (name === "lastName" && v.length < 2) msg = "Ingresá un apellido válido";
+        if (name === "fullName" && v.length < 2) msg = "Ingresá un nombre válido";
         if (name === "email" && !emailRe.test(v)) msg = "Ingresá un email válido";
         if (name === "phone") {
             const digits = v.replace(/\D/g, "");
@@ -163,18 +171,15 @@ export default function ReservarPage() {
             const digits = v.replace(/\D/g, "");
             if (digits.length < 6) msg = "Ingresá un DNI válido";
         }
-        setErrors((prev) => ({...prev, [name]: msg || undefined}));
+        setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
         return !msg;
     };
 
-    const validateAll = () => {
-        const ok1 = validateField("firstName", firstName);
-        const ok2 = validateField("lastName", lastName);
-        const ok3 = validateField("email", email);
-        const ok4 = validateField("phone", phone);
-        const ok5 = validateField("dni", dni);
-        return ok1 && ok2 && ok3 && ok4 && ok5;
-    };
+    const validateAll = () =>
+        validateField("fullName", fullName) &&
+        validateField("email", email) &&
+        validateField("phone", phone) &&
+        validateField("dni", dni);
 
     const timeSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -182,7 +187,7 @@ export default function ReservarPage() {
         const el = timeSectionRef.current;
         if (!el) return;
         const y = el.getBoundingClientRect().top + window.scrollY - 86;
-        window.scrollTo({top: y, behavior: "smooth"});
+        window.scrollTo({ top: y, behavior: "smooth" });
     };
 
     const serviceChosen = useMemo(
@@ -235,7 +240,7 @@ export default function ReservarPage() {
         try {
             const res = await fetch(
                 `${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`,
-                {cache: "no-store"}
+                { cache: "no-store" }
             );
             if (!res.ok) throw new Error("No se pudieron cargar los profesionales");
             const raw = await res.json();
@@ -337,7 +342,7 @@ export default function ReservarPage() {
         availableDays.includes(formatDateForAPI(date));
 
     const scrollToTop = () => {
-        window.scrollTo({top: 0, behavior: "smooth"});
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const createBooking = async () => {
@@ -346,25 +351,22 @@ export default function ReservarPage() {
             toast.error("Revisá los campos resaltados");
             return;
         }
-        const fullName = [firstName?.trim(), lastName?.trim()]
-            .filter(Boolean)
-            .join(" ")
-            .trim();
-        if (!fullName || !email || !phone || !dni) return;
+
+        const fullNameStr = fullName.trim();
+        if (!fullNameStr || !email || !phone || !dni) return;
 
         setSubmitting(true);
         try {
             const dateStr = formatDateForAPI(selectedDate);
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     service: selectedService,
-                    professional:
-                        selectedProfessional !== "any" ? selectedProfessional : undefined,
+                    professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
                     day: dateStr,
                     hour: selectedTime,
-                    client: {name: fullName, email, phone, dni},
+                    client: { name: fullNameStr, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
             });
@@ -394,7 +396,7 @@ export default function ReservarPage() {
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-4">
-                    <BookingStepper step={step}/>
+                    <BookingStepper step={step} />
                 </div>
 
                 {step === 1 && (
@@ -407,7 +409,7 @@ export default function ReservarPage() {
 
                             {loadingServices ? (
                                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow border overflow-hidden">
-                                    <Skeleton className="h-[760px] w-full"/>
+                                    <Skeleton className="h-[760px] w-full" />
                                 </div>
                             ) : services.length === 0 ? (
                                 <p className="text-center text-gray-600">No hay servicios disponibles.</p>
@@ -444,7 +446,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <User className="ml-3 h-6 w-6"/>
+                                    <User className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -463,11 +465,11 @@ export default function ReservarPage() {
 
                             {loadingProfessionals ? (
                                 <div className="max-w-3xl mx-auto">
-                                    <Skeleton className="h-20 w-full"/>
+                                    <Skeleton className="h-20 w-full" />
                                     <div className="mt-4 bg-white rounded-xl shadow border overflow-hidden">
-                                        <Skeleton className="h-20 border rounded-bl-none rounded-br-none w-full"/>
-                                        <Skeleton className="h-20 border rounded-none w-full"/>
-                                        <Skeleton className="h-20 border rounded-tl-none rounded-tr-none w-full"/>
+                                        <Skeleton className="h-20 border rounded-bl-none rounded-br-none w-full" />
+                                        <Skeleton className="h-20 border rounded-none w-full" />
+                                        <Skeleton className="h-20 border rounded-tl-none rounded-tr-none w-full" />
                                     </div>
                                 </div>
                             ) : (
@@ -476,7 +478,7 @@ export default function ReservarPage() {
                                         className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
                                             ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
                                             : "border-gray-200 hover:border-amber-300 bg-white/80"
-                                        }`}
+                                            }`}
                                         onClick={() => {
                                             setSelectedProfessional("any");
                                             setStep(3);
@@ -531,7 +533,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -550,7 +552,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <Calendar className="ml-3 h-6 w-6"/>
+                                    <Calendar className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -570,7 +572,7 @@ export default function ReservarPage() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                            <Calendar className="h-5 w-5 mr-2 text-amber-500"/>
+                                            <Calendar className="h-5 w-5 mr-2 text-amber-500" />
                                             Seleccionar Fecha
                                         </CardTitle>
                                     </CardHeader>
@@ -619,7 +621,7 @@ export default function ReservarPage() {
                                                 />
                                             ) : (
                                                 <div className="w-full">
-                                                    <Skeleton className="h-[248px] w-full"/>
+                                                    <Skeleton className="h-[248px] w-full" />
                                                 </div>
                                             )}
                                         </div>
@@ -633,15 +635,15 @@ export default function ReservarPage() {
                                 <Card ref={timeSectionRef}>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                            <Clock className="h-5 w-5 mr-2 text-amber-500"/>
+                                            <Clock className="h-5 w-5 mr-2 text-amber-500" />
                                             Horarios Disponibles
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         {loadingSlots ? (
                                             <div className="grid grid-cols-3 gap-3">
-                                                {Array.from({length: 18}).map((_, i) => (
-                                                    <Skeleton key={i} className="h-9 w-full"/>
+                                                {Array.from({ length: 18 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-9 w-full" />
                                                 ))}
                                             </div>
                                         ) : !selectedDate ? (
@@ -660,7 +662,7 @@ export default function ReservarPage() {
                                                         className={`h-12 transition-all duration-300 ${selectedTime === time
                                                             ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
                                                             : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                                                        }`}
+                                                            }`}
                                                         onClick={() => setSelectedTime(time)}
                                                     >
                                                         {time}
@@ -683,7 +685,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -702,7 +704,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <User className="ml-3 h-6 w-6"/>
+                                    <User className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -718,73 +720,41 @@ export default function ReservarPage() {
                                     reserva</p>
                             </div>
 
-                            <Card className={"relative"}>
+                            <Card className="relative">
                                 {submitting && (
-                                    <div
-                                        className="bg-white/70 flex items-center justify-center rounded-xl absolute w-full h-full top-0 left-0 z-10">
+                                    <div className="bg-white/70 flex items-center justify-center rounded-xl absolute w-full h-full top-0 left-0 z-10">
                                         Creando su reserva...
                                     </div>
                                 ) as React.ReactNode}
                                 <CardContent className="space-y-6">
                                     <fieldset
-                                        disabled={submitting}
+                                        disabled={!!user || submitting}
                                         className={submitting ? "opacity-60 pointer-events-none select-none" : ""}
                                     >
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-6">
-                                            <div>
-                                                <label
-                                                    className="block text-sm font-semibold text-gray-700 mb-2">Nombre</label>
-                                                <input
-                                                    type="text"
-                                                    className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.firstName
-                                                        ? "border-red-500 focus:ring-red-500"
-                                                        : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo</label>
+                                            <input
+                                                type="text"
+                                                className={` ${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.fullName ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
                                                     }`}
-                                                    placeholder="Tu nombre"
-                                                    value={firstName}
-                                                    onChange={(e) => {
-                                                        setFirstName(e.target.value);
-                                                        if (errors.firstName) validateField("firstName", e.target.value);
-                                                    }}
-                                                    onBlur={(e) => validateField("firstName", e.target.value)}
-                                                    aria-invalid={!!errors.firstName}
-                                                />
-                                                {errors.firstName &&
-                                                    <p className="mt-1 text-sm text-red-600">{errors.firstName}</p>}
-                                            </div>
-                                            <div>
-                                                <label
-                                                    className="block text-sm font-semibold text-gray-700 mb-2">Apellido</label>
-                                                <input
-                                                    type="text"
-                                                    className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.lastName
-                                                        ? "border-red-500 focus:ring-red-500"
-                                                        : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                    }`}
-                                                    placeholder="Tu apellido"
-                                                    value={lastName}
-                                                    onChange={(e) => {
-                                                        setLastName(e.target.value);
-                                                        if (errors.lastName) validateField("lastName", e.target.value);
-                                                    }}
-                                                    onBlur={(e) => validateField("lastName", e.target.value)}
-                                                    aria-invalid={!!errors.lastName}
-                                                />
-                                                {errors.lastName &&
-                                                    <p className="mt-1 text-sm text-red-600">{errors.lastName}</p>}
-                                            </div>
+                                                placeholder="Tu nombre y apellido"
+                                                value={fullName}
+                                                onChange={(e) => {
+                                                    setFullName(e.target.value);
+                                                    if (errors.fullName) validateField("fullName", e.target.value);
+                                                }}
+                                                onBlur={(e) => validateField("fullName", e.target.value)}
+                                                aria-invalid={!!errors.fullName}
+                                            />
+                                            {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
                                         </div>
 
-                                        <div className={"mt-2"}>
-                                            <label
-                                                className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                        <div className="mt-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                                             <input
                                                 type="email"
-                                                className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.email
-                                                    ? "border-red-500 focus:ring-red-500"
-                                                    : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                                                    }`}
                                                 placeholder="tu@email.com"
                                                 value={email}
                                                 onChange={(e) => {
@@ -794,19 +764,15 @@ export default function ReservarPage() {
                                                 onBlur={(e) => validateField("email", e.target.value)}
                                                 aria-invalid={!!errors.email}
                                             />
-                                            {errors.email &&
-                                                <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                                            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                                         </div>
 
-                                        <div className={"mt-2"}>
-                                            <label
-                                                className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                                        <div className="mt-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                                             <input
                                                 type="tel"
-                                                className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.phone
-                                                    ? "border-red-500 focus:ring-red-500"
-                                                    : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.phone ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                                                    }`}
                                                 placeholder="+54 11 1234-5678"
                                                 value={phone}
                                                 onChange={(e) => {
@@ -816,19 +782,15 @@ export default function ReservarPage() {
                                                 onBlur={(e) => validateField("phone", e.target.value)}
                                                 aria-invalid={!!errors.phone}
                                             />
-                                            {errors.phone &&
-                                                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                                            {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                                         </div>
 
-                                        <div className={"mt-2"}>
-                                            <label
-                                                className="block text-sm font-semibold text-gray-700 mb-2">DNI</label>
+                                        <div className="mt-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">DNI</label>
                                             <input
                                                 type="text"
-                                                className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.dni
-                                                    ? "border-red-500 focus:ring-red-500"
-                                                    : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.dni ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                                                    }`}
                                                 placeholder="Tu DNI"
                                                 value={dni}
                                                 onChange={(e) => {
@@ -841,9 +803,8 @@ export default function ReservarPage() {
                                             {errors.dni && <p className="mt-1 text-sm text-red-600">{errors.dni}</p>}
                                         </div>
 
-                                        <div className={"mt-2"}>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Comentarios
-                                                (opcional)</label>
+                                        <div className="mt-2">
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Comentarios (opcional)</label>
                                             <textarea
                                                 rows={4}
                                                 className="w-full px-4 py-1.5 !outline-none border-2 border-gray-200 rounded-xl focus:ring-1.5 focus:ring-amber-500 focus:border-amber-500 transition-all duration-300 resize-none"
@@ -856,6 +817,7 @@ export default function ReservarPage() {
                                 </CardContent>
                             </Card>
 
+
                             <div className="flex justify-center space-x-4 mt-4">
                                 <Button
                                     variant="outline"
@@ -867,7 +829,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -877,8 +839,7 @@ export default function ReservarPage() {
                                         !selectedService ||
                                         !selectedDate ||
                                         !selectedTime ||
-                                        !firstName.trim() ||
-                                        !lastName.trim() ||
+                                        !fullName.trim() ||
                                         !email.trim() ||
                                         !phone.trim() ||
                                         !dni.trim()
@@ -887,7 +848,7 @@ export default function ReservarPage() {
                                     onClick={createBooking}
                                 >
                                     {submitting ? "Creando…" : "Confirmar Reserva"}
-                                    <CheckCircle className="ml-3 h-6 w-6"/>
+                                    <CheckCircle className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -902,19 +863,19 @@ export default function ReservarPage() {
                                     className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
                                         ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
                                         : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center justify-center">
                                         <div
                                             className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired
                                                 ? "bg-gradient-to-r from-amber-500 to-yellow-600"
                                                 : "bg-gradient-to-r from-green-500 to-emerald-600"
-                                            }`}
+                                                }`}
                                         >
                                             {bookingResult.booking.depositRequired ? (
-                                                <CreditCard className="h-10 w-10 text-white"/>
+                                                <CreditCard className="h-10 w-10 text-white" />
                                             ) : (
-                                                <CheckCircle className="h-10 w-10 text-white"/>
+                                                <CheckCircle className="h-10 w-10 text-white" />
                                             )}
                                         </div>
                                     </div>
@@ -924,7 +885,7 @@ export default function ReservarPage() {
                                             className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired
                                                 ? "bg-amber-100 text-amber-900 ring-amber-200"
                                                 : "bg-emerald-100 text-emerald-900 ring-emerald-200"
-                                            }`}
+                                                }`}
                                         >
                                             {bookingResult.booking.depositRequired ? "Acción requerida" : "Listo"}
                                         </div>
@@ -963,7 +924,7 @@ export default function ReservarPage() {
                                                         }}
                                                     >
                                                         <img src="/mercadopago.png" alt="Mercado Pago"
-                                                             className="h-4 mr-2"/>
+                                                            className="h-4 mr-2" />
                                                         Abrir Mercado Pago
                                                     </Button>
                                                     <Button
@@ -980,7 +941,7 @@ export default function ReservarPage() {
                                                     </Button>
                                                 </div>
                                             }
-                                                
+
                                         </div>
                                     )}
 
@@ -1003,7 +964,7 @@ export default function ReservarPage() {
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Fecha</span>
                                                     <span className="font-semibold text-gray-900">
-                                                        {format(new Date(bookingResult.booking.start), "PPP", {locale: es})}
+                                                        {format(new Date(bookingResult.booking.start), "PPP", { locale: es })}
                                                     </span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
@@ -1034,14 +995,14 @@ export default function ReservarPage() {
                                                 <Link
                                                     href={`/verify-client?email=${encodeURIComponent(bookingResult.booking.client.email)}`}
                                                     className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl
-                 bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white
-                 shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
-                 transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl
-                 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                                                                bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white
+                                                                shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
+                                                                transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl
+                                                                focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                                                 >
                                                     <span
-                                                        className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10"/>
-                                                    <UserPlus className="h-5 w-5 shrink-0"/>
+                                                        className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+                                                    <UserPlus className="h-5 w-5 shrink-0" />
                                                     <span>Crear cuenta</span>
                                                 </Link>
 
@@ -1069,8 +1030,7 @@ export default function ReservarPage() {
                                         setAvailableDays([]);
                                         setTimeSlots([]);
                                         setSelectedTime("");
-                                        setFirstName("");
-                                        setLastName("");
+                                        setFullName("");
                                         setEmail("");
                                         setPhone("");
                                         setDni("");

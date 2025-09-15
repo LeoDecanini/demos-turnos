@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 type User = { email: string; name?: string; _id: string } | null;
 type AuthCtx = {
-    user: User;
+    user: any;
     token: string | null;
     loginWithToken: (t: string) => void;
     logout: () => void;
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
             if (!r.ok) throw new Error();
             const me = await r.json();
-            setUser({ email: me.email, name: me.name, _id: me._id });
+            setUser(me);
         } catch {
             setUser(null);
         }
