@@ -90,6 +90,7 @@ type BookingResponse = {
         };
         start: string;
         end: string;
+        client?: any;
     };
     payment?: {
         required: boolean;
@@ -99,7 +100,6 @@ type BookingResponse = {
         sandboxInitPoint: string;
     };
     message: string;
-    client?: any;
 };
 
 const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`;
@@ -952,31 +952,35 @@ export default function ReservarPage() {
                                                 </span>
                                             </div>
 
-                                            <div className="mt-5 flex flex-col sm:flex-row gap-2">
-                                                <Button
-                                                    className="h-12 w-full sm:w-auto px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
-                                                    onClick={() => {
-                                                        const link = bookingResult.payment!.initPoint;
-                                                        window.open(link, "_blank")?.focus();
-                                                    }}
-                                                >
-                                                    <img src="/mercadopago.png" alt="Mercado Pago"
-                                                         className="h-4 mr-2"/>
-                                                    Abrir Mercado Pago
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => {
-                                                        const link = bookingResult.payment!.initPoint;
-                                                        navigator.clipboard
-                                                            .writeText(link)
-                                                            .then(() => toast.success("Link de pago copiado al portapapeles"))
-                                                            .catch(() => toast.error("No se pudo copiar el link"));
-                                                    }}
-                                                >
-                                                    Copiar link de pago
-                                                </Button>
-                                            </div>
+                                            {
+                                                bookingResult?.payment!.initPoint &&
+                                                <div className="mt-5 flex flex-col sm:flex-row gap-2">
+                                                    <Button
+                                                        className="h-12 w-full sm:w-auto px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
+                                                        onClick={() => {
+                                                            const link = bookingResult.payment!.initPoint;
+                                                            window.open(link, "_blank")?.focus();
+                                                        }}
+                                                    >
+                                                        <img src="/mercadopago.png" alt="Mercado Pago"
+                                                             className="h-4 mr-2"/>
+                                                        Abrir Mercado Pago
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            const link = bookingResult.payment!.initPoint;
+                                                            navigator.clipboard
+                                                                .writeText(link)
+                                                                .then(() => toast.success("Link de pago copiado al portapapeles"))
+                                                                .catch(() => toast.error("No se pudo copiar el link"));
+                                                        }}
+                                                    >
+                                                        Copiar link de pago
+                                                    </Button>
+                                                </div>
+                                            }
+                                                
                                         </div>
                                     )}
 
