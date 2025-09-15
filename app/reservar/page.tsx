@@ -355,12 +355,19 @@ export default function ReservarPage() {
         const fullNameStr = fullName.trim();
         if (!fullNameStr || !email || !phone || !dni) return;
 
-        const dateStr = formatDateForAPI(selectedDate); // ya lo tenés
-        const tz =
-            Intl.DateTimeFormat().resolvedOptions().timeZone ||
-            "America/Argentina/Buenos_Aires";
+        const tz =  "America/Argentina/Buenos_Aires";
 
-        const startISO = `${dateStr}T${selectedTime}:00`;
+        const dateStr = formatDateForAPI(selectedDate!);          // yyyy-MM-dd
+// construir fecha/hora local elegida
+        const base = new Date(`${dateStr}T${selectedTime}:00`);
+// sumar 3 horas
+        base.setMinutes(base.getMinutes() + 180);
+
+// recomponer día y hora ya ajustados
+        const adjDay  = format(base, "yyyy-MM-dd");
+        const adjHour = format(base, "HH:mm");
+// ISO recomendado para el backend
+        const startISO = `${adjDay}T${adjHour}:00`;
 
 
         setSubmitting(true);
@@ -372,12 +379,14 @@ export default function ReservarPage() {
                 body: JSON.stringify({
                     service: selectedService,
                     professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
-                    day: dateStr,
-                    hour: selectedTime,
-                    startISO,
-                    client: {name: fullNameStr, email, phone, dni},
+                    day: adjDay,          // ← día ajustado
+                    hour: adjHour,        // ← hora ajustada (+3h)
+                    startISO,             // ← opcional pero recomendado
+                    timezone: tz,         // ← enviá la zona igual
+                    client: { name: fullNameStr, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
+
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
