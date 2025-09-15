@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import {Button} from "@/components/ui/button";
 
 type PublicClientInfo = {
     name: string;
@@ -221,17 +222,7 @@ export default function VerifyClientPage() {
                                                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                                                 placeholder="Ej: 12345678"
                                             />
-                                            <button
-                                                onClick={async () => {
-                                                    // Si el user hace click, permitimos reenviar y actualizamos el flag
-                                                    await requestCode();
-                                                    if (CODE_FLAG_KEY) localStorage.setItem(CODE_FLAG_KEY, '1');
-                                                }}
-                                                disabled={sendingCode}
-                                                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 hover:bg-slate-50 disabled:opacity-60 transition"
-                                            >
-                                                {sendingCode ? 'Enviando…' : 'Enviar'}
-                                            </button>
+
                                         </div>
                                     </div>
                                 )}
@@ -247,7 +238,7 @@ export default function VerifyClientPage() {
                                             placeholder="Mínimo 6 caracteres"
                                             minLength={6}
                                         />
-                                        <div className="mt-2 h-1 w-full bg-slate-100 rounded">
+                                        {/*<div className="mt-2 h-1 w-full bg-slate-100 rounded">
                                             <div
                                                 className={`h-1 rounded ${password.length >= 10
                                                         ? 'bg-emerald-500 w-full'
@@ -256,7 +247,7 @@ export default function VerifyClientPage() {
                                                             : 'bg-red-400 w-1/3'
                                                     }`}
                                             />
-                                        </div>
+                                        </div>*/}
                                     </div>
 
                                     <button
@@ -266,14 +257,20 @@ export default function VerifyClientPage() {
                                     >
                                         {submitting ? 'Guardando…' : 'Guardar contraseña'}
                                     </button>
-
-                                    <button
-                                        type="button"
-                                        className="w-full rounded-xl border border-slate-200 bg-white text-slate-700 font-medium py-3 hover:bg-slate-50 transition"
-                                        onClick={() => router.replace(`/login?email=${encodeURIComponent(info.email)}`)}
+                                </div>
+                                <div className={"flex items-center justify-center mt-3"}>
+                                    <Button
+                                        onClick={async () => {
+                                            // Si el user hace click, permitimos reenviar y actualizamos el flag
+                                            await requestCode();
+                                            if (CODE_FLAG_KEY) localStorage.setItem(CODE_FLAG_KEY, '1');
+                                        }}
+                                        disabled={sendingCode}
+                                        variant={"link"}
+                                        className={"!text-center !m-auto"}
                                     >
-                                        Ir al login
-                                    </button>
+                                        {sendingCode ? 'Enviando un nuevo código' : 'Volver a enviar códgio'}
+                                    </Button>
                                 </div>
                             </>
                         )}
@@ -281,10 +278,10 @@ export default function VerifyClientPage() {
 
                     <div className="text-center mt-6">
                         <button
-                            onClick={() => router.replace('/reservar')}
+                            onClick={() => router.replace('/login')}
                             className="inline-flex items-center gap-2 rounded-full border border-yellow-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-yellow-50 transition"
                         >
-                            Ver tratamientos
+                            Ir al Login
                             <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-900">
                                 <path fill="currentColor" d="M13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" />
                             </svg>
