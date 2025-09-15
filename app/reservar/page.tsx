@@ -355,19 +355,13 @@ export default function ReservarPage() {
         const fullNameStr = fullName.trim();
         if (!fullNameStr || !email || !phone || !dni) return;
 
-        const tz =  "America/Argentina/Buenos_Aires";
+        const tz =
+            "America/Argentina/Buenos_Aires";
 
-        const dateStr = formatDateForAPI(selectedDate!);          // yyyy-MM-dd
-// construir fecha/hora local elegida
-        const base = new Date(`${dateStr}T${selectedTime}:00`);
-// sumar 3 horas
-        base.setMinutes(base.getMinutes() + 180);
+        const dateStr = formatDateForAPI(selectedDate!);   // "yyyy-MM-dd"
+// ISO local SIN zona/offset (no uses toISOString aquí)
+        const startISO = `${dateStr}T${selectedTime}:00`;
 
-// recomponer día y hora ya ajustados
-        const adjDay  = format(base, "yyyy-MM-dd");
-        const adjHour = format(base, "HH:mm");
-// ISO recomendado para el backend
-        const startISO = `${adjDay}T${adjHour}:00`;
 
 
         setSubmitting(true);
@@ -379,13 +373,14 @@ export default function ReservarPage() {
                 body: JSON.stringify({
                     service: selectedService,
                     professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
-                    day: adjDay,          // ← día ajustado
-                    hour: adjHour,        // ← hora ajustada (+3h)
-                    startISO,             // ← opcional pero recomendado
-                    timezone: tz,         // ← enviá la zona igual
+                    day: dateStr,              // ← tal cual lo eligió el usuario
+                    hour: selectedTime,        // ← tal cual lo eligió el usuario
+                    startISO,                  // ← ISO local sin Z
+                    timezone: tz,              // ← clave para que el backend interprete bien
                     client: { name: fullNameStr, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
+
 
             });
             if (!res.ok) {
