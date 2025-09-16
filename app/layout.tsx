@@ -7,6 +7,7 @@ import { Suspense } from "react"
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { AuthProvider } from "./auth/AuthProvider"
+import { Toaster } from "@/components/ui/sonner"
 
 export const metadata: Metadata = {
     title: "MG Estética 22 - Centro de Medicina Estética",
@@ -47,6 +48,7 @@ export default function RootLayout({
                     <AuthProvider>
                     <SiteHeader />
                         {children}
+                        <Toaster position="top-center" />
                     </AuthProvider>
                     <SiteFooter />
                     <WhatsAppButton />

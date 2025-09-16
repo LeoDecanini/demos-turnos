@@ -1,8 +1,8 @@
 "use client";
 
-import React, {useEffect, useMemo, useRef, useState} from "react";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Calendar,
     Clock,
@@ -13,15 +13,15 @@ import {
     UserPlus,
 } from "lucide-react";
 import Link from "next/link";
-import {toast} from "sonner";
-import {Calendar as CalendarComponent} from "@/components/ui/calendar";
-import {format} from "date-fns";
-import {es} from "date-fns/locale";
-import ServiceList, {type ServiceItem} from "@/components/ServiceList";
+import { toast } from "sonner";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import ServiceList, { type ServiceItem } from "@/components/ServiceList";
 import ProfessionalList from "@/components/ProfessionalList";
-import {Skeleton} from "@/components/ui/skeleton";
-import {BookingStepper} from "@/components/BookingStepper";
-import {useAuth} from "../auth/AuthProvider";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BookingStepper } from "@/components/BookingStepper";
+import { useAuth } from "../auth/AuthProvider";
 
 type Service = ServiceItem;
 
@@ -110,7 +110,7 @@ const getPayload = (raw: any) => raw?.data ?? raw;
 
 export default function ReservarPage() {
     const [step, setStep] = useState(1);
-    const {user, token, logout} = useAuth();
+    const { user, token, logout } = useAuth();
     const [services, setServices] = useState<Service[]>([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [selectedService, setSelectedService] = useState<string>("");
@@ -171,7 +171,7 @@ export default function ReservarPage() {
             const digits = v.replace(/\D/g, "");
             if (digits.length < 6) msg = "Ingresá un DNI válido";
         }
-        setErrors((prev) => ({...prev, [name]: msg || undefined}));
+        setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
         return !msg;
     };
 
@@ -187,7 +187,7 @@ export default function ReservarPage() {
         const el = timeSectionRef.current;
         if (!el) return;
         const y = el.getBoundingClientRect().top + window.scrollY - 86;
-        window.scrollTo({top: y, behavior: "smooth"});
+        window.scrollTo({ top: y, behavior: "smooth" });
     };
 
     const serviceChosen = useMemo(
@@ -234,7 +234,7 @@ export default function ReservarPage() {
         load();
     }, []);
 
-    const loadProfessionals = async (serviceId: string) => {
+    /* const loadProfessionals = async (serviceId: string) => {
         if (!serviceId) return;
         setLoadingProfessionals(true);
         try {
@@ -251,6 +251,46 @@ export default function ReservarPage() {
             setProfessionals(list);
             setSelectedProfessional("any");
         } catch (e) {
+            setProfessionals([]);
+            setSelectedProfessional("any");
+            toast.error("Error al cargar los profesionales");
+        } finally {
+            setLoadingProfessionals(false);
+        }
+    }; */
+
+    const loadProfessionals = async (serviceId: string) => {
+        if (!serviceId) return;
+        setLoadingProfessionals(true);
+        try {
+            const res = await fetch(
+                `${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`,
+                { cache: "no-store" }
+            );
+            if (!res.ok) throw new Error("No se pudieron cargar los profesionales");
+
+            const raw = await res.json();
+            const payload = getPayload(raw);
+            const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
+
+            setProfessionals(list);
+
+            if (list.length === 1) {
+                // 👉 Auto-select + precargar días + saltar al paso 3
+                const only = list[0];
+                setSelectedProfessional(only._id);
+                setAvailableDays([]);
+                setSelectedDate(undefined);
+                setTimeSlots([]);
+                setSelectedTime("");
+                await loadAvailableDays(serviceId, only._id);
+                setStep(3);
+                scrollToTop();
+            } else {
+                // Varios pros → dejar "Indistinto" como opción
+                setSelectedProfessional("any");
+            }
+        } catch {
             setProfessionals([]);
             setSelectedProfessional("any");
             toast.error("Error al cargar los profesionales");
@@ -342,7 +382,7 @@ export default function ReservarPage() {
         availableDays.includes(formatDateForAPI(date));
 
     const scrollToTop = () => {
-        window.scrollTo({top: 0, behavior: "smooth"});
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const createBooking = async () => {
@@ -359,7 +399,7 @@ export default function ReservarPage() {
             "America/Argentina/Buenos_Aires";
 
         const dateStr = formatDateForAPI(selectedDate!);   // "yyyy-MM-dd"
-// ISO local SIN zona/offset (no uses toISOString aquí)
+        // ISO local SIN zona/offset (no uses toISOString aquí)
         const startISO = `${dateStr}T${selectedTime}:00`;
 
 
@@ -369,7 +409,7 @@ export default function ReservarPage() {
             const dateStr = formatDateForAPI(selectedDate);
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     service: selectedService,
                     professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
@@ -409,7 +449,7 @@ export default function ReservarPage() {
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-4">
-                    <BookingStepper step={step}/>
+                    <BookingStepper step={step} />
                 </div>
 
                 {step === 1 && (
@@ -422,7 +462,7 @@ export default function ReservarPage() {
 
                             {loadingServices ? (
                                 <div className="max-w-3xl mx-auto bg-white rounded-xl shadow border overflow-hidden">
-                                    <Skeleton className="h-[760px] w-full"/>
+                                    <Skeleton className="h-[760px] w-full" />
                                 </div>
                             ) : services.length === 0 ? (
                                 <p className="text-center text-gray-600">No hay servicios disponibles.</p>
@@ -459,7 +499,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <User className="ml-3 h-6 w-6"/>
+                                    <User className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -469,52 +509,44 @@ export default function ReservarPage() {
                 {step === 2 && (
                     <div className={submitting ? "pointer-events-none opacity-60" : ""}>
                         <div className="space-y-8">
-                            <div className="text-center mb-4">
+                            {/* <div className="text-center mb-4">
                                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Elegí el profesional</h2>
                                 <p className="text-gray-600 text-lg">
                                     Podés seleccionar <b>Indistinto</b> para que asignemos uno automáticamente
                                 </p>
-                            </div>
+                            </div> */}
 
-                            {loadingProfessionals ? (
+                            {!loadingProfessionals && (
                                 <div className="max-w-3xl mx-auto">
-                                    <Skeleton className="h-20 w-full"/>
-                                    <div className="mt-4 bg-white rounded-xl shadow border overflow-hidden">
-                                        <Skeleton className="h-20 border rounded-bl-none rounded-br-none w-full"/>
-                                        <Skeleton className="h-20 border rounded-none w-full"/>
-                                        <Skeleton className="h-20 border rounded-tl-none rounded-tr-none w-full"/>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="max-w-3xl mx-auto">
-                                    <div
-                                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
-                                            ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                                            : "border-gray-200 hover:border-amber-300 bg-white/80"
-                                        }`}
-                                        onClick={() => {
-                                            setSelectedProfessional("any");
-                                            setStep(3);
-                                            setAvailableDays([]);
-                                            setSelectedDate(undefined);
-                                            setTimeSlots([]);
-                                            setSelectedTime("");
-                                            setLoadingDays(true);
-                                            void loadAvailableDays(selectedService, undefined);
-                                            scrollToTop();
-                                        }}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="font-semibold text-gray-900">Indistinto</div>
-                                            <span
-                                                className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
-                                                Automático
-                                            </span>
+                                    {professionals.length > 1 && (
+                                        <div
+                                            className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
+                                                ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
+                                                : "border-gray-200 hover:border-amber-300 bg-white/80"
+                                                }`}
+                                            onClick={() => {
+                                                setSelectedProfessional("any");
+                                                setStep(3);
+                                                setAvailableDays([]);
+                                                setSelectedDate(undefined);
+                                                setTimeSlots([]);
+                                                setSelectedTime("");
+                                                setLoadingDays(true);
+                                                void loadAvailableDays(selectedService, undefined);
+                                                scrollToTop();
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="font-semibold text-gray-900">Indistinto</div>
+                                                <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
+                                                    Automático
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                Podés seleccionar Indistinto para que asignemos uno automáticamente
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-gray-600 mt-1">
-                                            Podés seleccionar Indistinto para que asignemos uno automáticamente
-                                        </p>
-                                    </div>
+                                    )}
 
                                     <ProfessionalList
                                         professionals={professionals}
@@ -546,7 +578,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -565,7 +597,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <Calendar className="ml-3 h-6 w-6"/>
+                                    <Calendar className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -585,7 +617,7 @@ export default function ReservarPage() {
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                            <Calendar className="h-5 w-5 mr-2 text-amber-500"/>
+                                            <Calendar className="h-5 w-5 mr-2 text-amber-500" />
                                             Seleccionar Fecha
                                         </CardTitle>
                                     </CardHeader>
@@ -634,7 +666,7 @@ export default function ReservarPage() {
                                                 />
                                             ) : (
                                                 <div className="w-full">
-                                                    <Skeleton className="h-[248px] w-full"/>
+                                                    <Skeleton className="h-[248px] w-full" />
                                                 </div>
                                             )}
                                         </div>
@@ -648,15 +680,15 @@ export default function ReservarPage() {
                                 <Card ref={timeSectionRef}>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                            <Clock className="h-5 w-5 mr-2 text-amber-500"/>
+                                            <Clock className="h-5 w-5 mr-2 text-amber-500" />
                                             Horarios Disponibles
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         {loadingSlots ? (
                                             <div className="grid grid-cols-3 gap-3">
-                                                {Array.from({length: 18}).map((_, i) => (
-                                                    <Skeleton key={i} className="h-9 w-full"/>
+                                                {Array.from({ length: 18 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-9 w-full" />
                                                 ))}
                                             </div>
                                         ) : !selectedDate ? (
@@ -675,7 +707,7 @@ export default function ReservarPage() {
                                                         className={`h-12 transition-all duration-300 ${selectedTime === time
                                                             ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
                                                             : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                                                        }`}
+                                                            }`}
                                                         onClick={() => setSelectedTime(time)}
                                                     >
                                                         {time}
@@ -698,7 +730,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -717,7 +749,7 @@ export default function ReservarPage() {
                                     }}
                                 >
                                     Continuar
-                                    <User className="ml-3 h-6 w-6"/>
+                                    <User className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -751,7 +783,7 @@ export default function ReservarPage() {
                                             <input
                                                 type="text"
                                                 className={` ${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.fullName ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                    }`}
                                                 placeholder="Tu nombre y apellido"
                                                 value={fullName}
                                                 onChange={(e) => {
@@ -771,7 +803,7 @@ export default function ReservarPage() {
                                             <input
                                                 type="email"
                                                 className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                    }`}
                                                 placeholder="tu@email.com"
                                                 value={email}
                                                 onChange={(e) => {
@@ -791,7 +823,7 @@ export default function ReservarPage() {
                                             <input
                                                 type="tel"
                                                 className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.phone ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                    }`}
                                                 placeholder="+54 11 1234-5678"
                                                 value={phone}
                                                 onChange={(e) => {
@@ -811,7 +843,7 @@ export default function ReservarPage() {
                                             <input
                                                 type="text"
                                                 className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.dni ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                                                }`}
+                                                    }`}
                                                 placeholder="Tu DNI"
                                                 value={dni}
                                                 onChange={(e) => {
@@ -851,7 +883,7 @@ export default function ReservarPage() {
                                         scrollToTop();
                                     }}
                                 >
-                                    <ArrowLeft className="mr-2 h-5 w-5"/>
+                                    <ArrowLeft className="mr-2 h-5 w-5" />
                                     Volver
                                 </Button>
                                 <Button
@@ -870,7 +902,7 @@ export default function ReservarPage() {
                                     onClick={createBooking}
                                 >
                                     {submitting ? "Creando…" : "Confirmar Reserva"}
-                                    <CheckCircle className="ml-3 h-6 w-6"/>
+                                    <CheckCircle className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
@@ -885,19 +917,19 @@ export default function ReservarPage() {
                                     className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
                                         ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
                                         : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
-                                    }`}
+                                        }`}
                                 >
                                     <div className="flex items-center justify-center">
                                         <div
                                             className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired
                                                 ? "bg-gradient-to-r from-amber-500 to-yellow-600"
                                                 : "bg-gradient-to-r from-green-500 to-emerald-600"
-                                            }`}
+                                                }`}
                                         >
                                             {bookingResult.booking.depositRequired ? (
-                                                <CreditCard className="h-10 w-10 text-white"/>
+                                                <CreditCard className="h-10 w-10 text-white" />
                                             ) : (
-                                                <CheckCircle className="h-10 w-10 text-white"/>
+                                                <CheckCircle className="h-10 w-10 text-white" />
                                             )}
                                         </div>
                                     </div>
@@ -907,16 +939,16 @@ export default function ReservarPage() {
                                             className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired
                                                 ? "bg-amber-100 text-amber-900 ring-amber-200"
                                                 : "bg-emerald-100 text-emerald-900 ring-emerald-200"
-                                            }`}
+                                                }`}
                                         >
                                             {bookingResult.booking.depositRequired ? "Acción requerida" : "Listo"}
                                         </div>
 
                                         <h2 className="text-3xl font-extrabold text-gray-900">
-                                            {bookingResult.booking.depositRequired ? "¡Reserva creada!" : "¡Reserva confirmada!"}
+                                            {bookingResult.booking.depositRequired ? "¡Reserva Pendiente!" : "¡Reserva confirmada!"}
                                         </h2>
 
-                                        <p className="text-base text-gray-600">{bookingResult.message}</p>
+                                        <p className="text-black text-xl">{bookingResult.message}</p>
                                     </div>
 
                                     {bookingResult.booking.depositRequired && bookingResult.payment && (
@@ -937,20 +969,21 @@ export default function ReservarPage() {
 
                                             {
                                                 bookingResult?.payment!.initPoint &&
-                                                <div className="mt-5 flex flex-col sm:flex-row gap-2">
+                                                <div className="mt-5 flex gap-2">
                                                     <Button
-                                                        className="h-12 w-full sm:w-auto px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
+                                                        className="h-12 w-full flex-1 px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
                                                         onClick={() => {
                                                             const link = bookingResult.payment!.initPoint;
                                                             window.open(link, "_blank")?.focus();
                                                         }}
                                                     >
-                                                        <img src="/mercadopago.png" alt="Mercado Pago"
-                                                             className="h-4 mr-2"/>
+                                                        <img src="/mercadopago.png" alt="Mercado Pago" className="h-4 mr-2" />
                                                         Abrir Mercado Pago
                                                     </Button>
+
                                                     <Button
                                                         variant="outline"
+                                                        className="h-12 w-full flex-1"
                                                         onClick={() => {
                                                             const link = bookingResult.payment!.initPoint;
                                                             navigator.clipboard
@@ -986,7 +1019,7 @@ export default function ReservarPage() {
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Fecha</span>
                                                     <span className="font-semibold text-gray-900">
-                                                        {format(new Date(bookingResult.booking.start), "PPP", {locale: es})}
+                                                        {format(new Date(bookingResult.booking.start), "PPP", { locale: es })}
                                                     </span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
@@ -1023,8 +1056,8 @@ export default function ReservarPage() {
                                                                 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                                                 >
                                                     <span
-                                                        className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10"/>
-                                                    <UserPlus className="h-5 w-5 shrink-0"/>
+                                                        className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+                                                    <UserPlus className="h-5 w-5 shrink-0" />
                                                     <span>Crear cuenta</span>
                                                 </Link>
 

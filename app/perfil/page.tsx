@@ -316,7 +316,7 @@ function ReservasView() {
     }, [fetchBookings])
 
     // ----------------- Load for reschedule -----------------
-    const loadProfessionals = async (serviceId: string) => {
+    /* const loadProfessionals = async (serviceId: string) => {
         if (!serviceId) return
         setLoadingProfessionals(true)
         try {
@@ -336,7 +336,54 @@ function ReservasView() {
         } finally {
             setLoadingProfessionals(false)
         }
-    }
+    } */
+
+    const loadProfessionals = async (serviceId: string, opts?: { autoadvance?: boolean }) => {
+        if (!serviceId) return;
+        setLoadingProfessionals(true);
+        try {
+            const res = await fetch(
+                `${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`,
+                { cache: "no-store" }
+            );
+            if (!res.ok) throw new Error("No se pudieron cargar los profesionales");
+
+            const raw = await res.json();
+            const payload = getPayload(raw);
+            const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
+
+            setProfessionals(list);
+
+            if (list.length === 1) {
+                // 👉 Auto-select y pasar al paso 3
+                const only = list[0];
+                setSelectedProfessional(only._id);
+
+                // limpiar selección actual
+                setAvailableDays([]);
+                setSelectedDate(undefined);
+                setTimeSlots([]);
+                setSelectedTime("");
+
+                // precargar días del único profesional
+                await loadAvailableDays(serviceId, only._id);
+
+                if (opts?.autoadvance) {
+                    setStep(3);
+                }
+            } else {
+                // varios (o ninguno) → dejar “Indistinto”
+                setSelectedProfessional("any");
+            }
+        } catch (e) {
+            console.error(e);
+            setProfessionals([]);
+            setSelectedProfessional("any");
+        } finally {
+            setLoadingProfessionals(false);
+        }
+    };
+
 
     const loadAvailableDays = async (serviceId: string, professionalId: string | undefined) => {
         if (!serviceId) return
@@ -435,7 +482,7 @@ function ReservasView() {
     }
 
     // ----------------- Reschedule -----------------
-    const openReschedule = (booking: any) => {
+    /* const openReschedule = (booking: any) => {
         setRescheduleErr(null)
         setRescheduling(false)
         setStep(2)
@@ -452,7 +499,26 @@ function ReservasView() {
         if (booking?.service?._id) {
             void loadProfessionals(String(booking.service._id))
         }
-    }
+    } */
+
+    const openReschedule = (booking: any) => {
+        setRescheduleErr(null);
+        setRescheduling(false);
+        setStep(2);
+        setReschedulingId(String(booking._id));
+        setSelectedService(String(booking?.service?._id || ""));
+
+        // reset selección
+        setSelectedProfessional("any");
+        setSelectedDate(undefined);
+        setAvailableDays([]);
+        setTimeSlots([]);
+        setSelectedTime("");
+
+        if (booking?.service?._id) {
+            void loadProfessionals(String(booking.service._id), { autoadvance: true });
+        }
+    };
 
     const closeReschedule = () => {
         setRescheduling(false)
@@ -568,10 +634,11 @@ function ReservasView() {
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
                                                         <button
+                                                            type="button"
                                                             onClick={() => window.open(b.depositInitPoint, "_blank")}
-                                                            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm border-sky-300 text-sky-700 hover:bg-sky-50"
+                                                            className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs border-sky-300 text-sky-700 hover:bg-sky-50"
                                                         >
-                                                            <CreditCard className="h-4 w-4" />
+                                                            Pagar
                                                         </button>
                                                     </TooltipTrigger>
                                                     <TooltipContent>Pagar y confirmar tu turno</TooltipContent>
@@ -581,16 +648,17 @@ function ReservasView() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
+                                                        type="button"
                                                         onClick={() => openReschedule(b)}
                                                         disabled={b.status === "canceled"}
                                                         className={[
-                                                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
+                                                            "inline-flex items-center rounded-full px-2.5 py-1 text-xs border",
                                                             b.status === "canceled"
                                                                 ? "border-slate-200 text-slate-400 cursor-not-allowed"
                                                                 : "border-emerald-300 text-emerald-700 hover:bg-emerald-50",
                                                         ].join(" ")}
                                                     >
-                                                        <CalendarClock className="h-4 w-4" />
+                                                        Reprogramar
                                                     </button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>Cambiar fecha u horario</TooltipContent>
@@ -599,23 +667,23 @@ function ReservasView() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <button
+                                                        type="button"
                                                         onClick={() => openCancel(b._id)}
                                                         disabled={b.status === "canceled"}
                                                         className={[
-                                                            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm",
+                                                            "inline-flex items-center rounded-full px-2.5 py-1 text-xs border",
                                                             b.status === "canceled"
                                                                 ? "border-slate-200 text-slate-400 cursor-not-allowed"
                                                                 : "border-rose-300 text-rose-700 hover:bg-rose-50",
                                                         ].join(" ")}
                                                     >
-                                                        <XCircle className="h-4 w-4" />
+                                                        Cancelar
                                                     </button>
                                                 </TooltipTrigger>
                                                 <TooltipContent>Cancelar la reserva</TooltipContent>
                                             </Tooltip>
                                         </div>
                                     </TooltipProvider>
-
                                 </div>
 
                                 {/* Mobile row */}
@@ -785,33 +853,34 @@ function ReservasView() {
                                 </div>
                             ) : (
                                 <div className="max-w-3xl mx-auto">
-                                    <div
-                                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
-                                            ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                                            : "border-gray-200 hover:border-amber-300 bg-white/80"
-                                            }`}
-                                        onClick={() => {
-                                            setSelectedProfessional("any");
-                                            setStep(3);
-                                            setAvailableDays([]);
-                                            setSelectedDate(undefined);
-                                            setTimeSlots([]);
-                                            setSelectedTime("");
-                                            setLoadingDays(true);
-                                            void loadAvailableDays(selectedService, undefined);
-                                        }}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div className="font-semibold text-gray-900">Indistinto</div>
-                                            <span
-                                                className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
-                                                Automático
-                                            </span>
+                                    {professionals.length !== 1 && (
+                                        <div
+                                            className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
+                                                    ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
+                                                    : "border-gray-200 hover:border-amber-300 bg-white/80"
+                                                }`}
+                                            onClick={() => {
+                                                setSelectedProfessional("any");
+                                                setStep(3);
+                                                setAvailableDays([]);
+                                                setSelectedDate(undefined);
+                                                setTimeSlots([]);
+                                                setSelectedTime("");
+                                                setLoadingDays(true);
+                                                void loadAvailableDays(selectedService, undefined);
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="font-semibold text-gray-900">Indistinto</div>
+                                                <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
+                                                    Automático
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 mt-1">
+                                                Podés seleccionar Indistinto para que asignemos uno automáticamente
+                                            </p>
                                         </div>
-                                        <p className="text-sm text-gray-600 mt-1">
-                                            Podés seleccionar Indistinto para que asignemos uno automáticamente
-                                        </p>
-                                    </div>
+                                    )}
 
                                     <ProfessionalList
                                         professionals={professionals}
