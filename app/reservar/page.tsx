@@ -3,15 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Calendar,
-    Clock,
-    User,
-    CheckCircle,
-    ArrowLeft,
-    CreditCard,
-    UserPlus,
-} from "lucide-react";
+import { Calendar, Clock, User, CheckCircle, ArrowLeft, CreditCard, UserPlus, Lock } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -24,49 +16,16 @@ import { BookingStepper } from "@/components/BookingStepper";
 import { useAuth } from "../auth/AuthProvider";
 
 type Service = ServiceItem;
-
-type Professional = {
-    _id: string;
-    name: string;
-    photo?: { path?: string };
-};
-
+type Professional = { _id: string; name: string; photo?: { path?: string } };
 type DepositType = "FIXED" | "PERCENT";
-
-type ServiceWithDeposit = Service & {
-    depositRequired?: boolean;
-    depositType?: DepositType;
-    depositValue?: number;
-    usesGlobalDepositConfig?: boolean;
-};
-
-type DepositCfg = {
-    allowOverrideOnService: boolean;
-    defaultRequired: boolean;
-    defaultType: DepositType;
-    defaultValue: number;
-    rounding?: { enabled?: boolean; decimals?: number };
-};
+type ServiceWithDeposit = Service & { depositRequired?: boolean; depositType?: DepositType; depositValue?: number; usesGlobalDepositConfig?: boolean };
+type DepositCfg = { allowOverrideOnService: boolean; defaultRequired: boolean; defaultType: DepositType; defaultValue: number; rounding?: { enabled?: boolean; decimals?: number } };
 
 const applyDepositPolicy = (list: ServiceWithDeposit[], cfg?: DepositCfg) => {
     if (!cfg) return list;
     if (cfg.allowOverrideOnService === false)
-        return list.map((s) => ({
-            ...s,
-            depositRequired: cfg.defaultRequired,
-            depositType: cfg.defaultType,
-            depositValue: cfg.defaultValue,
-        }));
-    return list.map((s) =>
-        s.usesGlobalDepositConfig
-            ? {
-                ...s,
-                depositRequired: cfg.defaultRequired,
-                depositType: cfg.defaultType,
-                depositValue: cfg.defaultValue,
-            }
-            : s
-    );
+        return list.map((s) => ({ ...s, depositRequired: cfg.defaultRequired, depositType: cfg.defaultType, depositValue: cfg.defaultValue }));
+    return list.map((s) => (s.usesGlobalDepositConfig ? { ...s, depositRequired: cfg.defaultRequired, depositType: cfg.defaultType, depositValue: cfg.defaultValue } : s));
 };
 
 type BookingResponse = {
@@ -81,25 +40,13 @@ type BookingResponse = {
         depositStatus?: string;
         depositInitPoint?: string;
         depositSandboxInitPoint?: string;
-        service: {
-            name: string;
-            price: number;
-            currency: string;
-        };
-        professional: {
-            name: string;
-        };
+        service: { name: string; price: number; currency: string };
+        professional: { name: string };
         start: string;
         end: string;
         client?: any;
     };
-    payment?: {
-        required: boolean;
-        amount: number;
-        currency: string;
-        initPoint: string;
-        sandboxInitPoint: string;
-    };
+    payment?: { required: boolean; amount: number; currency: string; initPoint: string; sandboxInitPoint: string };
     message: string;
 };
 
@@ -110,7 +57,12 @@ const getPayload = (raw: any) => raw?.data ?? raw;
 
 export default function ReservarPage() {
     const [step, setStep] = useState(1);
-    const { user, token, logout } = useAuth();
+    const { user } = useAuth();
+
+    const [gateLoading, setGateLoading] = useState(true);
+    const [isBlocked, setIsBlocked] = useState(false);
+    const [blockMsg, setBlockMsg] = useState<string | null>(null);
+
     const [services, setServices] = useState<Service[]>([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [selectedService, setSelectedService] = useState<string>("");
@@ -135,12 +87,7 @@ export default function ReservarPage() {
 
     const [submitting, setSubmitting] = useState(false);
 
-    const [errors, setErrors] = useState<{
-        fullName?: string;
-        email?: string;
-        phone?: string;
-        dni?: string;
-    }>({});
+    const [errors, setErrors] = useState<{ fullName?: string; email?: string; phone?: string; dni?: string }>({});
 
     useEffect(() => {
         if (user) {
@@ -155,10 +102,7 @@ export default function ReservarPage() {
 
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    const validateField = (
-        name: "fullName" | "email" | "phone" | "dni",
-        value: string
-    ) => {
+    const validateField = (name: "fullName" | "email" | "phone" | "dni", value: string) => {
         let msg = "";
         const v = value?.trim() || "";
         if (name === "fullName" && v.length < 2) msg = "Ingresá un nombre válido";
@@ -175,14 +119,9 @@ export default function ReservarPage() {
         return !msg;
     };
 
-    const validateAll = () =>
-        validateField("fullName", fullName) &&
-        validateField("email", email) &&
-        validateField("phone", phone) &&
-        validateField("dni", dni);
+    const validateAll = () => validateField("fullName", fullName) && validateField("email", email) && validateField("phone", phone) && validateField("dni", dni);
 
     const timeSectionRef = useRef<HTMLDivElement | null>(null);
-
     const scrollToTimes = () => {
         const el = timeSectionRef.current;
         if (!el) return;
@@ -190,93 +129,57 @@ export default function ReservarPage() {
         window.scrollTo({ top: y, behavior: "smooth" });
     };
 
-    const serviceChosen = useMemo(
-        () => services.find((s) => s._id === selectedService),
-        [services, selectedService]
-    );
-
-    const professionalChosen = useMemo(
-        () =>
-            selectedProfessional !== "any"
-                ? professionals.find((p) => p._id === selectedProfessional)
-                : undefined,
-        [professionals, selectedProfessional]
-    );
+    const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService]);
+    const professionalChosen = useMemo(() => (selectedProfessional !== "any" ? professionals.find((p) => p._id === selectedProfessional) : undefined), [professionals, selectedProfessional]);
 
     const formatDateForAPI = (date: Date) => format(date, "yyyy-MM-dd");
     const getCurrentMonth = (date: Date) => format(date, "yyyy-MM");
 
     useEffect(() => {
-        const load = async () => {
+        const preflight = async () => {
+            setGateLoading(true);
             setLoadingServices(true);
             try {
-                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, {
-                    cache: "no-store",
-                });
-                if (!res.ok) throw new Error("No se pudieron cargar los servicios");
-                const raw = await res.json();
+                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, { cache: "no-store" });
+                const raw = await res.json().catch(() => ({}));
+                if (raw?.message === "Reservas bloqueadas") {
+                    setIsBlocked(true);
+                    setBlockMsg("Reservas bloqueadas");
+                    setServices([]);
+                    return;
+                }
                 const cfg: DepositCfg | undefined = raw?.config?.deposit;
                 const payload = getPayload(raw);
-                const list: ServiceWithDeposit[] = Array.isArray(payload)
-                    ? payload
-                    : payload?.items ?? [];
+                const list: ServiceWithDeposit[] = Array.isArray(payload) ? payload : payload?.items ?? [];
                 const listWithDeposit = applyDepositPolicy(list, cfg);
                 setServices(listWithDeposit as Service[]);
-                if (listWithDeposit.length === 0)
-                    toast.error("No hay servicios disponibles en este momento");
-            } catch (e) {
+                if (listWithDeposit.length === 0) toast.error("No hay servicios disponibles en este momento");
+            } catch {
                 setServices([]);
                 toast.error("Error al cargar los servicios");
             } finally {
                 setLoadingServices(false);
+                setGateLoading(false);
             }
         };
-        load();
+        preflight();
     }, []);
 
-    /* const loadProfessionals = async (serviceId: string) => {
-        if (!serviceId) return;
-        setLoadingProfessionals(true);
-        try {
-            const res = await fetch(
-                `${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`,
-                {cache: "no-store"}
-            );
-            if (!res.ok) throw new Error("No se pudieron cargar los profesionales");
-            const raw = await res.json();
-            const payload = getPayload(raw);
-            const list: Professional[] = Array.isArray(payload)
-                ? payload
-                : payload?.items ?? [];
-            setProfessionals(list);
-            setSelectedProfessional("any");
-        } catch (e) {
-            setProfessionals([]);
-            setSelectedProfessional("any");
-            toast.error("Error al cargar los profesionales");
-        } finally {
-            setLoadingProfessionals(false);
-        }
-    }; */
-
     const loadProfessionals = async (serviceId: string) => {
-        if (!serviceId) return;
+        if (!serviceId || isBlocked) return;
         setLoadingProfessionals(true);
         try {
-            const res = await fetch(
-                `${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`,
-                { cache: "no-store" }
-            );
-            if (!res.ok) throw new Error("No se pudieron cargar los profesionales");
-
-            const raw = await res.json();
+            const res = await fetch(`${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`, { cache: "no-store" });
+            const raw = await res.json().catch(() => ({}));
+            if (raw?.message === "Reservas bloqueadas") {
+                setIsBlocked(true);
+                setBlockMsg("Reservas bloqueadas");
+                return;
+            }
             const payload = getPayload(raw);
             const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
-
             setProfessionals(list);
-
             if (list.length === 1) {
-                // 👉 Auto-select + precargar días + saltar al paso 3
                 const only = list[0];
                 setSelectedProfessional(only._id);
                 setAvailableDays([]);
@@ -287,7 +190,6 @@ export default function ReservarPage() {
                 setStep(3);
                 scrollToTop();
             } else {
-                // Varios pros → dejar "Indistinto" como opción
                 setSelectedProfessional("any");
             }
         } catch {
@@ -299,11 +201,8 @@ export default function ReservarPage() {
         }
     };
 
-    const loadAvailableDays = async (
-        serviceId: string,
-        professionalId: string | undefined
-    ) => {
-        if (!serviceId) return;
+    const loadAvailableDays = async (serviceId: string, professionalId: string | undefined) => {
+        if (!serviceId || isBlocked) return;
         const currentDate = new Date();
         const month = getCurrentMonth(currentDate);
         setLoadingDays(true);
@@ -312,27 +211,22 @@ export default function ReservarPage() {
             params.set("accountId", ACCOUNT_ID);
             params.set("service", serviceId);
             params.set("month", month);
-            if (professionalId && professionalId !== "any") {
-                params.set("professional", professionalId);
+            if (professionalId && professionalId !== "any") params.set("professional", professionalId);
+            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" });
+            const raw = await res.json().catch(() => ({}));
+            if (raw?.message === "Reservas bloqueadas") {
+                setIsBlocked(true);
+                setBlockMsg("Reservas bloqueadas");
+                return;
             }
-            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, {
-                cache: "no-store",
-            });
-            if (!res.ok) throw new Error("No se pudieron cargar los días disponibles");
-            const raw = await res.json();
             const payload = getPayload(raw);
-
             let dates: any[] = [];
             if (Array.isArray(payload)) dates = payload;
             else if (Array.isArray(payload?.days)) dates = payload.days;
             else if (Array.isArray(payload?.items)) dates = payload.items;
-
-            if (dates.length && typeof dates[0] !== "string") {
-                dates = dates.map((d: any) => d?.date).filter(Boolean);
-            }
-
+            if (dates.length && typeof dates[0] !== "string") dates = dates.map((d: any) => d?.date).filter(Boolean);
             setAvailableDays(dates as string[]);
-        } catch (e) {
+        } catch {
             setAvailableDays([]);
             toast.error("Error al cargar los días disponibles");
         } finally {
@@ -340,11 +234,8 @@ export default function ReservarPage() {
         }
     };
 
-    const loadTimeSlots = async (
-        serviceId: string,
-        professionalId: string | undefined,
-        date: Date
-    ) => {
+    const loadTimeSlots = async (serviceId: string, professionalId: string | undefined, date: Date) => {
+        if (isBlocked) return;
         const dateStr = formatDateForAPI(date);
         if (!serviceId || !availableDays.includes(dateStr)) return;
         setLoadingSlots(true);
@@ -353,23 +244,20 @@ export default function ReservarPage() {
             params.set("accountId", ACCOUNT_ID);
             params.set("service", serviceId);
             params.set("date", dateStr);
-            if (professionalId && professionalId !== "any") {
-                params.set("professional", professionalId);
+            if (professionalId && professionalId !== "any") params.set("professional", professionalId);
+            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" });
+            const raw = await res.json().catch(() => ({}));
+            if (raw?.message === "Reservas bloqueadas") {
+                setIsBlocked(true);
+                setBlockMsg("Reservas bloqueadas");
+                return;
             }
-            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, {
-                cache: "no-store",
-            });
-            if (!res.ok) throw new Error("No se pudieron cargar los horarios");
-            const raw = await res.json();
             const payload = getPayload(raw);
-            const slots: string[] = Array.isArray(payload)
-                ? payload
-                : payload?.slots ?? payload?.items ?? [];
+            const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? [];
             setTimeSlots(slots);
             setSelectedTime("");
-            if (slots.length === 0)
-                toast.info("No hay horarios disponibles para esta fecha");
-        } catch (e) {
+            if (slots.length === 0) toast.info("No hay horarios disponibles para esta fecha");
+        } catch {
             setTimeSlots([]);
             setSelectedTime("");
             toast.error("Error al cargar los horarios");
@@ -378,64 +266,46 @@ export default function ReservarPage() {
         }
     };
 
-    const isDateAvailable = (date: Date) =>
-        availableDays.includes(formatDateForAPI(date));
-
-    const scrollToTop = () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    };
+    const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date));
+    const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
     const createBooking = async () => {
+        if (isBlocked) return;
         if (!selectedService || !selectedDate || !selectedTime) return;
         if (!validateAll()) {
             toast.error("Revisá los campos resaltados");
             return;
         }
-
         const fullNameStr = fullName.trim();
         if (!fullNameStr || !email || !phone || !dni) return;
-
-        const tz =
-            "America/Argentina/Buenos_Aires";
-
-        const dateStr = formatDateForAPI(selectedDate!);   // "yyyy-MM-dd"
-        // ISO local SIN zona/offset (no uses toISOString aquí)
+        const tz = "America/Argentina/Buenos_Aires";
+        const dateStr = formatDateForAPI(selectedDate!);
         const startISO = `${dateStr}T${selectedTime}:00`;
-
-
-
         setSubmitting(true);
         try {
-            const dateStr = formatDateForAPI(selectedDate);
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     service: selectedService,
                     professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
-                    day: dateStr,              // ← tal cual lo eligió el usuario
-                    hour: selectedTime,        // ← tal cual lo eligió el usuario
-                    startISO,                  // ← ISO local sin Z
-                    timezone: tz,              // ← clave para que el backend interprete bien
+                    day: dateStr,
+                    hour: selectedTime,
+                    startISO,
+                    timezone: tz,
                     client: { name: fullNameStr, email, phone, dni },
                     notes: notes?.trim() || undefined,
                 }),
-
-
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                const msg =
-                    getPayload(err)?.message || err?.message || "No se pudo crear la reserva";
+                const msg = getPayload(err)?.message || err?.message || "No se pudo crear la reserva";
                 throw new Error(msg);
             }
             const bookingResponse: BookingResponse = await res.json();
             setBookingResult(bookingResponse);
-            if (bookingResponse.booking.depositRequired) {
-                toast.success("¡Reserva creada! Necesitás pagar la seña para confirmar");
-            } else {
-                toast.success("¡Reserva confirmada exitosamente!");
-            }
+            if (bookingResponse.booking.depositRequired) toast.success("¡Reserva creada! Necesitás pagar la seña para confirmar");
+            else toast.success("¡Reserva confirmada exitosamente!");
             setStep(5);
             scrollToTop();
         } catch (e) {
@@ -444,6 +314,37 @@ export default function ReservarPage() {
             setSubmitting(false);
         }
     };
+
+    if (gateLoading)
+        return (
+            <div className="min-h-screen grid place-items-center bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
+                <div className="w-full max-w-md space-y-4 text-center">
+                    <Skeleton className="h-10 w-40 mx-auto" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-6 w-1/2 mx-auto" />
+                </div>
+            </div>
+        );
+
+    if (isBlocked)
+        return (
+            <div className="min-h-screen grid place-items-center bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
+                <Card className="max-w-md w-full border-amber-300/50">
+                    <CardContent className="p-8 text-center space-y-4">
+                        <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center">
+                            <Lock className="w-8 h-8" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900">{blockMsg || "Reservas bloqueadas"}</h2>
+                        <p className="text-gray-600">Por el momento no estamos tomando reservas en línea.</p>
+                        <div className="pt-2">
+                            <Button asChild className="w-full bg-gradient-to-r from-amber-500 to-yellow-600">
+                                <Link href="/">Volver al inicio</Link>
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
 
     return (
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
@@ -1115,12 +1016,4 @@ export default function ReservarPage() {
 }
 
 const money = (n?: number, currency = "ARS") =>
-    typeof n === "number"
-        ? n
-            .toLocaleString("es-AR", {
-                style: "currency",
-                currency,
-                maximumFractionDigits: 0,
-            })
-            .replace(/\s/g, "")
-        : "";
+    typeof n === "number" ? n.toLocaleString("es-AR", { style: "currency", currency, maximumFractionDigits: 0 }).replace(/\s/g, "") : "";
