@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, User, CheckCircle, ArrowLeft, CreditCard, UserPlus, Lock } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, User, CheckCircle, ArrowLeft, CreditCard, UserPlus, Lock } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -15,17 +15,77 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BookingStepper } from "@/components/BookingStepper";
 import { useAuth } from "../auth/AuthProvider";
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// Google Calendar espera fechas como YYYYMMDDTHHMMSSZ (UTC)
+const toGCalDateUTC = (d: Date) => {
+    const iso = d.toISOString(); // 2025-09-18T06:30:00.000Z
+    // removemos guiones, dos puntos y milisegundos -> 20250918T063000Z
+    return iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+};
+
+function buildGoogleCalendarUrl(opts: {
+    title: string;
+    startISO: string;
+    endISO?: string;      // si no viene, calcula +30m
+    details?: string;
+    location?: string;
+}) {
+    const start = new Date(opts.startISO);
+    const end = opts.endISO ? new Date(opts.endISO) : new Date(start.getTime() + 30 * 60 * 1000);
+
+    const dates = `${toGCalDateUTC(start)}/${toGCalDateUTC(end)}`;
+
+    const params = new URLSearchParams({
+        action: "TEMPLATE",
+        text: opts.title || "Reserva",
+        dates,
+    });
+
+    if (opts.details) params.set("details", opts.details);
+    if (opts.location) params.set("location", opts.location);
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 type Service = ServiceItem;
 type Professional = { _id: string; name: string; photo?: { path?: string } };
+
 type DepositType = "FIXED" | "PERCENT";
-type ServiceWithDeposit = Service & { depositRequired?: boolean; depositType?: DepositType; depositValue?: number; usesGlobalDepositConfig?: boolean };
-type DepositCfg = { allowOverrideOnService: boolean; defaultRequired: boolean; defaultType: DepositType; defaultValue: number; rounding?: { enabled?: boolean; decimals?: number } };
+type ServiceWithDeposit = Service & {
+    depositRequired?: boolean;
+    depositType?: DepositType;
+    depositValue?: number;
+    usesGlobalDepositConfig?: boolean;
+};
+
+type DepositCfg = {
+    allowOverrideOnService: boolean;
+    defaultRequired: boolean;
+    defaultType: DepositType;
+    defaultValue: number;
+    rounding?: { enabled?: boolean; decimals?: number };
+};
 
 const applyDepositPolicy = (list: ServiceWithDeposit[], cfg?: DepositCfg) => {
     if (!cfg) return list;
     if (cfg.allowOverrideOnService === false)
-        return list.map((s) => ({ ...s, depositRequired: cfg.defaultRequired, depositType: cfg.defaultType, depositValue: cfg.defaultValue }));
-    return list.map((s) => (s.usesGlobalDepositConfig ? { ...s, depositRequired: cfg.defaultRequired, depositType: cfg.defaultType, depositValue: cfg.defaultValue } : s));
+        return list.map((s) => ({
+            ...s,
+            depositRequired: cfg.defaultRequired,
+            depositType: cfg.defaultType,
+            depositValue: cfg.defaultValue,
+        }));
+    return list.map((s) =>
+        s.usesGlobalDepositConfig
+            ? {
+                ...s,
+                depositRequired: cfg.defaultRequired,
+                depositType: cfg.defaultType,
+                depositValue: cfg.defaultValue,
+            }
+            : s
+    );
 };
 
 type BookingResponse = {
@@ -54,15 +114,19 @@ const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`;
 const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID as string;
 
 const getPayload = (raw: any) => raw?.data ?? raw;
+const fmtDay = (date: Date) => format(date, "yyyy-MM-dd");
+const fmtMonth = (date: Date) => format(date, "yyyy-MM");
 
 export default function ReservarPage() {
     const [step, setStep] = useState(1);
     const { user } = useAuth();
 
+    // ─── Gate “Reservas bloqueadas” ──────────────────────────────────────────────
     const [gateLoading, setGateLoading] = useState(true);
     const [isBlocked, setIsBlocked] = useState(false);
     const [blockMsg, setBlockMsg] = useState<string | null>(null);
 
+    // ─── Datos de selección ─────────────────────────────────────────────────────
     const [services, setServices] = useState<Service[]>([]);
     const [loadingServices, setLoadingServices] = useState(true);
     const [selectedService, setSelectedService] = useState<string>("");
@@ -79,6 +143,10 @@ export default function ReservarPage() {
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [selectedTime, setSelectedTime] = useState<string>("");
 
+    // Mes visible del calendario (para refetch al cambiar de mes)
+    const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
+
+    // ─── Datos del cliente ──────────────────────────────────────────────────────
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
@@ -86,8 +154,7 @@ export default function ReservarPage() {
     const [notes, setNotes] = useState("");
 
     const [submitting, setSubmitting] = useState(false);
-
-    const [errors, setErrors] = useState<{ fullName?: string; email?: string; phone?: string; dni?: string }>({});
+    const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
 
     useEffect(() => {
         if (user) {
@@ -98,8 +165,8 @@ export default function ReservarPage() {
         }
     }, [user]);
 
-    const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
-
+    // ─── Validaciones simple front ───────────────────────────────────────────────
+    const [errors, setErrors] = useState<{ fullName?: string; email?: string; phone?: string; dni?: string }>({});
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const validateField = (name: "fullName" | "email" | "phone" | "dni", value: string) => {
@@ -118,9 +185,10 @@ export default function ReservarPage() {
         setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
         return !msg;
     };
+    const validateAll = () =>
+        validateField("fullName", fullName) && validateField("email", email) && validateField("phone", phone) && validateField("dni", dni);
 
-    const validateAll = () => validateField("fullName", fullName) && validateField("email", email) && validateField("phone", phone) && validateField("dni", dni);
-
+    // ─── Helpers UI ─────────────────────────────────────────────────────────────
     const timeSectionRef = useRef<HTMLDivElement | null>(null);
     const scrollToTimes = () => {
         const el = timeSectionRef.current;
@@ -128,13 +196,15 @@ export default function ReservarPage() {
         const y = el.getBoundingClientRect().top + window.scrollY - 86;
         window.scrollTo({ top: y, behavior: "smooth" });
     };
+    const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
     const serviceChosen = useMemo(() => services.find((s) => s._id === selectedService), [services, selectedService]);
-    const professionalChosen = useMemo(() => (selectedProfessional !== "any" ? professionals.find((p) => p._id === selectedProfessional) : undefined), [professionals, selectedProfessional]);
+    const professionalChosen = useMemo(
+        () => (selectedProfessional !== "any" ? professionals.find((p) => p._id === selectedProfessional) : undefined),
+        [professionals, selectedProfessional]
+    );
 
-    const formatDateForAPI = (date: Date) => format(date, "yyyy-MM-dd");
-    const getCurrentMonth = (date: Date) => format(date, "yyyy-MM");
-
+    // ─── Carga inicial (gate + servicios) ───────────────────────────────────────
     useEffect(() => {
         const preflight = async () => {
             setGateLoading(true);
@@ -165,6 +235,7 @@ export default function ReservarPage() {
         preflight();
     }, []);
 
+    // ─── Profesionales ──────────────────────────────────────────────────────────
     const loadProfessionals = async (serviceId: string) => {
         if (!serviceId || isBlocked) return;
         setLoadingProfessionals(true);
@@ -179,14 +250,13 @@ export default function ReservarPage() {
             const payload = getPayload(raw);
             const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
             setProfessionals(list);
+
             if (list.length === 1) {
+                // Autoselect + precargar días + pasar al paso 3
                 const only = list[0];
                 setSelectedProfessional(only._id);
-                setAvailableDays([]);
-                setSelectedDate(undefined);
-                setTimeSlots([]);
-                setSelectedTime("");
-                await loadAvailableDays(serviceId, only._id);
+                resetCalendar();
+                await loadAvailableDays(serviceId, only._id, fmtMonth(visibleMonth));
                 setStep(3);
                 scrollToTop();
             } else {
@@ -201,10 +271,10 @@ export default function ReservarPage() {
         }
     };
 
-    const loadAvailableDays = async (serviceId: string, professionalId: string | undefined) => {
+    // ─── Días disponibles ───────────────────────────────────────────────────────
+    const loadAvailableDays = async (serviceId: string, professionalId: string | undefined, monthStr?: string) => {
         if (!serviceId || isBlocked) return;
-        const currentDate = new Date();
-        const month = getCurrentMonth(currentDate);
+        const month = monthStr ?? fmtMonth(visibleMonth);
         setLoadingDays(true);
         try {
             const params = new URLSearchParams();
@@ -212,6 +282,7 @@ export default function ReservarPage() {
             params.set("service", serviceId);
             params.set("month", month);
             if (professionalId && professionalId !== "any") params.set("professional", professionalId);
+
             const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" });
             const raw = await res.json().catch(() => ({}));
             if (raw?.message === "Reservas bloqueadas") {
@@ -220,11 +291,13 @@ export default function ReservarPage() {
                 return;
             }
             const payload = getPayload(raw);
+
             let dates: any[] = [];
             if (Array.isArray(payload)) dates = payload;
             else if (Array.isArray(payload?.days)) dates = payload.days;
             else if (Array.isArray(payload?.items)) dates = payload.items;
             if (dates.length && typeof dates[0] !== "string") dates = dates.map((d: any) => d?.date).filter(Boolean);
+
             setAvailableDays(dates as string[]);
         } catch {
             setAvailableDays([]);
@@ -234,9 +307,17 @@ export default function ReservarPage() {
         }
     };
 
+    // Refetch cuando cambia el mes visible del calendario
+    const handleMonthChange = async (newMonth: Date) => {
+        setVisibleMonth(newMonth);
+        // mantenemos selección y solo refetch de días del mes nuevo
+        await loadAvailableDays(selectedService, selectedProfessional, fmtMonth(newMonth));
+    };
+
+    // ─── Horarios ───────────────────────────────────────────────────────────────
     const loadTimeSlots = async (serviceId: string, professionalId: string | undefined, date: Date) => {
         if (isBlocked) return;
-        const dateStr = formatDateForAPI(date);
+        const dateStr = fmtDay(date);
         if (!serviceId || !availableDays.includes(dateStr)) return;
         setLoadingSlots(true);
         try {
@@ -245,6 +326,7 @@ export default function ReservarPage() {
             params.set("service", serviceId);
             params.set("date", dateStr);
             if (professionalId && professionalId !== "any") params.set("professional", professionalId);
+
             const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" });
             const raw = await res.json().catch(() => ({}));
             if (raw?.message === "Reservas bloqueadas") {
@@ -266,9 +348,17 @@ export default function ReservarPage() {
         }
     };
 
-    const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date));
-    const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+    const isDateAvailable = (date: Date) => availableDays.includes(fmtDay(date));
 
+    const resetCalendar = () => {
+        setAvailableDays([]);
+        setSelectedDate(undefined);
+        setTimeSlots([]);
+        setSelectedTime("");
+        setVisibleMonth(new Date());
+    };
+
+    // ─── Crear reserva ──────────────────────────────────────────────────────────
     const createBooking = async () => {
         if (isBlocked) return;
         if (!selectedService || !selectedDate || !selectedTime) return;
@@ -278,9 +368,11 @@ export default function ReservarPage() {
         }
         const fullNameStr = fullName.trim();
         if (!fullNameStr || !email || !phone || !dni) return;
+
         const tz = "America/Argentina/Buenos_Aires";
-        const dateStr = formatDateForAPI(selectedDate!);
+        const dateStr = fmtDay(selectedDate!);
         const startISO = `${dateStr}T${selectedTime}:00`;
+
         setSubmitting(true);
         try {
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
@@ -315,6 +407,7 @@ export default function ReservarPage() {
         }
     };
 
+    // ─── UIs de estado del gate ─────────────────────────────────────────────────
     if (gateLoading)
         return (
             <div className="min-h-screen grid place-items-center bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
@@ -346,6 +439,7 @@ export default function ReservarPage() {
             </div>
         );
 
+    // ─── Página principal ───────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
             <div className="mt-12 relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -353,6 +447,7 @@ export default function ReservarPage() {
                     <BookingStepper step={step} />
                 </div>
 
+                {/* Paso 1: Servicio */}
                 {step === 1 && (
                     <div className={submitting ? "pointer-events-none opacity-60" : ""}>
                         <div className="space-y-8">
@@ -375,10 +470,7 @@ export default function ReservarPage() {
                                         setSelectedService(id);
                                         setProfessionals([]);
                                         setSelectedProfessional("any");
-                                        setAvailableDays([]);
-                                        setSelectedDate(undefined);
-                                        setTimeSlots([]);
-                                        setSelectedTime("");
+                                        resetCalendar();
                                         setStep(2);
                                         setLoadingProfessionals(true);
                                         void loadProfessionals(id);
@@ -407,31 +499,22 @@ export default function ReservarPage() {
                     </div>
                 )}
 
+                {/* Paso 2: Profesional */}
                 {step === 2 && (
                     <div className={submitting ? "pointer-events-none opacity-60" : ""}>
                         <div className="space-y-8">
-                            {/* <div className="text-center mb-4">
-                                <h2 className="text-3xl font-bold text-gray-900 mb-4">Elegí el profesional</h2>
-                                <p className="text-gray-600 text-lg">
-                                    Podés seleccionar <b>Indistinto</b> para que asignemos uno automáticamente
-                                </p>
-                            </div> */}
-
                             {!loadingProfessionals && (
                                 <div className="max-w-3xl mx-auto">
                                     {professionals.length > 1 && (
                                         <div
                                             className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
-                                                ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                                                : "border-gray-200 hover:border-amber-300 bg-white/80"
+                                                    ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
+                                                    : "border-gray-200 hover:border-amber-300 bg-white/80"
                                                 }`}
                                             onClick={() => {
                                                 setSelectedProfessional("any");
                                                 setStep(3);
-                                                setAvailableDays([]);
-                                                setSelectedDate(undefined);
-                                                setTimeSlots([]);
-                                                setSelectedTime("");
+                                                resetCalendar();
                                                 setLoadingDays(true);
                                                 void loadAvailableDays(selectedService, undefined);
                                                 scrollToTop();
@@ -443,9 +526,7 @@ export default function ReservarPage() {
                                                     Automático
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-600 mt-1">
-                                                Podés seleccionar Indistinto para que asignemos uno automáticamente
-                                            </p>
+                                            <p className="text-sm text-gray-600 mt-1">Podés seleccionar Indistinto para que asignemos uno automáticamente</p>
                                         </div>
                                     )}
 
@@ -455,10 +536,7 @@ export default function ReservarPage() {
                                         onSelect={(id) => {
                                             setSelectedProfessional(id);
                                             setStep(3);
-                                            setAvailableDays([]);
-                                            setSelectedDate(undefined);
-                                            setTimeSlots([]);
-                                            setSelectedTime("");
+                                            resetCalendar();
                                             setLoadingDays(true);
                                             void loadAvailableDays(selectedService, id);
                                             scrollToTop();
@@ -488,37 +566,35 @@ export default function ReservarPage() {
                                     className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105 disabled:opacity-50"
                                     onClick={() => {
                                         setStep(3);
-                                        setAvailableDays([]);
-                                        setSelectedDate(undefined);
-                                        setTimeSlots([]);
-                                        setSelectedTime("");
+                                        resetCalendar();
                                         setLoadingDays(true);
                                         void loadAvailableDays(selectedService, selectedProfessional);
                                         scrollToTop();
                                     }}
                                 >
                                     Continuar
-                                    <Calendar className="ml-3 h-6 w-6" />
+                                    <CalendarIcon className="ml-3 h-6 w-6" />
                                 </Button>
                             </div>
                         </div>
                     </div>
                 )}
 
+                {/* Paso 3: Fecha y horarios */}
                 {step === 3 && (
                     <div className={submitting ? "pointer-events-none opacity-60" : ""}>
                         <div className="space-y-8">
                             <div className="text-center mb-4">
                                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Elegí fecha y horario</h2>
-                                <p className="text-gray-600 text-lg">Seleccioná una fecha disponible y luego el horario
-                                    que prefieras</p>
+                                <p className="text-gray-600 text-lg">Seleccioná una fecha disponible y luego el horario que prefieras</p>
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                                {/* Calendario */}
                                 <Card>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                            <Calendar className="h-5 w-5 mr-2 text-amber-500" />
+                                            <CalendarIcon className="h-5 w-5 mr-2 text-amber-500" />
                                             Seleccionar Fecha
                                         </CardTitle>
                                     </CardHeader>
@@ -528,18 +604,16 @@ export default function ReservarPage() {
                                                 <CalendarComponent
                                                     mode="single"
                                                     selected={selectedDate}
+                                                    month={visibleMonth}
+                                                    onMonthChange={handleMonthChange}
                                                     onSelect={async (date) => {
-                                                        setSelectedDate(date);
+                                                        setSelectedDate(date || undefined);
                                                         if (date && isDateAvailable(date)) {
                                                             scrollToTimes();
                                                             setLoadingSlots(true);
                                                             setTimeSlots([]);
                                                             setSelectedTime("");
-                                                            await loadTimeSlots(
-                                                                selectedService,
-                                                                selectedProfessional,
-                                                                date
-                                                            );
+                                                            await loadTimeSlots(selectedService, selectedProfessional, date);
                                                         } else {
                                                             setTimeSlots([]);
                                                             setSelectedTime("");
@@ -557,8 +631,7 @@ export default function ReservarPage() {
                                                     locale={es}
                                                     className="rounded-xl border-2 border-amber-200 max-w-none w-full"
                                                     classNames={{
-                                                        months:
-                                                            "flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 flex-1",
+                                                        months: "flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 flex-1",
                                                         month: "space-y-4 w-full flex flex-col",
                                                         table: "w-full h-full border-collapse space-y-1",
                                                         head_row: "",
@@ -572,12 +645,12 @@ export default function ReservarPage() {
                                             )}
                                         </div>
                                         {selectedDate && availableDays.length > 0 && !isDateAvailable(selectedDate) && (
-                                            <p className="text-sm text-red-500 text-center">Esta fecha no está
-                                                disponible</p>
+                                            <p className="text-sm text-red-500 text-center">Esta fecha no está disponible</p>
                                         )}
                                     </CardContent>
                                 </Card>
 
+                                {/* Horarios */}
                                 <Card ref={timeSectionRef}>
                                     <CardHeader>
                                         <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
@@ -597,8 +670,7 @@ export default function ReservarPage() {
                                         ) : !isDateAvailable(selectedDate) ? (
                                             <p className="text-gray-600">Esta fecha no está disponible.</p>
                                         ) : timeSlots.length === 0 ? (
-                                            <p className="text-gray-600">No hay horarios disponibles para esta
-                                                fecha.</p>
+                                            <p className="text-gray-600">No hay horarios disponibles para esta fecha.</p>
                                         ) : (
                                             <div className="grid grid-cols-3 gap-3">
                                                 {timeSlots.map((time) => (
@@ -606,8 +678,8 @@ export default function ReservarPage() {
                                                         key={time}
                                                         variant={selectedTime === time ? "default" : "outline"}
                                                         className={`h-12 transition-all duration-300 ${selectedTime === time
-                                                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                                                            : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                                                                ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                                                                : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
                                                             }`}
                                                         onClick={() => setSelectedTime(time)}
                                                     >
@@ -636,13 +708,7 @@ export default function ReservarPage() {
                                 </Button>
                                 <Button
                                     size="lg"
-                                    disabled={
-                                        submitting ||
-                                        !selectedService ||
-                                        !selectedDate ||
-                                        !selectedTime ||
-                                        !isDateAvailable(selectedDate)
-                                    }
+                                    disabled={submitting || !selectedService || !selectedDate || !selectedTime || !isDateAvailable(selectedDate)}
                                     className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105 disabled:opacity-50"
                                     onClick={() => {
                                         setStep(4);
@@ -657,30 +723,25 @@ export default function ReservarPage() {
                     </div>
                 )}
 
+                {/* Paso 4: Datos del cliente */}
                 {step === 4 && (
                     <div className={submitting ? "pointer-events-none opacity-60" : ""}>
                         <div className="space-y-8">
                             <div className="text-center mb-4">
                                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Tus datos de contacto</h2>
-                                <p className="text-gray-600 text-lg">Completá la información para confirmar tu
-                                    reserva</p>
+                                <p className="text-gray-600 text-lg">Completá la información para confirmar tu reserva</p>
                             </div>
 
                             <Card className="relative">
                                 {submitting && (
-                                    <div
-                                        className="bg-white/70 flex items-center justify-center rounded-xl absolute w-full h-full top-0 left-0 z-10">
+                                    <div className="bg-white/70 flex items-center justify-center rounded-xl absolute w-full h-full top-0 left-0 z-10">
                                         Creando su reserva...
                                     </div>
-                                ) as React.ReactNode}
+                                )}
                                 <CardContent className="space-y-6">
-                                    <fieldset
-                                        disabled={!!user || submitting}
-                                        className={submitting ? "opacity-60 pointer-events-none select-none" : ""}
-                                    >
+                                    <fieldset disabled={!!user || submitting} className={submitting ? "opacity-60 pointer-events-none select-none" : ""}>
                                         <div>
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre
-                                                completo</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo</label>
                                             <input
                                                 type="text"
                                                 className={` ${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.fullName ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
@@ -694,13 +755,11 @@ export default function ReservarPage() {
                                                 onBlur={(e) => validateField("fullName", e.target.value)}
                                                 aria-invalid={!!errors.fullName}
                                             />
-                                            {errors.fullName &&
-                                                <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+                                            {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
                                         </div>
 
                                         <div className="mt-2">
-                                            <label
-                                                className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                                             <input
                                                 type="email"
                                                 className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
@@ -714,13 +773,11 @@ export default function ReservarPage() {
                                                 onBlur={(e) => validateField("email", e.target.value)}
                                                 aria-invalid={!!errors.email}
                                             />
-                                            {errors.email &&
-                                                <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                                            {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                                         </div>
 
                                         <div className="mt-2">
-                                            <label
-                                                className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                                             <input
                                                 type="tel"
                                                 className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.phone ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
@@ -734,13 +791,11 @@ export default function ReservarPage() {
                                                 onBlur={(e) => validateField("phone", e.target.value)}
                                                 aria-invalid={!!errors.phone}
                                             />
-                                            {errors.phone &&
-                                                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                                            {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                                         </div>
 
                                         <div className="mt-2">
-                                            <label
-                                                className="block text-sm font-semibold text-gray-700 mb-2">DNI</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">DNI</label>
                                             <input
                                                 type="text"
                                                 className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.dni ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
@@ -758,8 +813,7 @@ export default function ReservarPage() {
                                         </div>
 
                                         <div className="mt-2">
-                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Comentarios
-                                                (opcional)</label>
+                                            <label className="block text-sm font-semibold text-gray-700 mb-2">Comentarios (opcional)</label>
                                             <textarea
                                                 rows={4}
                                                 className="w-full px-4 py-1.5 !outline-none border-2 border-gray-200 rounded-xl focus:ring-1.5 focus:ring-amber-500 focus:border-amber-500 transition-all duration-300 resize-none"
@@ -771,7 +825,6 @@ export default function ReservarPage() {
                                     </fieldset>
                                 </CardContent>
                             </Card>
-
 
                             <div className="flex justify-center space-x-4 mt-4">
                                 <Button
@@ -790,14 +843,7 @@ export default function ReservarPage() {
                                 <Button
                                     size="lg"
                                     disabled={
-                                        submitting ||
-                                        !selectedService ||
-                                        !selectedDate ||
-                                        !selectedTime ||
-                                        !fullName.trim() ||
-                                        !email.trim() ||
-                                        !phone.trim() ||
-                                        !dni.trim()
+                                        submitting || !selectedService || !selectedDate || !selectedTime || !fullName.trim() || !email.trim() || !phone.trim() || !dni.trim()
                                     }
                                     className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105 disabled:opacity-50"
                                     onClick={createBooking}
@@ -810,36 +856,29 @@ export default function ReservarPage() {
                     </div>
                 )}
 
+                {/* Paso 5: Resultado */}
                 {step === 5 && bookingResult && (
                     <div className={submitting ? "pointer-events-none opacity-60" : ""}>
                         <div className="text-center space-y-8">
                             <div className="max-w-2xl mx-auto">
                                 <div
                                     className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
-                                        ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
-                                        : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
+                                            ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
+                                            : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
                                         }`}
                                 >
                                     <div className="flex items-center justify-center">
                                         <div
-                                            className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired
-                                                ? "bg-gradient-to-r from-amber-500 to-yellow-600"
-                                                : "bg-gradient-to-r from-green-500 to-emerald-600"
+                                            className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired ? "bg-gradient-to-r from-amber-500 to-yellow-600" : "bg-gradient-to-r from-green-500 to-emerald-600"
                                                 }`}
                                         >
-                                            {bookingResult.booking.depositRequired ? (
-                                                <CreditCard className="h-10 w-10 text-white" />
-                                            ) : (
-                                                <CheckCircle className="h-10 w-10 text-white" />
-                                            )}
+                                            {bookingResult.booking.depositRequired ? <CreditCard className="h-10 w-10 text-white" /> : <CheckCircle className="h-10 w-10 text-white" />}
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
                                         <div
-                                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired
-                                                ? "bg-amber-100 text-amber-900 ring-amber-200"
-                                                : "bg-emerald-100 text-emerald-900 ring-emerald-200"
+                                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired ? "bg-amber-100 text-amber-900 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-emerald-200"
                                                 }`}
                                         >
                                             {bookingResult.booking.depositRequired ? "Acción requerida" : "Listo"}
@@ -853,23 +892,18 @@ export default function ReservarPage() {
                                     </div>
 
                                     {bookingResult.booking.depositRequired && bookingResult.payment && (
-                                        <div
-                                            className="mt-8 rounded-2xl border border-amber-200 bg-white/80 p-6 text-left">
+                                        <div className="mt-8 rounded-2xl border border-amber-200 bg-white/80 p-6 text-left">
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <p className="text-sm text-gray-600">Seña a abonar</p>
-                                                    <p className="text-2xl font-bold text-gray-900">
-                                                        {money(bookingResult.payment.amount)}
-                                                    </p>
+                                                    <p className="text-2xl font-bold text-gray-900">{money(bookingResult.payment.amount)}</p>
                                                 </div>
-                                                <span
-                                                    className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
+                                                <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200">
                                                     Mercado Pago
                                                 </span>
                                             </div>
 
-                                            {
-                                                bookingResult?.payment!.initPoint &&
+                                            {bookingResult?.payment!.initPoint && (
                                                 <div className="mt-5 flex gap-2">
                                                     <Button
                                                         className="h-12 w-full flex-1 px-6 bg-gradient-to-r from-sky-500 to-sky-600 text-white font-semibold shadow-lg border-0 transition-transform hover:scale-[1.02]"
@@ -896,10 +930,45 @@ export default function ReservarPage() {
                                                         Copiar link de pago
                                                     </Button>
                                                 </div>
-                                            }
-
+                                            )}
                                         </div>
                                     )}
+
+                                    {/* Botón Guardar en Google Calendar */}
+                                    <div className="pt-10">
+                                        {(() => {
+                                            const title = `${bookingResult.booking.service.name}${bookingResult?.booking?.professional?.name ? ` — ${bookingResult.booking.professional.name}` : ""
+                                                }`;
+
+                                            const details =
+                                                (bookingResult.message ? bookingResult.message + "\n" : "") +
+                                                `Reserva #${bookingResult.booking._id}`;
+
+                                            const location = "Paraná 1315, PB 4, Recoleta, CABA";
+
+                                            const gcalUrl = buildGoogleCalendarUrl({
+                                                title,
+                                                startISO: bookingResult.booking.start,
+                                                endISO: bookingResult.booking.end, // si no viene, el helper usa +30 min
+                                                details,
+                                                location,
+                                            });
+
+                                            return (
+                                                <Button
+                                                    asChild
+                                                    variant="outline"
+                                                    className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50"
+                                                >
+                                                    <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
+                                                        <CalendarIcon className="mr-2 h-5 w-5" />
+                                                        Guardar en Google Calendar
+                                                    </a>
+                                                </Button>
+                                            );
+                                        })()}
+                                    </div>
+
 
                                     <div className="mt-8 grid gap-6">
                                         <div className="rounded-2xl bg-white border p-6 text-left">
@@ -907,66 +976,51 @@ export default function ReservarPage() {
                                             <div className="divide-y divide-gray-100">
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Servicio</span>
-                                                    <span className="font-semibold text-gray-900">
-                                                        {bookingResult.booking.service.name}
-                                                    </span>
+                                                    <span className="font-semibold text-gray-900">{bookingResult.booking.service.name}</span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Profesional</span>
-                                                    <span className="font-semibold text-gray-900">
-                                                        {bookingResult?.booking?.professional?.name || "Profesional indistinto"}
-                                                    </span>
+                                                    <span className="font-semibold text-gray-900">{bookingResult?.booking?.professional?.name || "Profesional indistinto"}</span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Fecha</span>
-                                                    <span className="font-semibold text-gray-900">
-                                                        {format(new Date(bookingResult.booking.start), "PPP", { locale: es })}
-                                                    </span>
+                                                    <span className="font-semibold text-gray-900">{format(new Date(bookingResult.booking.start), "PPP", { locale: es })}</span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Hora</span>
-                                                    <span className="font-semibold text-gray-900">
-                                                        {format(new Date(bookingResult.booking.start), "HH:mm")}
-                                                    </span>
+                                                    <span className="font-semibold text-gray-900">{format(new Date(bookingResult.booking.start), "HH:mm")}</span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Dirección</span>
-                                                    <span className="font-semibold text-gray-900">
-                                                        Paraná 1315, PB 4, Recoleta, CABA
-                                                    </span>
+                                                    <span className="font-semibold text-gray-900">Paraná 1315, PB 4, Recoleta, CABA</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {!bookingResult.booking.depositRequired && (
                                             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-                                                <p className="text-sm text-emerald-800">
-                                                    Tu turno quedó confirmado. Te enviamos un correo con el detalle.
-                                                </p>
+                                                <p className="text-sm text-emerald-800">Tu turno quedó confirmado. Te enviamos un correo con el detalle.</p>
                                             </div>
                                         )}
 
-                                        {bookingResult?.booking?.client?.email &&
+                                        {bookingResult?.booking?.client?.email && (
                                             <div className="pt-2">
                                                 <Link
                                                     href={`/verify-client?email=${encodeURIComponent(bookingResult.booking.client.email)}`}
                                                     className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl
-                                                                bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white
-                                                                shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
-                                                                transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl
-                                                                focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                              bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white
+                              shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
+                              transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl
+                              focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
                                                 >
-                                                    <span
-                                                        className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
+                                                    <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
                                                     <UserPlus className="h-5 w-5 shrink-0" />
                                                     <span>Crear cuenta</span>
                                                 </Link>
 
-                                                <p className="mt-2 text-xs text-gray-500">
-                                                    Creá tu cuenta para ver y gestionar tus reservas más rápido.
-                                                </p>
+                                                <p className="mt-2 text-xs text-gray-500">Creá tu cuenta para ver y gestionar tus reservas más rápido.</p>
                                             </div>
-                                        }
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -982,10 +1036,7 @@ export default function ReservarPage() {
                                         setSelectedService("");
                                         setProfessionals([]);
                                         setSelectedProfessional("any");
-                                        setSelectedDate(undefined);
-                                        setAvailableDays([]);
-                                        setTimeSlots([]);
-                                        setSelectedTime("");
+                                        resetCalendar();
                                         setFullName("");
                                         setEmail("");
                                         setPhone("");
@@ -998,12 +1049,7 @@ export default function ReservarPage() {
                                     Nueva reserva
                                 </Button>
 
-                                <Button
-                                    size="lg"
-                                    disabled={submitting}
-                                    className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0 transition-transform hover:scale-[1.02]"
-                                    asChild
-                                >
+                                <Button size="lg" disabled={submitting} className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0 transition-transform hover:scale-[1.02]" asChild>
                                     <Link href="/">Volver al inicio</Link>
                                 </Button>
                             </div>
