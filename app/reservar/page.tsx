@@ -393,67 +393,70 @@ export default function ReservarPage() {
         }
 
         const fullNameStr = fullName.trim();
-        if (!fullNameStr || !email || !phone || !dni) return;
+        if (!fullNameStr || !email.trim() || !phone.trim() || !dni.trim()) return;
 
-        const tz =
-            "America/Argentina/Buenos_Aires";
+        const tz = "America/Argentina/Buenos_Aires";
+        const dateStr = formatDateForAPI(selectedDate!); // "yyyy-MM-dd"
 
-        const dateStr = formatDateForAPI(selectedDate!);   // "yyyy-MM-dd"
-        // ISO local SIN zona/offset (no uses toISOString aquí)
-        const startISO = `${dateStr}T${selectedTime}:00`;
-
-
+        // Construimos un Date local y lo convertimos a ISO UTC (termina en Z)
+        const local = new Date(`${dateStr}T${selectedTime}:00`);
+        const startUtcZ = new Date(local.getTime() - local.getTimezoneOffset() * 60000).toISOString();
 
         setSubmitting(true);
         try {
-            const dateStr = formatDateForAPI(selectedDate);
+            const body: any = {
+                service: selectedService,
+                // solo incluimos professional si NO es "any"
+                ...(selectedProfessional !== "any" ? { professional: selectedProfessional } : {}),
+                start: startUtcZ,      // <— el back espera `start` con offset/Z
+                timezone: tz,
+                client: { name: fullNameStr, email, phone, dni },
+                notes: notes?.trim() || undefined,
+            };
+
             const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    service: selectedService,
-                    professional: selectedProfessional !== "any" ? selectedProfessional : undefined,
-                    day: dateStr,              // ← tal cual lo eligió el usuario
-                    hour: selectedTime,        // ← tal cual lo eligió el usuario
-                    startISO,                  // ← ISO local sin Z
-                    timezone: tz,              // ← clave para que el backend interprete bien
-                    client: { name: fullNameStr, email, phone, dni },
-                    notes: notes?.trim() || undefined,
-                }),
-
-
+                body: JSON.stringify(body),
             });
+
+            // Si falla, levantamos el mensaje del backend
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                const msg =
-                    getPayload(err)?.message || err?.message || "No se pudo crear la reserva";
+                let msg = "No se pudo crear la reserva";
+                try {
+                    const err = await res.json();
+                    const payload = getPayload(err);
+                    msg = payload?.message || err?.message || msg;
+                } catch { /* ignore parse error */ }
                 throw new Error(msg);
             }
+
             const bookingResponse: BookingResponse = await res.json();
             setBookingResult(bookingResponse);
-            if (bookingResponse.booking.depositRequired) {
+
+            if (bookingResponse.booking?.depositRequired) {
                 toast.success("¡Reserva creada! Necesitás pagar la seña para confirmar");
             } else {
                 toast.success("¡Reserva confirmada exitosamente!");
             }
+
             setStep(5);
             scrollToTop();
         } catch (e) {
             const msg = (e as Error).message || "No se pudo crear la reserva";
             toast.error(msg);
 
-            // Si hay superposición de turnos → volver al paso de fecha/horario
-            if (/superpone/i.test(msg)) {
+            // Si hay superposición/solape, volvemos a la selección de horario
+            if (/superpone|solap/i.test(msg)) {
                 setStep(3);
-                setSelectedTime("");        // forzá a elegir otro horario
-                setTimeout(() => {
-                    scrollToTimes();          // lleva al bloque de horarios
-                }, 0);
+                setSelectedTime("");
+                setTimeout(() => { scrollToTimes(); }, 0);
             }
         } finally {
             setSubmitting(false);
         }
     };
+
 
     return (
         <div className="min-h-screen bg--gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
