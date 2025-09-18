@@ -439,7 +439,17 @@ export default function ReservarPage() {
             setStep(5);
             scrollToTop();
         } catch (e) {
-            toast.error((e as Error).message);
+            const msg = (e as Error).message || "No se pudo crear la reserva";
+            toast.error(msg);
+
+            // Si hay superposición de turnos → volver al paso de fecha/horario
+            if (/superpone/i.test(msg)) {
+                setStep(3);
+                setSelectedTime("");        // forzá a elegir otro horario
+                setTimeout(() => {
+                    scrollToTimes();          // lleva al bloque de horarios
+                }, 0);
+            }
         } finally {
             setSubmitting(false);
         }
