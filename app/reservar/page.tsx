@@ -1013,7 +1013,7 @@ export default function ReservarPage() {
                                                 <div className="py-3 flex items-center justify-between">
                                                     <span className="text-gray-600">Profesional</span>
                                                     <span className="font-semibold text-gray-900">
-                                                        {bookingResult.booking.professional.name}
+                                                        {bookingResult?.booking?.professional?.name || "Profesional indistinto"}
                                                     </span>
                                                 </div>
                                                 <div className="py-3 flex items-center justify-between">
