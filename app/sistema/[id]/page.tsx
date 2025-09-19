@@ -359,6 +359,41 @@ export default async function BookingPublicPage({
                                         <p className="whitespace-pre-wrap">{booking.notes}</p>
                                     </div>
                                 )}
+
+                                {/* Botón Guardar en Google Calendar */}
+                                {!booking.depositRequired && (
+                                    <div className="pt-10">
+                                        {(() => {
+                                            const title = `${booking.service.name}${bookingResult?.booking?.professional?.name ? ` — ${booking.professional.name}` : ""
+                                                }`;
+
+                                            const details = `Reserva: ${booking.name}`
+
+                                            const location = "Paraná 1315, PB 4, Recoleta, CABA";
+
+                                            const gcalUrl = buildGoogleCalendarUrl({
+                                                title,
+                                                startISO: booking.start,
+                                                endISO: booking.end, // si no viene, el helper usa +30 min
+                                                details,
+                                                location,
+                                            });
+
+                                            return (
+                                                <Button
+                                                    asChild
+                                                    variant="outline"
+                                                    className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50"
+                                                >
+                                                    <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
+                                                        <CalendarIcon className="mr-2 h-5 w-5" />
+                                                        Guardar en Google Calendar
+                                                    </a>
+                                                </Button>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
 

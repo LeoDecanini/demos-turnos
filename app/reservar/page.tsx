@@ -508,8 +508,8 @@ export default function ReservarPage() {
                                     {professionals.length > 1 && (
                                         <div
                                             className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any"
-                                                    ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                                                    : "border-gray-200 hover:border-amber-300 bg-white/80"
+                                                ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
+                                                : "border-gray-200 hover:border-amber-300 bg-white/80"
                                                 }`}
                                             onClick={() => {
                                                 setSelectedProfessional("any");
@@ -678,8 +678,8 @@ export default function ReservarPage() {
                                                         key={time}
                                                         variant={selectedTime === time ? "default" : "outline"}
                                                         className={`h-12 transition-all duration-300 ${selectedTime === time
-                                                                ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                                                                : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                                                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                                                            : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
                                                             }`}
                                                         onClick={() => setSelectedTime(time)}
                                                     >
@@ -863,8 +863,8 @@ export default function ReservarPage() {
                             <div className="max-w-2xl mx-auto">
                                 <div
                                     className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired
-                                            ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
-                                            : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
+                                        ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
+                                        : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
                                         }`}
                                 >
                                     <div className="flex items-center justify-center">
@@ -935,40 +935,41 @@ export default function ReservarPage() {
                                     )}
 
                                     {/* Botón Guardar en Google Calendar */}
-                                    <div className="pt-10">
-                                        {(() => {
-                                            const title = `${bookingResult.booking.service.name}${bookingResult?.booking?.professional?.name ? ` — ${bookingResult.booking.professional.name}` : ""
-                                                }`;
+                                    {!bookingResult.booking.depositRequired && (
+                                        <div className="pt-10">
+                                            {(() => {
+                                                const title = `${bookingResult.booking.service.name}${bookingResult?.booking?.professional?.name ? ` — ${bookingResult.booking.professional.name}` : ""
+                                                    }`;
 
-                                            const details =
-                                                (bookingResult.message ? bookingResult.message + "\n" : "") +
-                                                `Reserva #${bookingResult.booking._id}`;
+                                                const details =
+                                                    (bookingResult.message ? bookingResult.message + "\n" : "") +
+                                                    `Reserva #${bookingResult.booking._id}`;
 
-                                            const location = "Paraná 1315, PB 4, Recoleta, CABA";
+                                                const location = "Paraná 1315, PB 4, Recoleta, CABA";
 
-                                            const gcalUrl = buildGoogleCalendarUrl({
-                                                title,
-                                                startISO: bookingResult.booking.start,
-                                                endISO: bookingResult.booking.end, // si no viene, el helper usa +30 min
-                                                details,
-                                                location,
-                                            });
+                                                const gcalUrl = buildGoogleCalendarUrl({
+                                                    title,
+                                                    startISO: bookingResult.booking.start,
+                                                    endISO: bookingResult.booking.end, // si no viene, el helper usa +30 min
+                                                    details,
+                                                    location,
+                                                });
 
-                                            return (
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
-                                                    className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50"
-                                                >
-                                                    <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
-                                                        <CalendarIcon className="mr-2 h-5 w-5" />
-                                                        Guardar en Google Calendar
-                                                    </a>
-                                                </Button>
-                                            );
-                                        })()}
-                                    </div>
-
+                                                return (
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50"
+                                                    >
+                                                        <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
+                                                            <CalendarIcon className="mr-2 h-5 w-5" />
+                                                            Guardar en Google Calendar
+                                                        </a>
+                                                    </Button>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
 
                                     <div className="mt-8 grid gap-6">
                                         <div className="rounded-2xl bg-white border p-6 text-left">
