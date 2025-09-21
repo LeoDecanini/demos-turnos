@@ -192,3 +192,8 @@ html {
         transform: translateX(100%) scaleY(1);
     }
 }
+
+
+.pwa-standalone .site-chrome {
+  display: none !important;
+}
