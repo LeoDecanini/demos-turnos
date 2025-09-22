@@ -112,6 +112,7 @@ type BookingResponse = {
 
 const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`;
 const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID as string;
+const SUBDOMAIN = process.env.NEXT_PUBLIC_TENANT as string;
 
 const getPayload = (raw: any) => raw?.data ?? raw;
 const fmtDay = (date: Date) => format(date, "yyyy-MM-dd");
@@ -210,7 +211,10 @@ export default function ReservarPage() {
             setGateLoading(true);
             setLoadingServices(true);
             try {
-                const res = await fetch(`${API_BASE}/services?accountId=${ACCOUNT_ID}`, { cache: "no-store" });
+                const slug =
+                    SUBDOMAIN ??
+                    (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+                const res = await fetch(`${API_BASE}/${slug}/services`, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
                 if (raw?.message === "Reservas bloqueadas") {
                     setIsBlocked(true);
@@ -240,8 +244,14 @@ export default function ReservarPage() {
         if (!serviceId || isBlocked) return;
         setLoadingProfessionals(true);
         try {
-            const res = await fetch(`${API_BASE}/services/${serviceId}/professionals?accountId=${ACCOUNT_ID}`, { cache: "no-store" });
+            const slug =
+                SUBDOMAIN ??
+                (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+            const url = `${API_BASE}/${slug}/services/${serviceId}/professionals`;
+
+            const res = await fetch(url, { cache: "no-store" });
             const raw = await res.json().catch(() => ({}));
+
             if (raw?.message === "Reservas bloqueadas") {
                 setIsBlocked(true);
                 setBlockMsg("Reservas bloqueadas");
@@ -252,7 +262,6 @@ export default function ReservarPage() {
             setProfessionals(list);
 
             if (list.length === 1) {
-                // Autoselect + precargar días + pasar al paso 3
                 const only = list[0];
                 setSelectedProfessional(only._id);
                 resetCalendar();
@@ -278,20 +287,24 @@ export default function ReservarPage() {
         setLoadingDays(true);
         try {
             const params = new URLSearchParams();
-            params.set("accountId", ACCOUNT_ID);
             params.set("service", serviceId);
             params.set("month", month);
             if (professionalId && professionalId !== "any") params.set("professional", professionalId);
 
-            const res = await fetch(`${API_BASE}/available-days?${params.toString()}`, { cache: "no-store" });
+            const slug =
+                SUBDOMAIN ??
+                (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+
+            const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
             const raw = await res.json().catch(() => ({}));
+
             if (raw?.message === "Reservas bloqueadas") {
                 setIsBlocked(true);
                 setBlockMsg("Reservas bloqueadas");
                 return;
             }
-            const payload = getPayload(raw);
 
+            const payload = getPayload(raw);
             let dates: any[] = [];
             if (Array.isArray(payload)) dates = payload;
             else if (Array.isArray(payload?.days)) dates = payload.days;
@@ -306,6 +319,7 @@ export default function ReservarPage() {
             setLoadingDays(false);
         }
     };
+
 
     // Refetch cuando cambia el mes visible del calendario
     const handleMonthChange = async (newMonth: Date) => {
@@ -322,18 +336,21 @@ export default function ReservarPage() {
         setLoadingSlots(true);
         try {
             const params = new URLSearchParams();
-            params.set("accountId", ACCOUNT_ID);
             params.set("service", serviceId);
             params.set("date", dateStr);
             if (professionalId && professionalId !== "any") params.set("professional", professionalId);
-
-            const res = await fetch(`${API_BASE}/day-slots?${params.toString()}`, { cache: "no-store" });
+            const slug =
+                SUBDOMAIN ??
+                (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+            const res = await fetch(`${API_BASE}/${slug}/day-slots?${params.toString()}`, { cache: "no-store" });
             const raw = await res.json().catch(() => ({}));
+
             if (raw?.message === "Reservas bloqueadas") {
                 setIsBlocked(true);
                 setBlockMsg("Reservas bloqueadas");
                 return;
             }
+
             const payload = getPayload(raw);
             const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? [];
             setTimeSlots(slots);
@@ -347,6 +364,7 @@ export default function ReservarPage() {
             setLoadingSlots(false);
         }
     };
+
 
     const isDateAvailable = (date: Date) => availableDays.includes(fmtDay(date));
 
@@ -375,7 +393,10 @@ export default function ReservarPage() {
 
         setSubmitting(true);
         try {
-            const res = await fetch(`${API_BASE}/create-booking/${ACCOUNT_ID}`, {
+            const slug =
+                SUBDOMAIN ??
+                (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+            const res = await fetch(`${API_BASE}/${slug}/create-booking`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -389,11 +410,13 @@ export default function ReservarPage() {
                     notes: notes?.trim() || undefined,
                 }),
             });
+
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
                 const msg = getPayload(err)?.message || err?.message || "No se pudo crear la reserva";
                 throw new Error(msg);
             }
+
             const bookingResponse: BookingResponse = await res.json();
             setBookingResult(bookingResponse);
             if (bookingResponse.booking.depositRequired) toast.success("¡Reserva creada! Necesitás pagar la seña para confirmar");
@@ -406,6 +429,7 @@ export default function ReservarPage() {
             setSubmitting(false);
         }
     };
+
 
     // ─── UIs de estado del gate ─────────────────────────────────────────────────
     if (gateLoading)
