@@ -8,6 +8,16 @@ import { useAuth } from '../auth/AuthProvider';
 
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 const ACCOUNTID = process.env.NEXT_PUBLIC_ACCOUNT_ID || '';
+const SUBDOMAIN = process.env.NEXT_PUBLIC_TENANT as string | undefined;
+
+function getSlug() {
+    if (SUBDOMAIN) return SUBDOMAIN;
+    if (typeof window !== 'undefined') {
+        const [sub] = window.location.hostname.split('.');
+        return sub || '';
+    }
+    return '';
+}
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -29,12 +39,17 @@ export default function RegisterPage() {
             setPending(true);
             setErr(null);
 
-            const r = await fetch(`${API}/bookingmodule/public/clients/register/${ACCOUNTID}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                // ⬇️ Importante: enviar phone y dni (requeridos por el modelo)
-                body: JSON.stringify({ name, email, phone, dni, password }),
-            });
+            const slug = getSlug();
+            if (!slug) throw new Error('No se detectó el tenant');
+
+            const r = await fetch(
+                `${API}/bookingmodule/public/${slug}/clients/register`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone, dni, password }),
+                }
+            );
 
             if (!r.ok) throw new Error((await r.text()) || 'No se pudo crear la cuenta');
 
@@ -43,7 +58,7 @@ export default function RegisterPage() {
             loginWithToken(token);
             router.replace('/perfil');
         } catch (e: any) {
-            setErr('Error, intenta nuevamente');
+            setErr(e.message || 'Error, intenta nuevamente');
         } finally {
             setPending(false);
         }
