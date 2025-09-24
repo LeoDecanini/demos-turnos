@@ -26,7 +26,7 @@ type Booking = {
     account: string;
     service:
     | { _id: string; name: string; description?: string; price?: number; currency?: string }
-    | string | any;
+    | string;
     professional?: { _id: string; name: string } | string | null;
     client?: { name?: string; email?: string; phone?: string; dni?: string };
     start: string;
@@ -364,7 +364,7 @@ export default async function BookingPublicPage({
                                 {!booking.depositRequired && (
                                     <div className="pt-10">
                                         {(() => {
-                                            const title = `${booking.service.name}${booking?.professional?.name ? ` — ${booking.professional.name}` : ""
+                                            const title = `${booking.service.name}${bookingResult?.booking?.professional?.name ? ` — ${booking.professional.name}` : ""
                                                 }`;
 
                                             const details = `Reserva: ${booking.name}`
