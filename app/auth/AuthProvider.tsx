@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-type User = { email: string; name?: string; _id: string } | null;
+type User = { email: string; name?: string; _id: string; phone: string; dni: string } | null;
 
 type AuthCtx = {
   user: User;
