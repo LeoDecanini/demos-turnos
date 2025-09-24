@@ -364,7 +364,7 @@ export default async function BookingPublicPage({
                                 {!booking.depositRequired && (
                                     <div className="pt-10">
                                         {(() => {
-                                            const title = `${booking.service.name}${bookingResult?.booking?.professional?.name ? ` — ${booking.professional.name}` : ""
+                                            const title = `${booking.service.name}${booking?.professional?.name ? ` — ${booking.professional.name}` : ""
                                                 }`;
 
                                             const details = `Reserva: ${booking.name}`
