@@ -26,7 +26,7 @@ type Booking = {
     account: string;
     service:
     | { _id: string; name: string; description?: string; price?: number; currency?: string }
-    | string;
+    | string | any;
     professional?: { _id: string; name: string } | string | null;
     client?: { name?: string; email?: string; phone?: string; dni?: string };
     start: string;
