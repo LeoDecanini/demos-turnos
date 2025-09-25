@@ -1,5 +1,5 @@
-// app/reservas/[id]/page.tsx
 "use client"
+
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +15,41 @@ import {
     Mail,
     Phone,
     IdCard,
-    Copy,
     ExternalLink,
-    ArrowLeft,
     UserPlus,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+// ----------------- Helpers Google Calendar -----------------
+const toGCalDateUTC = (d: Date) => {
+    // YYYYMMDDTHHMMSSZ
+    const iso = d.toISOString();
+    return iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+};
+
+function buildGoogleCalendarUrl(opts: {
+    title: string;
+    startISO: string;
+    endISO?: string;
+    details?: string;
+    location?: string;
+}) {
+    const start = new Date(opts.startISO);
+    const end = opts.endISO ? new Date(opts.endISO) : new Date(start.getTime() + 30 * 60 * 1000);
+    const dates = `${toGCalDateUTC(start)}/${toGCalDateUTC(end)}`;
+
+    const params = new URLSearchParams({
+        action: "TEMPLATE",
+        text: opts.title || "Reserva",
+        dates,
+    });
+
+    if (opts.details) params.set("details", opts.details);
+    if (opts.location) params.set("location", opts.location);
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+// -----------------------------------------------------------
 
 type Booking = {
     _id: string;
@@ -39,12 +69,11 @@ type Booking = {
     currency?: string;
     notes?: string;
 
-    // Depósito / seña
     depositRequired?: boolean;
     depositType?: string;
-    depositAmount?: number; // % o monto según depositType
-    depositCurrency?: string; // ISO
-    depositValueApplied?: number; // monto final aplicado (en dinero)
+    depositAmount?: number;
+    depositCurrency?: string;
+    depositValueApplied?: number;
     depositStatus?: "not_required" | "unpaid" | "pending" | "paid" | "refunded" | "expired" | string;
     depositDeadlineAt?: string | null;
     depositInitPoint?: string;
@@ -143,9 +172,10 @@ function InfoRow({
 export default async function BookingPublicPage({
     params,
 }: {
-    params: Promise<{ id: string }>;
+    params: Promise<{ id: string }>
 }) {
     const { id } = await params;
+
     if (!id) {
         return (
             <div className="min-h-screen grid place-items-center px-6 py-24">
@@ -233,6 +263,22 @@ export default async function BookingPublicPage({
 
     const isConfirmed = (booking.status || "").toLowerCase() === "confirmed";
 
+    // ---------- URL Google Calendar (solo lectura) ----------
+    const gcalUrl = buildGoogleCalendarUrl({
+        title: `${service?.name || "Reserva"}${professional?.name && professional.name !== "Indistinto" ? ` — ${professional.name}` : ""
+            }`,
+        startISO: booking.start,
+        endISO: booking.end, // fallback +30 min si no viene
+        details:
+            `Reserva #${booking._id}` +
+            (service?.name ? `\nServicio: ${service.name}` : "") +
+            (professional?.name ? `\nProfesional: ${professional.name}` : "") +
+            (booking.notes ? `\n\nNotas:\n${booking.notes}` : ""),
+        // Si tenés la dirección real, reemplazá aquí:
+        location: undefined, // o "Paraná 1315, PB 4, Recoleta, CABA"
+    });
+    // --------------------------------------------------------
+
     return (
         <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden pt-16">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.12),transparent_55%)]" />
@@ -247,7 +293,6 @@ export default async function BookingPublicPage({
                             <div className="flex justify-center">
                                 <CheckCircle2 className="w-16 h-16 text-emerald-500" />
                             </div>
-                            {/* ↓ achicado en móviles */}
                             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900">
                                 ¡Reserva confirmada!
                             </h1>
@@ -303,53 +348,17 @@ export default async function BookingPublicPage({
                                         <NotebookText className="w-6 h-6 text-amber-600" />
                                         Detalle de la reserva
                                     </CardTitle>
-
-                                    {/*<div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                                        <StatusBadge label={`Estado: ${booking.status || "—"}`} kind={statusTone} />
-                                        <StatusBadge
-                                            label={`Pago: ${booking.paymentStatus || "—"}`}
-                                            kind={payTone}
-                                        />
-                                        {booking.depositRequired ? (
-                                            <StatusBadge
-                                                label={`Seña: ${booking.depositStatus || "—"}`}
-                                                kind={depositTone}
-                                            />
-                                        ) : (
-                                            <StatusBadge label="Sin seña" kind="neutral" />
-                                        )}
-                                    </div>*/}
                                 </div>
                             </CardHeader>
 
                             <CardContent className="pt-4">
                                 <div className="divide-y divide-gray-100">
-                                    <InfoRow
-                                        icon={<CalendarIcon className="w-4 h-4 text-amber-600" />}
-                                        label="Fecha"
-                                        value={dateStr}
-                                    />
-                                    <InfoRow
-                                        icon={<Clock className="w-4 h-4 text-amber-600" />}
-                                        label="Horario"
-                                        value={`${startTime} — ${endTime}`}
-                                    />
-                                    <InfoRow
-                                        icon={<NotebookText className="w-4 h-4 text-amber-600" />}
-                                        label="Servicio"
-                                        value={service?.name}
-                                    />
-                                    <InfoRow
-                                        icon={<User className="w-4 h-4 text-amber-600" />}
-                                        label="Profesional"
-                                        value={professional?.name || "Indistinto"}
-                                    />
+                                    <InfoRow icon={<CalendarIcon className="w-4 h-4 text-amber-600" />} label="Fecha" value={dateStr} />
+                                    <InfoRow icon={<Clock className="w-4 h-4 text-amber-600" />} label="Horario" value={`${startTime} — ${endTime}`} />
+                                    <InfoRow icon={<NotebookText className="w-4 h-4 text-amber-600" />} label="Servicio" value={service?.name} />
+                                    <InfoRow icon={<User className="w-4 h-4 text-amber-600" />} label="Profesional" value={professional?.name || "Indistinto"} />
                                     {!!booking.price && (
-                                        <InfoRow
-                                            icon={<Wallet className="w-4 h-4 text-amber-600" />}
-                                            label="Precio"
-                                            value={fmtMoney(booking.price, booking.currency)}
-                                        />
+                                        <InfoRow icon={<Wallet className="w-4 h-4 text-amber-600" />} label="Precio" value={fmtMoney(booking.price, booking.currency)} />
                                     )}
                                 </div>
 
@@ -363,35 +372,16 @@ export default async function BookingPublicPage({
                                 {/* Botón Guardar en Google Calendar */}
                                 {!booking.depositRequired && (
                                     <div className="pt-10">
-                                        {(() => {
-                                            const title = `${booking.service.name}${bookingResult?.booking?.professional?.name ? ` — ${booking.professional.name}` : ""
-                                                }`;
-
-                                            const details = `Reserva: ${booking.name}`
-
-                                            const location = "Paraná 1315, PB 4, Recoleta, CABA";
-
-                                            const gcalUrl = buildGoogleCalendarUrl({
-                                                title,
-                                                startISO: booking.start,
-                                                endISO: booking.end, // si no viene, el helper usa +30 min
-                                                details,
-                                                location,
-                                            });
-
-                                            return (
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
-                                                    className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50"
-                                                >
-                                                    <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
-                                                        <CalendarIcon className="mr-2 h-5 w-5" />
-                                                        Guardar en Google Calendar
-                                                    </a>
-                                                </Button>
-                                            );
-                                        })()}
+                                        <Button
+                                            asChild
+                                            variant="outline"
+                                            className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50"
+                                        >
+                                            <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
+                                                <CalendarIcon className="mr-2 h-5 w-5" />
+                                                Guardar en Google Calendar
+                                            </a>
+                                        </Button>
                                     </div>
                                 )}
                             </CardContent>
@@ -407,26 +397,10 @@ export default async function BookingPublicPage({
                             </CardHeader>
                             <CardContent className="pt-0">
                                 <div className="divide-y divide-gray-100">
-                                    <InfoRow
-                                        icon={<User className="w-4 h-4 text-gray-500" />}
-                                        label="Nombre"
-                                        value={booking.client?.name}
-                                    />
-                                    <InfoRow
-                                        icon={<Mail className="w-4 h-4 text-gray-500" />}
-                                        label="Email"
-                                        value={booking.client?.email}
-                                    />
-                                    <InfoRow
-                                        icon={<Phone className="w-4 h-4 text-gray-500" />}
-                                        label="Teléfono"
-                                        value={booking.client?.phone}
-                                    />
-                                    <InfoRow
-                                        icon={<IdCard className="w-4 h-4 text-gray-500" />}
-                                        label="DNI"
-                                        value={booking.client?.dni}
-                                    />
+                                    <InfoRow icon={<User className="w-4 h-4 text-gray-500" />} label="Nombre" value={booking.client?.name} />
+                                    <InfoRow icon={<Mail className="w-4 h-4 text-gray-500" />} label="Email" value={booking.client?.email} />
+                                    <InfoRow icon={<Phone className="w-4 h-4 text-gray-500" />} label="Teléfono" value={booking.client?.phone} />
+                                    <InfoRow icon={<IdCard className="w-4 h-4 text-gray-500" />} label="DNI" value={booking.client?.dni} />
                                 </div>
                             </CardContent>
                         </Card>
@@ -435,7 +409,7 @@ export default async function BookingPublicPage({
                             <div className="pt-2">
                                 <Link
                                     href={`/verify-client?email=${encodeURIComponent(booking.client.email)}`}
-                                    className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl 
+                                    className="group relative inline-flex w/full sm:w-auto items-center justify-center gap-2 rounded-xl 
                  bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white 
                  shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
                  transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl 
@@ -451,7 +425,6 @@ export default async function BookingPublicPage({
                                 </p>
                             </div>
                         ) : null}
-
                     </div>
 
                     {/* Lateral */}
@@ -471,10 +444,6 @@ export default async function BookingPublicPage({
                                             <div className="text-sm text-gray-600">Importe a abonar</div>
                                             <div className="text-2xl font-bold text-gray-900">{señaAplicada}</div>
                                         </div>
-                                        <StatusBadge
-                                            label={booking.depositStatus === "pending" ? "Procesando" : "Pendiente"}
-                                            kind="warn"
-                                        />
                                     </div>
 
                                     {deadlineHuman && (
@@ -499,44 +468,6 @@ export default async function BookingPublicPage({
                                 </CardContent>
                             </Card>
                         )}
-
-                        {/* Utilitarios */}
-                        {/*  <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/90 md:backdrop-blur md:rounded-2xl">
-                            <CardHeader>
-                                <CardTitle className="text-base sm:text-lg">Acciones</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid gap-3">
-                                <form
-                                >
-                                    <button
-                                        formAction={async () => { }}
-                                        className="hidden"
-                                        aria-hidden
-                                    />
-                                </form>
-
-                                  <button
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                                    onClick={async () => {
-                                        "use client";
-                                        try {
-                                            await navigator.clipboard.writeText(booking._id);
-                                        } catch { }
-                                    }}
-                                >
-                                    <Copy className="w-4 h-4" />
-                                    Copiar ID de reserva
-                                </button>
-
-                                <Link
-                                    href="/"
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                                >
-                                    <ArrowLeft className="w-4 h-4" />
-                                    Volver al inicio
-                                </Link>
-                            </CardContent>
-                        </Card>*/}
                     </div>
                 </div>
             </section>
