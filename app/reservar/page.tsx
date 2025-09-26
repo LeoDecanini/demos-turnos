@@ -293,17 +293,8 @@ export default function ReservarPage() {
       const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
       setProfessionals(list);
 
-      if (list.length === 1) {
-        const only = list[0];
-        setSelectedProfessional(only._id);
-        resetCalendar();
-        await loadAvailableDays(serviceId, only._id, fmtMonth(visibleMonth));
-        // si venimos con paso sucursal, el siguiente es fecha (4); si no, igual fecha (4)
-        setStep(hasBranchStep ? 4 : 4);
-        scrollToTop();
-      } else {
-        setSelectedProfessional("any");
-      }
+      // 🔴 borramos el redirect automático al único profesional
+      setSelectedProfessional("any");
     } catch {
       setProfessionals([]);
       setSelectedProfessional("any");
@@ -312,6 +303,7 @@ export default function ReservarPage() {
       setLoadingProfessionals(false);
     }
   };
+
 
   // Profesionales solo por servicio (fallback si no hay branch API, casi no se usa en este flujo)
   const loadProfessionals = async (serviceId: string) => {
@@ -456,6 +448,7 @@ export default function ReservarPage() {
           timezone: tz,
           client: { name: fullNameStr, email, phone, dni },
           notes: notes?.trim() || undefined,
+          indistint: selectedProfessional === "any",
         }),
       });
 
@@ -621,9 +614,8 @@ export default function ReservarPage() {
                             key={b._id}
                             type="button"
                             onClick={() => setSelectedBranchId(b._id)}
-                            className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${
-                              selected ? "border-amber-500 bg-amber-50/60" : "border-gray-200 hover:border-amber-300 bg-white"
-                            }`}
+                            className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected ? "border-amber-500 bg-amber-50/60" : "border-gray-200 hover:border-amber-300 bg-white"
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <div className="font-semibold text-gray-900">
@@ -676,9 +668,8 @@ export default function ReservarPage() {
                 <div className="max-w-3xl mx-auto">
                   {professionals.length > 1 && (
                     <div
-                      className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${
-                        selectedProfessional === "any" ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50" : "border-gray-200 hover:border-amber-300 bg-white/80"
-                      }`}
+                      className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === "any" ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50" : "border-gray-200 hover:border-amber-300 bg-white/80"
+                        }`}
                       onClick={() => {
                         setSelectedProfessional("any");
                         setStep(3);
@@ -843,9 +834,8 @@ export default function ReservarPage() {
                           <Button
                             key={time}
                             variant={selectedTime === time ? "default" : "outline"}
-                            className={`h-12 transition-all duration-300 ${
-                              selectedTime === time ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0" : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                            }`}
+                            className={`h-12 transition-all duration-300 ${selectedTime === time ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0" : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                              }`}
                             onClick={() => setSelectedTime(time)}
                           >
                             {time}
@@ -905,9 +895,8 @@ export default function ReservarPage() {
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre completo</label>
                       <input
                         type="text"
-                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${
-                          errors.fullName ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                        }`}
+                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.fullName ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                          }`}
                         placeholder="Tu nombre y apellido"
                         value={fullName}
                         onChange={(e) => {
@@ -924,9 +913,8 @@ export default function ReservarPage() {
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                       <input
                         type="email"
-                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${
-                          errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                        }`}
+                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                          }`}
                         placeholder="tu@email.com"
                         value={email}
                         onChange={(e) => {
@@ -943,9 +931,8 @@ export default function ReservarPage() {
                       <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                       <input
                         type="tel"
-                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${
-                          errors.phone ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                        }`}
+                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.phone ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                          }`}
                         placeholder="+54 11 1234-5678"
                         value={phone}
                         onChange={(e) => {
@@ -962,9 +949,8 @@ export default function ReservarPage() {
                       <label className="block text-sm font-semibold text-gray-700 mb-2">DNI</label>
                       <input
                         type="text"
-                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${
-                          errors.dni ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
-                        }`}
+                        className={`${user ? "opacity-60" : ""} w-full px-4 py-1.5 !outline-none border-2 rounded-xl focus:ring-1.5 transition-all duration-300 ${errors.dni ? "border-red-500 focus:ring-red-500" : "border-gray-200 focus:ring-amber-500 focus:border-amber-500"
+                          }`}
                         placeholder="Tu DNI"
                         value={dni}
                         onChange={(e) => {
@@ -1025,15 +1011,13 @@ export default function ReservarPage() {
             <div className="text-center space-y-8">
               <div className="max-w-2xl mx-auto">
                 <div
-                  className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${
-                    bookingResult.booking.depositRequired ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200" : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
-                  }`}
+                  className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${bookingResult.booking.depositRequired ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200" : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
+                    }`}
                 >
                   <div className="flex items-center justify-center">
                     <div
-                      className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${
-                        bookingResult.booking.depositRequired ? "bg-gradient-to-r from-amber-500 to-yellow-600" : "bg-gradient-to-r from-green-500 to-emerald-600"
-                      }`}
+                      className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${bookingResult.booking.depositRequired ? "bg-gradient-to-r from-amber-500 to-yellow-600" : "bg-gradient-to-r from-green-500 to-emerald-600"
+                        }`}
                     >
                       {bookingResult.booking.depositRequired ? <CreditCard className="h-10 w-10 text-white" /> : <CheckCircle className="h-10 w-10 text-white" />}
                     </div>
@@ -1041,9 +1025,8 @@ export default function ReservarPage() {
 
                   <div className="space-y-2">
                     <div
-                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${
-                        bookingResult.booking.depositRequired ? "bg-amber-100 text-amber-900 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-emerald-200"
-                      }`}
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${bookingResult.booking.depositRequired ? "bg-amber-100 text-amber-900 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-emerald-200"
+                        }`}
                     >
                       {bookingResult.booking.depositRequired ? "Acción requerida" : "Listo"}
                     </div>
