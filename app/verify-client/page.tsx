@@ -1,7 +1,7 @@
 // app/verify-client/page.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
@@ -16,21 +16,41 @@ type PublicClientInfo = {
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 const SUBDOMAIN = process.env.NEXT_PUBLIC_TENANT as string | undefined;
 
-function getSlug() {
+/** slug opcional para ambientes con subdominio; en localhost no lo usamos */
+function getSlug(): string | null {
   if (SUBDOMAIN) return SUBDOMAIN;
   if (typeof window !== 'undefined') {
-    const [sub] = window.location.hostname.split('.');
-    return sub || '';
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') return null;
+    const [sub] = host.split('.');
+    return sub || null;
   }
-  return '';
+  return null;
+}
+function publicBase(): string {
+  const slug = getSlug();
+  return `${API}/bookingmodule/public${slug ? `/${slug}` : ''}`;
 }
 
 export default function VerifyClientPage() {
-  const search = useSearchParams();
+  const search = useSearchParams(); // lo dejo para leer ?code, pero NO confío en él para el email
   const router = useRouter();
 
-  const email = search.get('email') ? decodeURIComponent(search.get('email')!) : '';
   const codeFromUrl = search.get('code') || '';
+
+  // 1) Email desde el location real (evita timing de useSearchParams)
+  const [emailState, setEmailState] = useState<string>('');
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const raw = sp.get('email');
+      const e = raw ? decodeURIComponent(raw) : '';
+      console.log('[verify-client] email from URLSearchParams(window):', e);
+      setEmailState(e);
+    } catch {
+      setEmailState('');
+    }
+  }, []);
 
   const [loading, setLoading] = useState(true);
   const [info, setInfo] = useState<PublicClientInfo | null>(null);
@@ -43,63 +63,82 @@ export default function VerifyClientPage() {
 
   const matchesCode = info?.matchesCode === true;
 
-  const CODE_FLAG_KEY = useMemo(() => (email ? `code_requested:${email}` : ''), [email]);
+  const CODE_FLAG_KEY = useMemo(
+    () => (emailState ? `code_requested:${emailState}` : ''),
+    [emailState]
+  );
+  const kickoffSentRef = useRef(false);
 
-  const requestCode = async () => {
-    if (!email) return;
+  /** Envía código y devuelve true si fue OK */
+  const requestCode = async (): Promise<boolean> => {
+    if (!emailState) return false;
     try {
+      console.log('[verify-client] requestCode() POST start-signup for', emailState);
       setSendingCode(true);
       setError(null);
-      const slug = getSlug();
-      if (!slug) throw new Error('No se detectó el tenant');
-
-      // ✅ nueva ruta con slug
       const res = await fetch(
-        `${API}/bookingmodule/public/${slug}/clients/${encodeURIComponent(email)}/start-signup`,
+        `${publicBase()}/clients/${encodeURIComponent(emailState)}/start-signup`,
         { method: 'POST' }
       );
-      if (!res.ok) throw new Error((await res.text()) || 'No se pudo generar el código');
+      if (!res.ok) {
+        const msg = (await res.text()) || 'No se pudo generar el código';
+        throw new Error(msg);
+      }
+      console.log('[verify-client] requestCode() OK');
+      return true;
     } catch (e: any) {
-      setError(e.message || 'Error');
+      console.error('[verify-client] requestCode() ERROR', e);
+      setError(e.message || 'Error al enviar el código');
+      return false;
     } finally {
       setSendingCode(false);
     }
   };
 
-  // Auto–request una sola vez por email
-  const requestCodeOnce = async () => {
-    if (!email || !CODE_FLAG_KEY) return;
-    if (typeof window !== 'undefined' && localStorage.getItem(CODE_FLAG_KEY)) return;
-    await requestCode();
-    if (typeof window !== 'undefined') localStorage.setItem(CODE_FLAG_KEY, '1');
-  };
+  /** 2) KICKOFF TEMPRANO: en cuanto tengamos emailState (y no haya ?code), mandamos */
+  useEffect(() => {
+    const kickoff = async () => {
+      if (!emailState) return;
+      if (codeFromUrl) return; // si ya viene el código, no mandamos
+      if (kickoffSentRef.current) return;
+      kickoffSentRef.current = true;
 
+      const already =
+        typeof window !== 'undefined' && CODE_FLAG_KEY
+          ? localStorage.getItem(CODE_FLAG_KEY)
+          : null;
+
+      if (!already) {
+        const ok = await requestCode();
+        if (ok && typeof window !== 'undefined' && CODE_FLAG_KEY) {
+          localStorage.setItem(CODE_FLAG_KEY, '1');
+        }
+      } else {
+        console.log('[verify-client] kickoff skipped (localStorage flag present)');
+      }
+    };
+    void kickoff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailState, codeFromUrl, CODE_FLAG_KEY]);
+
+  /** 3) FETCH de info (independiente del kickoff) */
   useEffect(() => {
     const run = async () => {
-      if (!email) {
+      if (!emailState) {
         setError('Falta el email en la URL');
         setLoading(false);
         return;
       }
       try {
         setError(null);
-        const slug = getSlug();
-        if (!slug) throw new Error('No se detectó el tenant');
-
-        // ✅ nueva ruta con slug (y ?code opcional)
-        const url = `${API}/bookingmodule/public/${slug}/clients/${encodeURIComponent(email)}${
+        const url = `${publicBase()}/clients/${encodeURIComponent(emailState)}${
           codeFromUrl ? `?code=${encodeURIComponent(codeFromUrl)}` : ''
         }`;
-
+        console.log('[verify-client] fetching client info:', url);
         const res = await fetch(url, { cache: 'no-store' });
-        if (!res.ok) throw new Error('No pudimos obtener el cliente');
-
+        if (!res.ok) throw new Error((await res.text()) || 'No pudimos obtener el cliente');
         const data = (await res.json()) as PublicClientInfo;
         setInfo(data);
-
-        if (!codeFromUrl && !data.hasUser) {
-          await requestCodeOnce();
-        }
       } catch (e: any) {
         setError(e.message || 'Error');
       } finally {
@@ -107,26 +146,21 @@ export default function VerifyClientPage() {
       }
     };
     void run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [email, codeFromUrl]);
+  }, [emailState, codeFromUrl]);
 
-  const canSubmit = useMemo(() => {
-    if (!info || info.hasUser) return false;
-    if (!password || password.length < 6) return false;
-    if (!matchesCode) return /^\d{8}$/.test(code);
-    return true;
-  }, [password, code, matchesCode, info]);
+  const canSubmit =
+    !!info &&
+    !info.hasUser &&
+    !!password &&
+    password.length >= 6 &&
+    (matchesCode || /^\d{8}$/.test(code));
 
   const submit = async () => {
     try {
       setSubmitting(true);
       setError(null);
-      const slug = getSlug();
-      if (!slug) throw new Error('No se detectó el tenant');
-
-      // ✅ nueva ruta con slug
       const res = await fetch(
-        `${API}/bookingmodule/public/${slug}/clients/${encodeURIComponent(email)}/set-password`,
+        `${publicBase()}/clients/${encodeURIComponent(emailState)}/set-password`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -273,8 +307,8 @@ export default function VerifyClientPage() {
                 <div className="flex items-center justify-center mt-3">
                   <Button
                     onClick={async () => {
-                      await requestCode();
-                      if (CODE_FLAG_KEY) localStorage.setItem(CODE_FLAG_KEY, '1');
+                      const ok = await requestCode();
+                      if (ok && CODE_FLAG_KEY) localStorage.setItem(CODE_FLAG_KEY, '1');
                     }}
                     disabled={sendingCode}
                     variant="link"
