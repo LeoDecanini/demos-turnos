@@ -16,7 +16,6 @@ type PublicClientInfo = {
 const API = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 const SUBDOMAIN = process.env.NEXT_PUBLIC_TENANT as string | undefined;
 
-/** slug opcional para ambientes con subdominio; en localhost no lo usamos */
 function getSlug(): string | null {
   if (SUBDOMAIN) return SUBDOMAIN;
   if (typeof window !== 'undefined') {
@@ -33,24 +32,15 @@ function publicBase(): string {
 }
 
 export default function VerifyClientPage() {
-  const search = useSearchParams(); // lo dejo para leer ?code, pero NO confío en él para el email
+  const search = useSearchParams();
   const router = useRouter();
 
+  // Para el FETCH de info sigo usando useSearchParams (sirve bien)
+  const emailFromUrl = useMemo(() => {
+    const raw = search.get('email');
+    return raw ? decodeURIComponent(raw) : '';
+  }, [search]);
   const codeFromUrl = search.get('code') || '';
-
-  // 1) Email desde el location real (evita timing de useSearchParams)
-  const [emailState, setEmailState] = useState<string>('');
-  useEffect(() => {
-    try {
-      const sp = new URLSearchParams(window.location.search);
-      const raw = sp.get('email');
-      const e = raw ? decodeURIComponent(raw) : '';
-      console.log('[verify-client] email from URLSearchParams(window):', e);
-      setEmailState(e);
-    } catch {
-      setEmailState('');
-    }
-  }, []);
 
   const [loading, setLoading] = useState(true);
   const [info, setInfo] = useState<PublicClientInfo | null>(null);
@@ -63,31 +53,25 @@ export default function VerifyClientPage() {
 
   const matchesCode = info?.matchesCode === true;
 
-  const CODE_FLAG_KEY = useMemo(
-    () => (emailState ? `code_requested:${emailState}` : ''),
-    [emailState]
-  );
-  const kickoffSentRef = useRef(false);
-
-  /** Envía código y devuelve true si fue OK */
-  const requestCode = async (): Promise<boolean> => {
-    if (!emailState) return false;
+  // === requestCode genérico ===
+  const requestCodeFor = async (email: string): Promise<boolean> => {
+    if (!email) return false;
     try {
-      console.log('[verify-client] requestCode() POST start-signup for', emailState);
+      console.log('[verify-client] requestCodeFor ->', email);
       setSendingCode(true);
       setError(null);
       const res = await fetch(
-        `${publicBase()}/clients/${encodeURIComponent(emailState)}/start-signup`,
+        `${publicBase()}/clients/${encodeURIComponent(email)}/start-signup`,
         { method: 'POST' }
       );
       if (!res.ok) {
         const msg = (await res.text()) || 'No se pudo generar el código';
         throw new Error(msg);
       }
-      console.log('[verify-client] requestCode() OK');
+      console.log('[verify-client] requestCodeFor OK');
       return true;
     } catch (e: any) {
-      console.error('[verify-client] requestCode() ERROR', e);
+      console.error('[verify-client] requestCodeFor ERROR', e);
       setError(e.message || 'Error al enviar el código');
       return false;
     } finally {
@@ -95,45 +79,49 @@ export default function VerifyClientPage() {
     }
   };
 
-  /** 2) KICKOFF TEMPRANO: en cuanto tengamos emailState (y no haya ?code), mandamos */
+  // === KICKOFF DURO: apenas monta, leo window.location.search y disparo si hay email y NO hay code ===
+  // Uso sessionStorage para evitar dobles disparos (incluido Strict Mode).
+  const kickoffRanRef = useRef(false);
   useEffect(() => {
-    const kickoff = async () => {
-      if (!emailState) return;
-      if (codeFromUrl) return; // si ya viene el código, no mandamos
-      if (kickoffSentRef.current) return;
-      kickoffSentRef.current = true;
+    if (kickoffRanRef.current) return;
+    kickoffRanRef.current = true;
 
-      const already =
-        typeof window !== 'undefined' && CODE_FLAG_KEY
-          ? localStorage.getItem(CODE_FLAG_KEY)
-          : null;
+    try {
+      if (typeof window === 'undefined') return;
+      const sp = new URLSearchParams(window.location.search);
+      const rawEmail = sp.get('email');
+      const email = rawEmail ? decodeURIComponent(rawEmail) : '';
+      const code = sp.get('code') || '';
 
-      if (!already) {
-        const ok = await requestCode();
-        if (ok && typeof window !== 'undefined' && CODE_FLAG_KEY) {
-          localStorage.setItem(CODE_FLAG_KEY, '1');
-        }
+      console.log('[verify-client] kickoff mount email:', email, 'code:', code);
+
+      if (!email) return;
+      if (code) return; // si ya viene código, no mandamos
+
+      const key = `vc:kick:${email}`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        void requestCodeFor(email);
       } else {
-        console.log('[verify-client] kickoff skipped (localStorage flag present)');
+        console.log('[verify-client] kickoff skip (sessionStorage flag)');
       }
-    };
-    void kickoff();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emailState, codeFromUrl, CODE_FLAG_KEY]);
+    } catch (e) {
+      console.warn('[verify-client] kickoff parse error', e);
+    }
+  }, []); // <- SIN dependencias, corre una vez por montaje (estrictamente controlado por ref+sessionStorage)
 
-  /** 3) FETCH de info (independiente del kickoff) */
+  // === FETCH de info (independiente del kickoff) ===
   useEffect(() => {
     const run = async () => {
-      if (!emailState) {
+      if (!emailFromUrl) {
         setError('Falta el email en la URL');
         setLoading(false);
         return;
       }
       try {
         setError(null);
-        const url = `${publicBase()}/clients/${encodeURIComponent(emailState)}${
-          codeFromUrl ? `?code=${encodeURIComponent(codeFromUrl)}` : ''
-        }`;
+        const url = `${publicBase()}/clients/${encodeURIComponent(emailFromUrl)}${codeFromUrl ? `?code=${encodeURIComponent(codeFromUrl)}` : ''
+          }`;
         console.log('[verify-client] fetching client info:', url);
         const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) throw new Error((await res.text()) || 'No pudimos obtener el cliente');
@@ -146,7 +134,7 @@ export default function VerifyClientPage() {
       }
     };
     void run();
-  }, [emailState, codeFromUrl]);
+  }, [emailFromUrl, codeFromUrl]);
 
   const canSubmit =
     !!info &&
@@ -160,7 +148,7 @@ export default function VerifyClientPage() {
       setSubmitting(true);
       setError(null);
       const res = await fetch(
-        `${publicBase()}/clients/${encodeURIComponent(emailState)}/set-password`,
+        `${publicBase()}/clients/${encodeURIComponent(emailFromUrl)}/set-password`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -179,6 +167,7 @@ export default function VerifyClientPage() {
     }
   };
 
+  // ================= UI =================
   if (loading) {
     return (
       <main className="pt-20">
@@ -307,8 +296,8 @@ export default function VerifyClientPage() {
                 <div className="flex items-center justify-center mt-3">
                   <Button
                     onClick={async () => {
-                      const ok = await requestCode();
-                      if (ok && CODE_FLAG_KEY) localStorage.setItem(CODE_FLAG_KEY, '1');
+                      const ok = await requestCodeFor(emailFromUrl);
+                      if (ok) sessionStorage.setItem(`vc:kick:${emailFromUrl}`, '1');
                     }}
                     disabled={sendingCode}
                     variant="link"
