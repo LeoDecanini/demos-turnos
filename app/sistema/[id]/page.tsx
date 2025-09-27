@@ -80,8 +80,11 @@ type Booking = {
     depositSandboxInitPoint?: string;
 };
 
-const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public/booking`;
-const ACCOUNT_ID = process.env.NEXT_PUBLIC_ACCOUNT_ID as string;
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL!;
+const SUBDOMAIN = process.env.NEXT_PUBLIC_TENANT as string; // ej: "mgestetica"
+
+// /bookingmodule/public/:slug/booking
+const API_BASE = `${BACKEND}/bookingmodule/public/${SUBDOMAIN}/booking`;
 
 // Helpers
 const getPayload = (raw: any) => raw?.data ?? raw;
@@ -194,7 +197,8 @@ export default async function BookingPublicPage({
         );
     }
 
-    const url = `${API_BASE}/${id}?accountId=${ACCOUNT_ID}`;
+
+    const url = `${API_BASE}/${id}`;
     let booking: Booking | null = null;
 
     try {
