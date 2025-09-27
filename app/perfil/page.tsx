@@ -216,6 +216,7 @@ function ReservasView() {
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [rescheduling, setRescheduling] = useState(false);
   const [rescheduleErr, setRescheduleErr] = useState<string | null>(null);
+  const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
 
   const { user, token } = useAuth();
 
@@ -298,10 +299,13 @@ function ReservasView() {
   };
 
   // --- Días disponibles (slug) ---
-  const loadAvailableDays = async (serviceId: string, professionalId: string | undefined) => {
+  const loadAvailableDays = async (
+    serviceId: string,
+    professionalId: string | undefined,
+    monthStr?: string
+  ) => {
     if (!serviceId || !slug) return;
-    const currentDate = new Date();
-    const month = getCurrentMonth(currentDate);
+    const month = monthStr ?? getCurrentMonth(new Date());
     setLoadingDays(true);
     try {
       const params = new URLSearchParams();
@@ -395,17 +399,17 @@ function ReservasView() {
     setStep(2);
     setReschedulingId(String(booking._id));
     setSelectedService(String(booking?.service?._id || ''));
-
     setSelectedProfessional('any');
     setSelectedDate(undefined);
     setAvailableDays([]);
     setTimeSlots([]);
     setSelectedTime('');
-
+    setVisibleMonth(new Date());
     if (booking?.service?._id) {
       void loadProfessionals(String(booking.service._id), { autoadvance: true });
     }
   };
+
   const closeReschedule = () => {
     setRescheduling(false);
     setRescheduleErr(null);
@@ -695,11 +699,10 @@ function ReservasView() {
                 <div className="max-w-3xl mx-auto">
                   {professionals.length !== 1 && (
                     <div
-                      className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${
-                        selectedProfessional === 'any'
-                          ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50'
-                          : 'border-gray-200 hover:border-amber-300 bg-white/80'
-                      }`}
+                      className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === 'any'
+                        ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50'
+                        : 'border-gray-200 hover:border-amber-300 bg-white/80'
+                        }`}
                       onClick={() => {
                         setSelectedProfessional('any');
                         setStep(3);
@@ -708,7 +711,7 @@ function ReservasView() {
                         setTimeSlots([]);
                         setSelectedTime('');
                         setLoadingDays(true);
-                        void loadAvailableDays(selectedService, undefined);
+                        void loadAvailableDays(selectedService, undefined, getCurrentMonth(visibleMonth));
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -732,7 +735,7 @@ function ReservasView() {
                       setTimeSlots([]);
                       setSelectedTime('');
                       setLoadingDays(true);
-                      void loadAvailableDays(selectedService, id);
+                      void loadAvailableDays(selectedService, id, getCurrentMonth(visibleMonth));
                     }}
                     backendBaseUrl={process.env.NEXT_PUBLIC_CDN_URL || ''}
                   />
@@ -752,7 +755,7 @@ function ReservasView() {
                     setTimeSlots([]);
                     setSelectedTime('');
                     setLoadingDays(true);
-                    void loadAvailableDays(selectedService, selectedProfessional);
+                    void loadAvailableDays(selectedService, selectedProfessional, getCurrentMonth(visibleMonth));
                   }}
                 >
                   Continuar
@@ -783,6 +786,16 @@ function ReservasView() {
                       {!loadingDays ? (
                         <CalendarComponent
                           mode="single"
+                          month={visibleMonth}
+                          onMonthChange={(m) => {
+                            setVisibleMonth(m);
+                            setAvailableDays([]);
+                            setSelectedDate(undefined);
+                            setTimeSlots([]);
+                            setSelectedTime('');
+                            setLoadingDays(true);
+                            void loadAvailableDays(selectedService, selectedProfessional, getCurrentMonth(m));
+                          }}
                           selected={selectedDate}
                           onSelect={async (date) => {
                             setSelectedDate(date);
@@ -806,7 +819,7 @@ function ReservasView() {
                             return false;
                           }}
                           locale={es}
-                          className="rounded-xl border-2 border-amber-200 max-w-none w-full"
+                          className="rounded-xl border-2 border-amber-200 max-w-none w/full"
                           classNames={{
                             months: 'flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 flex-1',
                             month: 'space-y-4 w-full flex flex-col',
@@ -853,11 +866,10 @@ function ReservasView() {
                           <Button
                             key={time}
                             variant={selectedTime === time ? 'default' : 'outline'}
-                            className={`h-12 transition-all duration-300 ${
-                              selectedTime === time
-                                ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0'
-                                : 'border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50'
-                            }`}
+                            className={`h-12 transition-all duration-300 ${selectedTime === time
+                              ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0'
+                              : 'border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50'
+                              }`}
                             onClick={() => setSelectedTime(time)}
                           >
                             {time}
