@@ -284,8 +284,8 @@ export default async function BookingPublicPage({
     // --------------------------------------------------------
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden pt-16">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.12),transparent_55%)]" />
+        <main className="min-h-screen  relative overflow-hidden pt-16">
+            {/* <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.12),transparent_55%)]" /> */}
 
             {/* Header / Hero */}
             <section className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

@@ -125,6 +125,16 @@ export default function ReservarPage() {
     active: boolean;
     location?: { addressLine?: string; city?: string; state?: string; postalCode?: string; country?: string };
   };
+
+  const disableAllDays = !loadingDays && availableDays.length === 0;
+  const isPast = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d < today;
+  };
+
   const formatBranchAddress = (b?: Branch) =>
     b ? [b.location?.addressLine, b.location?.city, b.location?.state, b.location?.postalCode, b.location?.country].filter(Boolean).join(", ") : "";
 
@@ -776,14 +786,16 @@ export default function ReservarPage() {
                               setSelectedTime("");
                             }
                           }}
+                          // 🔴 acá el cambio:
                           disabled={(date) => {
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const d = new Date(date);
-                            d.setHours(0, 0, 0, 0);
-                            if (d < today) return true;
-                            if (availableDays.length > 0) return !availableDays.includes(fmtDay(date));
-                            return false;
+                            // mientras carga → todo deshabilitado (evita clicks “fantasma”)
+                            if (loadingDays) return true;
+                            // si no hay días disponibles → todo deshabilitado
+                            if (disableAllDays) return true;
+                            // no permitir pasado
+                            if (isPast(date)) return true;
+                            // si hay lista, solo permitir los que llegaron del backend
+                            return !availableDays.includes(fmtDay(date));
                           }}
                           locale={es}
                           className="rounded-xl border-2 border-amber-200 max-w-none w-full"
