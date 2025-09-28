@@ -1,13 +1,24 @@
-// /reserva/page.tsx (App Router) — SERVER COMPONENT (sin "use client")
+// app/reserva/page.tsx (App Router) — SERVER COMPONENT
 import { redirect } from "next/navigation"
 
-export default function ReservaLanding({
-  searchParams,
-}: {
-  searchParams: { external_reference?: string }
+type SearchParams =
+    | Record<string, string | string[] | undefined>
+    | undefined
+
+export default async function ReservaLanding({
+                                               searchParams,
+                                             }: {
+  // Next.js 15: searchParams es Promise
+  searchParams: Promise<SearchParams>
 }) {
-  const ext = searchParams?.external_reference
-  if (ext) {
+  const sp = (await searchParams) ?? {}
+
+  // puede venir string o string[]; tomamos el primero si es array
+  const extRaw = sp.external_reference
+  const ext =
+      Array.isArray(extRaw) ? extRaw[0] : extRaw
+
+  if (ext && typeof ext === "string") {
     // external_reference = "b:<bookingId>:a:<accountId>"
     const parts = ext.split(":")
     const bIdx = parts.indexOf("b")
@@ -16,6 +27,7 @@ export default function ReservaLanding({
       redirect(`/reserva/${bookingId}`)
     }
   }
-  // podrías renderizar un loader mínimo si quieres
+
+  // Si no hay ext o bookingId, podés renderizar algo mínimo
   return null
 }
