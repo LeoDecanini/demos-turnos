@@ -1,9 +1,9 @@
 "use client"
 
-import {useRouter} from "next/navigation"
-import {Button} from "@/components/ui/button"
-import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card"
-import {Badge} from "@/components/ui/badge"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
     CalendarCheck,
     Star,
@@ -30,7 +30,7 @@ export default function Home() {
         router.push(path)
         // Force scroll to top immediately
         setTimeout(() => {
-            window.scrollTo({top: 0, behavior: "auto"})
+            window.scrollTo({ top: 0, behavior: "auto" })
             document.documentElement.scrollTop = 0
             document.body.scrollTop = 0
         }, 0)
@@ -39,7 +39,7 @@ export default function Home() {
     const handleSectionScroll = (sectionId: string) => {
         const element = document.getElementById(sectionId)
         if (element) {
-            element.scrollIntoView({behavior: "smooth"})
+            element.scrollIntoView({ behavior: "smooth" })
         }
     }
 
@@ -65,15 +65,15 @@ export default function Home() {
                             className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 md:p-8 border border-white/10 max-w-2xl">
                             <Badge
                                 className="mb-3 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 hover:from-amber-200 hover:to-yellow-200 border-0 px-4 py-2 text-sm font-medium shadow-lg transition-colors">
-                                <Sparkles className="w-4 h-4 mr-2"/>
+                                <Sparkles className="w-4 h-4 mr-2" />
                                 Centro de Medicina Estética
                             </Badge>
                             <h1 className="text-2xl md:text-5xl font-bold text-white mb-3 leading-tight">
                                 Belleza y Bienestar{" "}
                                 <span
                                     className="bg-gradient-to-r from-amber-300 to-yellow-400 bg-clip-text text-transparent">
-                  Profesional
-                </span>
+                                    Profesional
+                                </span>
                             </h1>
                             <p className="text-lg md:text-xl text-gray-100 mb-6 leading-relaxed-moveup font-light">
                                 Descubre nuestros tratamientos personalizados para realzar tu belleza natural con los
@@ -86,7 +86,7 @@ export default function Home() {
                                         size="lg"
                                         className="h-14 px-8 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
                                     >
-                                        <CalendarCheck className="mr-3 h-6 w-6"/>
+                                        <CalendarCheck className="mr-3 h-6 w-6" />
                                         Reservar Cita
                                     </Button>
                                 </Link>
@@ -97,7 +97,7 @@ export default function Home() {
                                         className="h-14 px-8 text-white hover:text-amber-900 border-2 border-white/30 hover:bg-white/90 bg-white/10 backdrop-blur-sm font-semibold transition-all duration-300 hover:scale-105"
                                     >
                                         Ver Servicios
-                                        <ChevronRight className="ml-3 h-6 w-6"/>
+                                        <ChevronRight className="ml-3 h-6 w-6" />
                                     </Button>
                                 </Link>
                             </div>
@@ -106,7 +106,7 @@ export default function Home() {
                 </section>
 
                 <section id="servicios"
-                         className="py-24 relative overflow-hidden">
+                    className="py-24 relative overflow-hidden">
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-8">
                             <ReusableBadge
@@ -127,91 +127,171 @@ export default function Home() {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                        <div className="grid grid-cols-1 gap-10">
+                            {/* Card grande (Faciales) */}
                             {[
                                 {
                                     title: "Tratamientos Faciales",
-                                    description: "Rejuvenecimiento, hidratación y limpieza profunda para tu rostro",
                                     image:
                                         "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?q=80&w=2070&auto=format&fit=crop",
                                     popular: true,
-                                    treatments: ["Limpieza Facial Profunda", "Peeling Químico", "Hidrafacial"],
-                                },
-                                {
-                                    title: "Tratamientos Corporales",
-                                    description: "Moldea tu figura y mejora la apariencia de tu piel",
-                                    image:
-                                        "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?q=80&w=2044&auto=format&fit=crop",
-                                    popular: false,
-                                    treatments: ["Criolipólisis", "Radiofrecuencia", "Cavitación"],
-                                },
-                                {
-                                    title: "Medicina Estética",
-                                    description: "Procedimientos médicos para rejuvenecer y embellecer",
-                                    image:
-                                        "https://images.unsplash.com/photo-1598970434795-0c54fe7c0648?q=80&w=2070&auto=format&fit=crop",
-                                    popular: false,
-                                    treatments: ["Botox", "Ácido Hialurónico", "Hilos Tensores"],
+                                    groups: [
+                                        {
+                                            label: "Inyectables",
+                                            items: [
+                                                "💉 Toxina Botulínica (BOTOX – arrugas, bruxismo, hiperhidrosis)",
+                                                "💉 Ácido Hialurónico (Juvederm Allergan)",
+                                                "💉 Bioestimuladores (Radiesse, Sculptra, Harmonyca, Profhilo…)",
+                                            ],
+                                        },
+                                        {
+                                            label: "Hidratación & Luminosidad",
+                                            items: [
+                                                "✨ Hidratación Profunda / Skinbooster",
+                                                "✨ Mesoterapia Francesa NCTF",
+                                                "✨ Viscoderm",
+                                                "✨ Profhilo / Profhilo Structura",
+                                            ],
+                                        },
+                                        {
+                                            label: "Regenerativos",
+                                            items: [
+                                                "🌱 PRP Facial",
+                                                "🌱 Exosomas",
+                                                "🌱 Dermapen con Mesoterapia",
+                                                "🌱 Mesoterapia Facial",
+                                            ],
+                                        },
+                                    ],
                                 },
                             ].map((service, i) => (
                                 <Card
                                     key={i}
-                                    className="group overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/80 backdrop-blur-sm pt-0"
+                                    className="group overflow-hidden py-0 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/80 backdrop-blur-sm pt-0"
                                 >
                                     <div className="relative h-72 overflow-hidden">
                                         <img
-                                            src={service.image || "/placeholder.svg"}
+                                            src={service.image}
                                             alt={service.title}
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                         />
-                                        <div
-                                            className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                         {service.popular && (
                                             <div className="absolute top-4 right-4">
-                                                <Badge
-                                                    className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-0 px-4 py-2 font-semibold shadow-lg">
-                                                    <Star className="w-4 h-4 mr-1 fill-current"/>
+                                                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-0 px-4 py-2 font-semibold shadow-lg">
+                                                    <Star className="w-4 h-4 mr-1 fill-current" />
                                                     Popular
                                                 </Badge>
                                             </div>
                                         )}
                                     </div>
-                                    <CardHeader className="pb-4">
-                                        <CardTitle
-                                            className="text-2xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
+
+                                    <CardHeader className="pb-0">
+                                        <CardTitle className="text-2xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
                                             {service.title}
                                         </CardTitle>
-                                        <CardDescription className="text-gray-600 text-base leading-relaxed-moveup">
-                                            {service.description}
-                                        </CardDescription>
                                     </CardHeader>
-                                    <CardContent className="pb-6">
-                                        <div className="space-y-3">
-                                            {service.treatments.map((treatment, j) => (
-                                                <div key={j} className="flex items-center group/item">
-                                                    <div
-                                                        className="mr-3 h-2 w-2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-600 group-hover/item:scale-125 transition-transform duration-300"></div>
-                                                    <span
-                                                        className="text-gray-700 group-hover/item:text-amber-700 transition-colors duration-300 font-medium">
-                            {treatment}
-                          </span>
+
+                                    <CardContent className="pb-6 space-y-5 pt-0">
+                                        {service.groups.map((g, k) => (
+                                            <div
+                                                key={k}
+                                                className="rounded-2xl ring-1 ring-amber-100/60 bg-amber-50/40 px-4 py-3"
+                                            >
+                                                <div className="text-sm font-semibold tracking-wide text-amber-700 mb-2">
+                                                    {g.label}
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+                                                    {g.items.map((it, idx) => (
+                                                        <li
+                                                            key={idx}
+                                                            className="text-gray-700 leading-relaxed-moveup font-medium"
+                                                        >
+                                                            {it}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ))}
                                     </CardContent>
-                                    {/*<CardFooter>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold py-3"
-                                            onClick={() => handleNavigation("/reservar")}
-                                        >
-                                            Ver Detalles
-                                            <ChevronRight className="ml-2 h-5 w-5"/>
-                                        </Button>
-                                    </CardFooter>*/}
                                 </Card>
                             ))}
+
+                            {/* Grid con los 2 cards chicos */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                {[
+                                    {
+                                        title: "Tratamientos Corporales",
+                                        image:
+                                            "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?q=80&w=2044&auto=format&fit=crop",
+                                        popular: false,
+                                        groups: [
+                                            { label: "Modelado & Reducción", items: ["🏷️ Fosfatidilcolina (adiposidad localizada)"] },
+                                            { label: "Anticelulítico", items: ["🏷️ Alidya"] },
+                                            {
+                                                label: "Reafirmación & Calidad de piel",
+                                                items: ["🏷️ Mesoterapia Corporal (celulitis, flacidez, calidad de piel)"],
+                                            },
+                                        ],
+                                    },
+                                    {
+                                        title: "Tratamientos Capilares",
+                                        image:
+                                            "https://images.unsplash.com/photo-1598970434795-0c54fe7c0648?q=80&w=2070&auto=format&fit=crop",
+                                        popular: false,
+                                        groups: [
+                                            { label: "Regenerativos", items: ["🌱 PRP Capilar"] },
+                                            { label: "Fármacos", items: ["🌱 Mesoterapia Capilar (minoxidil, finasteride, biotina, etc.)"] },
+                                        ],
+                                    },
+                                ].map((service, i) => (
+                                    <Card
+                                        key={i}
+                                        className="group overflow-hidden py-0 border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 bg-white/80 backdrop-blur-sm pt-0"
+                                    >
+                                        <div className="relative h-72 overflow-hidden">
+                                            <img
+                                                src={service.image}
+                                                alt={service.title}
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                        </div>
+
+                                        <CardHeader className="pb-0">
+                                            <CardTitle className="text-2xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
+                                                {service.title}
+                                            </CardTitle>
+                                        </CardHeader>
+
+                                        <CardContent className="pb-6 space-y-5 pt-0">
+                                            {service.groups.map((g, k) => (
+                                                <div
+                                                    key={k}
+                                                    className="rounded-2xl ring-1 ring-amber-100/60 bg-amber-50/40 px-4 py-3"
+                                                >
+                                                    <div className="text-sm font-semibold tracking-wide text-amber-700 mb-2">
+                                                        {g.label}
+                                                    </div>
+                                                    <ul className="grid grid-cols-1 gap-y-2">
+                                                        {g.items.map((it, idx) => (
+                                                            <li
+                                                                key={idx}
+                                                                className="text-gray-700 leading-relaxed-moveup font-medium"
+                                                            >
+                                                                {it}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            ))}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
                         </div>
+
+
 
                         <div className="mt-16 text-center">
                             <Link href={"/reservar"}>
@@ -220,7 +300,7 @@ export default function Home() {
                                     className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold py-3"
                                 >
                                     Ver todos los servicios
-                                    <ChevronRight className="h-6 w-6"/>
+                                    <ChevronRight className="h-6 w-6" />
                                 </Button>
                             </Link>
                         </div>
@@ -294,7 +374,7 @@ export default function Home() {
                                                 <div className="flex items-center mb-4">
                                                     <div
                                                         className="bg-gradient-to-r from-amber-500 to-yellow-600 p-3 rounded-2xl mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                                        <item.icon className="h-6 w-6 text-white"/>
+                                                        <item.icon className="h-6 w-6 text-white" />
                                                     </div>
                                                     <h3 className="font-bold text-2xl group-hover:text-amber-300 transition-colors duration-300">
                                                         {item.title}
@@ -431,7 +511,7 @@ export default function Home() {
                                         className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold py-3"
                                     >
                                         Conocé a Nuestro Equipo
-                                        <ChevronDown className="h-6 w-6"/>
+                                        <ChevronDown className="h-6 w-6" />
                                     </Button>
                                 </Link>
                             </div>
@@ -446,7 +526,7 @@ export default function Home() {
                                 <div
                                     className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
                                     <img src="/instalanciones-1.jpg" alt="Tratamiento"
-                                         className="w-full h-full object-cover"/>
+                                        className="w-full h-full object-cover" />
                                 </div>
                             </div>
                         </div>
@@ -483,7 +563,7 @@ export default function Home() {
                                         src={img || "/placeholder.svg"}
                                         alt={`Instalación ${i + 1}`}
                                         className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                                        style={{height: i === 0 || i === 3 ? "400px" : "200px"}}
+                                        style={{ height: i === 0 || i === 3 ? "400px" : "200px" }}
                                     />
                                 </div>
                             ))}
@@ -560,7 +640,7 @@ export default function Home() {
                                                     </div>
                                                     <div
                                                         className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-full p-1.5 shadow-lg">
-                                                        <Star className="h-3 w-3 text-white fill-current"/>
+                                                        <Star className="h-3 w-3 text-white fill-current" />
                                                     </div>
                                                 </div>
                                                 <div className="flex-1">
@@ -580,7 +660,7 @@ export default function Home() {
                                                     <Star
                                                         key={j}
                                                         className="h-5 w-5 fill-amber-400 text-amber-400 mx-0.5 group-hover:scale-110 transition-transform duration-300"
-                                                        style={{transitionDelay: `${j * 50}ms`}}
+                                                        style={{ transitionDelay: `${j * 50}ms` }}
                                                     />
                                                 ))}
                                             </div>
@@ -668,7 +748,7 @@ export default function Home() {
                                                         <div className="flex items-center space-x-3">
                                                             <div
                                                                 className="bg-gradient-to-r from-amber-500 to-yellow-600 p-2 rounded-full">
-                                                                <Award className="h-4 w-4 text-white"/>
+                                                                <Award className="h-4 w-4 text-white" />
                                                             </div>
                                                             <span className="text-sm font-medium text-gray-700">Especialista Certificado</span>
                                                         </div>
@@ -698,7 +778,7 @@ export default function Home() {
                                                 <div className="flex items-center group/item">
                                                     <div
                                                         className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-xl mr-4 group-hover/item:from-amber-200 group-hover/item:to-yellow-200 transition-all duration-300">
-                                                        <Sparkles className="h-4 w-4 text-amber-600"/>
+                                                        <Sparkles className="h-4 w-4 text-amber-600" />
                                                     </div>
                                                     <div>
                                                         <span
@@ -709,7 +789,7 @@ export default function Home() {
                                                 <div className="flex items-center group/item">
                                                     <div
                                                         className="bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-xl mr-4 group-hover/item:from-amber-200 group-hover/item:to-yellow-200 transition-all duration-300">
-                                                        <Clock className="h-4 w-4 text-amber-600"/>
+                                                        <Clock className="h-4 w-4 text-amber-600" />
                                                     </div>
                                                     <div>
                                                         <span
@@ -791,7 +871,7 @@ export default function Home() {
                                                 <div
                                                     className={`bg-gradient-to-r ${item.color} p-2 rounded-lg shadow-lg group-hover:scale-110 transition-transform duration-300`}
                                                 >
-                                                    <item.icon className="h-6 w-6 text-white"/>
+                                                    <item.icon className="h-6 w-6 text-white" />
                                                 </div>
                                             </div>
                                             <div className="ml-3">
@@ -813,7 +893,7 @@ export default function Home() {
                                             variant="outline"
                                             className="bg-gradient-to-r from-pink-50 to-rose-50 border-2 border-pink-200 hover:from-pink-500 hover:to-rose-600 hover:text-white transition-all duration-300 font-semibold py-3 px-6"
                                         >
-                                            <Instagram className="h-5 w-5 mr-2"/>
+                                            <Instagram className="h-5 w-5 mr-2" />
                                             Seguinos en Instagram
                                         </Button>
                                     </Link>
@@ -890,7 +970,7 @@ export default function Home() {
                                             </div>
                                             <Button
                                                 className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold py-4 shadow-xl transition-all duration-300 hover:scale-105 border-0">
-                                                <Mail className="mr-3 h-5 w-5"/>
+                                                <Mail className="mr-3 h-5 w-5" />
                                                 Enviar Mensaje
                                             </Button>
                                         </form>
