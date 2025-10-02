@@ -121,9 +121,7 @@ export default function Home() {
                             <div
                                 className="w-24 h-1 bg-gradient-to-r from-amber-500 to-yellow-600 mx-auto mb-4 rounded-full"></div>
                             <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed-moveup">
-                                Ofrecemos una amplia gama de tratamientos estéticos y médicos para realzar tu belleza
-                                natural con la más
-                                alta calidad y profesionalismo.
+                                Realizamos tratamientos o procedimientos estéticos tanto faciales como corporales no invasivos. Nuestro objetivo es resaltar tu belleza y mejorar ciertos rasgos de la forma más natural posible.
                             </p>
                         </div>
 
@@ -454,58 +452,41 @@ export default function Home() {
                 <section className="py-20 bg-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                            <div>
-                                <ReusableBadge
-                                >
-                                    Nuestra
-                                    Historia
-                                </ReusableBadge>
-                                <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                                    Más de 10 años de experiencia en medicina estética
-                                </h2>
-                                <p className="text-lg text-gray-700 mb-6">
-                                    Fundado en 2013, nuestro centro de medicina estética ha sido pionero en introducir
-                                    las técnicas más
-                                    avanzadas y seguras para realzar la belleza natural de nuestros pacientes.
-                                </p>
-                                <p className="text-lg text-gray-700 mb-8">
-                                    Contamos con un equipo de profesionales altamente cualificados y en constante
-                                    formación, que trabajan
-                                    con la tecnología más innovadora para ofrecer resultados excepcionales.
-                                </p>
-                                <div className="grid grid-cols-2 gap-6 mb-8">
+                            <div className="space-y-8">
+                                <div>
+                                    <ReusableBadge>Nuestra Historia</ReusableBadge>
+                                    <h2 className="text-3xl font-bold text-gray-900 mb-6">
+                                        Más de 7 años de experiencia en medicina estética
+                                    </h2>
+                                    <p className="text-lg text-gray-700 mb-6">
+                                       Somos Gastón Adonis Franco y Melanye Guirland, dos médicos con más de 10 años de experiencia en el campo de la medicina. Nuestra historia comenzó en el Sanatorio Güemes, donde nos conocimos durante nuestra formación en Clínica Médica. Fue allí donde descubrimos nuestra pasión por la estética y decidimos especializarnos en este campo.
+                                    </p>
+                                    <p className="text-lg text-gray-700 mb-8">
+                                       En 2018, comenzamos a explorar el mundo de la medicina estética y realizamos nuestros primeros posgrados en SAENI (Asociación Médica Argentina) y SAEME (Universidad de Buenos Aires). Desde entonces, este mundo nos ha apasionado y hemos seguido actualizándonos constantemente para ofrecer los mejores tratamientos y resultados a nuestros pacientes.
+                                    </p>
+                                    <p className="text-lg text-gray-700 mb-8">
+                                       En 2022, después de años de formación y dedicación, decidimos abrir nuestro primer consultorio gracias a la ayuda de nuestra familia y amigos. Desde entonces, hemos podido crecer y desarrollarnos como profesionales, y estamos comprometidos con brindar la mejor atención posible a nuestros pacientes.
+                                    </p>
+                                </div>
+
+                                {/* <div className="grid grid-cols-2 gap-6">
                                     {[
-                                        {
-                                            number: "5,000+",
-                                            label: "Pacientes Satisfechos",
-                                        },
-                                        {
-                                            number: "15+",
-                                            label: "Profesionales",
-                                        },
-                                        {
-                                            number: "30+",
-                                            label: "Tratamientos",
-                                        },
-                                        {
-                                            number: "3",
-                                            label: "Premios de Excelencia",
-                                        },
+                                        { number: "5,000+", label: "Pacientes Satisfechos" },
+                                        { number: "15+", label: "Profesionales" },
+                                        { number: "30+", label: "Tratamientos" },
+                                        { number: "3", label: "Premios de Excelencia" },
                                     ].map((stat, i) => (
-                                        <div key={i} className="text-center p-4 bg-gray-50 rounded-lg shadow-sm">
+                                        <div
+                                            key={i}
+                                            className="text-center p-4 bg-gray-50 rounded-lg shadow-sm"
+                                        >
                                             <p className="text-3xl font-bold text-yellow-600">{stat.number}</p>
                                             <p className="text-gray-600">{stat.label}</p>
                                         </div>
                                     ))}
-                                </div>
+                                </div> */}
+
                                 <Link href={"#equipo"}>
-                                    {/*<Button
-                                        size="lg"
-                                        className="h-14 px-8 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
-                                    >
-                                        Conocé a Nuestro Equipo
-                                        <ChevronDown className="h-6 w-6" />
-                                    </Button>*/}
                                     <Button
                                         variant="outline"
                                         className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold py-3"
