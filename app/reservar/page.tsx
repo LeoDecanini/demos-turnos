@@ -394,6 +394,9 @@ export default function ReservarPage() {
       const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
       const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
       const raw = await res.json().catch(() => ({}));
+
+      console.log(raw)
+
       if (raw?.message === "Reservas bloqueadas") {
         setIsBlocked(true);
         setBlockMsg("Reservas bloqueadas");
