@@ -13,6 +13,7 @@ import ServiceList, { type ServiceItem as UIServiceItem } from "@/components/Ser
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookingStepper } from "@/components/BookingStepper";
 import { useAuth } from "../auth/AuthProvider";
+import ProfessionalList from "@/components/ProfessionalList";
 
 /* ---- Google Calendar helpers ---- */
 const toGCalDateUTC = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -799,7 +800,7 @@ export default function ReservarPage() {
 
         {/* PASO 3: Profesional (secuencial por servicio) */}
         {step === 3 && (
-          <>
+          <div className={submitting ? "pointer-events-none opacity-60" : ""}>
             {(() => {
               const srvId = selectedServices[profIdx];
               const srv = services.find((s) => s._id === srvId);
@@ -807,44 +808,68 @@ export default function ReservarPage() {
               const sel = selection[srvId]?.professionalId || "any";
 
               return (
-                <>
-                  <div className="text-center mb-6">
+                <div className="space-y-8">
+                  <div className="text-center">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">Elegí profesional</h2>
                     <p className="text-gray-600">
                       Servicio {profIdx + 1} de {selectedServices.length}: {srv?.name}
                     </p>
                   </div>
 
-                  <div className="max-w-3xl mx-auto space-y-3">
-                    <div
-                      className={`rounded-xl border-2 px-4 py-3 cursor-pointer ${sel === "any" ? "border-amber-500 bg-amber-50/60" : "border-gray-200 hover:border-amber-300"}`}
-                      onClick={() =>
-                        setSelection((prev) => ({ ...prev, [srvId]: { ...(prev[srvId] || { serviceId: srvId }), professionalId: "any", branchId: prev[srvId]?.branchId } }))
-                      }
-                    >
-                      <div className="font-semibold">Indistinto</div>
-                      <div className="text-xs text-gray-500">Asignación automática</div>
-                    </div>
+                  <div className="max-w-3xl mx-auto">
+                    {/* Card "Indistinto" */}
+                    {pros.length > 1 && (
+                      <div
+                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any"
+                            ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
+                            : "border-gray-200 hover:border-amber-300 bg-white/80"
+                          }`}
+                        onClick={() =>
+                          setSelection((prev) => ({
+                            ...prev,
+                            [srvId]: {
+                              ...(prev[srvId] || { serviceId: srvId }),
+                              professionalId: "any",
+                              branchId: prev[srvId]?.branchId,
+                            },
+                          }))
+                        }
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-gray-900">Indistinto</div>
+                          <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
+                            Automático
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Podés seleccionar “Indistinto” para que asignemos uno automáticamente.
+                        </p>
+                      </div>
+                    )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {pros.map((p) => {
-                        const isSel = sel === p._id;
-                        return (
-                          <button
-                            key={p._id}
-                            type="button"
-                            onClick={() =>
-                              setSelection((prev) => ({ ...prev, [srvId]: { ...(prev[srvId] || { serviceId: srvId }), professionalId: p._id, branchId: prev[srvId]?.branchId } }))
-                            }
-                            className={`rounded-xl border-2 px-4 py-3 text-left ${isSel ? "border-amber-500 bg-amber-50/60" : "border-gray-200 hover:border-amber-300"}`}
-                          >
-                            <div className="font-semibold">{p.name}</div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    {/* Lista de profesionales (cards estiladas) */}
+                    <ProfessionalList
+                      professionals={pros.map((p: any) => ({
+                        _id: String(p._id),
+                        name: p.name,
+                        photo: p.photo ? { path: p.photo.path } : undefined,
+                      }))}
+                      selectedId={sel === "any" ? undefined : sel}
+                      onSelect={(id: string) =>
+                        setSelection((prev) => ({
+                          ...prev,
+                          [srvId]: {
+                            ...(prev[srvId] || { serviceId: srvId }),
+                            professionalId: id,
+                            branchId: prev[srvId]?.branchId,
+                          },
+                        }))
+                      }
+                      backendBaseUrl={process.env.NEXT_PUBLIC_CDN_URL || ""}
+                    />
                   </div>
 
+                  {/* Navegación inferior (tu lógica original) */}
                   <FloatingNav
                     onBack={() => {
                       if (hasBranchStep && profIdx === 0) setStep(2);
@@ -858,7 +883,10 @@ export default function ReservarPage() {
                       } else {
                         setScheduleIdx(0);
                         resetCalendar();
-                        void loadAvailableDays(selectedServices[0], selection[selectedServices[0]]?.professionalId || "any");
+                        void loadAvailableDays(
+                          selectedServices[0],
+                          selection[selectedServices[0]]?.professionalId || "any"
+                        );
                         setStep(4);
                         scrollToTop();
                       }
@@ -866,11 +894,12 @@ export default function ReservarPage() {
                     backDisabled={submitting}
                     nextDisabled={submitting || !selection[srvId]?.professionalId}
                   />
-                </>
+                </div>
               );
             })()}
-          </>
+          </div>
         )}
+
 
         {/* PASO 4: Fecha y horario (secuencial) */}
         {step === 4 && currentServiceId && (
