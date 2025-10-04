@@ -15,7 +15,6 @@ import { BookingStepper } from "@/components/BookingStepper";
 import { useAuth } from "../auth/AuthProvider";
 import ProfessionalList from "@/components/ProfessionalList";
 
-/* ---- Google Calendar helpers ---- */
 const toGCalDateUTC = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 function buildGoogleCalendarUrl(opts: { title: string; startISO: string; endISO?: string; details?: string; location?: string }) {
   const start = new Date(opts.startISO);
@@ -27,7 +26,6 @@ function buildGoogleCalendarUrl(opts: { title: string; startISO: string; endISO?
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-/* ---- Tipos de datos ---- */
 type Professional = { _id: string; name: string; photo?: { path?: string } };
 
 type DepositType = "FIXED" | "PERCENT";
@@ -37,12 +35,12 @@ type RawService = {
   description?: string;
   price?: number;
   currency?: string;
-  durationMinutes?: number;        // ⇐ usamos esto para bloqueo por duración
+  durationMinutes?: number;
   depositRequired?: boolean;
   depositType?: DepositType;
   depositValue?: number;
   usesGlobalDepositConfig?: boolean;
-  category?: { _id: string; name: string } | null; // para ServiceList
+  category?: { _id: string; name: string } | null;
   popular?: boolean;
   sessionsCount?: number;
   sessionDuration?: number;
@@ -93,14 +91,12 @@ type PerServiceSelection = {
   time?: string;
 };
 
-/* ---- Config API ---- */
 const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`;
 const SUBDOMAIN = process.env.NEXT_PUBLIC_TENANT as string;
 const getPayload = (raw: any) => raw?.data ?? raw;
 const fmtDay = (date: Date) => format(date, "yyyy-MM-dd");
 const fmtMonth = (date: Date) => format(date, "yyyy-MM");
 
-/* ---- UI helpers ---- */
 function FloatingNav({
   onBack,
   onNext,
@@ -131,7 +127,6 @@ function FloatingNav({
   );
 }
 
-/* ====================== PAGE ====================== */
 export default function ReservarPage() {
   const { user } = useAuth();
 
@@ -140,23 +135,19 @@ export default function ReservarPage() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockMsg, setBlockMsg] = useState<string | null>(null);
 
-  // Servicios (multi hasta 3)
   const [services, setServices] = useState<RawService[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
-  // Sucursales
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [hasBranchStep, setHasBranchStep] = useState(false);
 
-  // Profesionales
   const [professionalsByService, setProfessionalsByService] = useState<Record<string, Professional[]>>({});
   const [loadingProfessionals, setLoadingProfessionals] = useState(false);
   const [selection, setSelection] = useState<Record<string, PerServiceSelection>>({});
-  const [profIdx, setProfIdx] = useState(0); // paso secuencial de profesionales
+  const [profIdx, setProfIdx] = useState(0);
 
-  // Calendario/Horarios (por servicio)
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const [availableDays, setAvailableDays] = useState<string[]>([]);
   const [loadingDays, setLoadingDays] = useState(false);
@@ -164,31 +155,28 @@ export default function ReservarPage() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [scheduleIdx, setScheduleIdx] = useState(0);
   const [selectedDateObj, setSelectedDateObj] = useState<Date | undefined>();
-  const [selectedTimeBlock, setSelectedTimeBlock] = useState<string | null>(null); // bloqueo por duración
+  const [selectedTimeBlock, setSelectedTimeBlock] = useState<string | null>(null);
 
-  // Cliente
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [dni, setDni] = useState("");
   const [notes, setNotes] = useState("");
 
-  // Resultado
   const [submitting, setSubmitting] = useState(false);
   const [bookingResult, setBookingResult] = useState<BookingResponse | null>(null);
 
-  // NEW: errores detallados de bulk (index, message)
   const [bulkErrors, setBulkErrors] = useState<Array<{ index: number; message: string }>>([]);
+  const [bulkWarns, setBulkWarns] = useState<Array<{ index: number; message: string }>>([]);
 
   const prettyBulkError = (idx: number, msg: string) => {
     const srvId = selectedServices[idx];
     const srv = services.find(s => s._id === srvId);
     const sel = selection[srvId];
-    const when = sel?.date && sel?.time ? `${sel.date} • ${sel.time}` : '';
-    return `${srv?.name ?? `Ítem #${idx + 1}`} ${when ? `(${when}) ` : ''}— ${msg}`;
+    const when = sel?.date && sel?.time ? `${sel.date} • ${sel.time}` : "";
+    return `${srv?.name ?? `Ítem #${idx + 1}`} ${when ? `(${when}) ` : ""}— ${msg}`;
   };
 
-  // Traducciones/normalizaciones de errores del backend
   const ERROR_MAP: Array<[test: RegExp, nice: string]> = [
     [/superpone/i, "El cliente ya tiene un turno que se superpone con ese horario"],
     [/dni.*exists|dni.*duplicado/i, "El DNI ya está registrado para otro cliente"],
@@ -202,9 +190,6 @@ export default function ReservarPage() {
     return msg;
   };
 
-  const [bulkWarns, setBulkWarns] = useState<Array<{ index: number; message: string }>>([]); // para paso 6
-
-  // UX helpers
   const timeSectionRef = useRef<HTMLDivElement | null>(null);
   const scrollToTimes = () => {
     const el = timeSectionRef.current;
@@ -234,7 +219,6 @@ export default function ReservarPage() {
     }
   }, [user]);
 
-  // Validaciones simples
   const [errors, setErrors] = useState<{ fullName?: string; email?: string; phone?: string; dni?: string }>({});
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const validateField = (name: "fullName" | "email" | "phone" | "dni", value: string) => {
@@ -276,7 +260,6 @@ export default function ReservarPage() {
     scrollToTop();
   };
 
-  /* -------- Preflight: cargar servicios -------- */
   useEffect(() => {
     const preflight = async () => {
       setGateLoading(true);
@@ -308,7 +291,6 @@ export default function ReservarPage() {
     preflight();
   }, []);
 
-  /* -------- Sucursales para varios servicios -------- */
   const loadBranchesForServices = async (serviceIds: string[]) => {
     setLoadingBranches(true);
     try {
@@ -354,7 +336,6 @@ export default function ReservarPage() {
     }
   };
 
-  /* -------- Profesionales (map por servicio) -------- */
   const loadProfessionalsForServices = async (serviceIds: string[], branchId?: string) => {
     setLoadingProfessionals(true);
     try {
@@ -384,7 +365,6 @@ export default function ReservarPage() {
     }
   };
 
-  /* -------- Días y horarios -------- */
   const loadAvailableDays = async (srvId: string, profId?: string | "any", monthStr?: string) => {
     setLoadingDays(true);
     try {
@@ -395,9 +375,6 @@ export default function ReservarPage() {
       const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
       const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
       const raw = await res.json().catch(() => ({}));
-
-      console.log(raw)
-
       if (raw?.message === "Reservas bloqueadas") {
         setIsBlocked(true);
         setBlockMsg("Reservas bloqueadas");
@@ -447,15 +424,12 @@ export default function ReservarPage() {
     }
   };
 
-  /* -------- Selecciones actuales -------- */
   const currentServiceId = selectedServices[scheduleIdx];
   const currentService = services.find((s) => s._id === currentServiceId);
   const currentProfId = selection[currentServiceId]?.professionalId || "any";
 
-  /* -------- Dinero helper -------- */
   const money = (n?: number, currency = "ARS") => (typeof n === "number" ? n.toLocaleString("es-AR", { style: "currency", currency, maximumFractionDigits: 0 }).replace(/\s/g, "") : "");
 
-  /* -------- Confirmar hora para el servicio vigente -------- */
   const handleConfirmTimesForCurrent = (date: Date, time: string) => {
     const dateStr = fmtDay(date);
     const next = { ...selection };
@@ -466,7 +440,6 @@ export default function ReservarPage() {
 
   const allTimesChosen = selectedServices.every((sid) => selection[sid]?.date && selection[sid]?.time);
 
-  /* ======== BLOQUEO POR DURACIÓN + SERVICIO ANTERIOR ======== */
   function hhmmToMinutes(h: string) {
     const [hh, mm] = h.split(":").map(Number);
     return hh * 60 + mm;
@@ -499,10 +472,7 @@ export default function ReservarPage() {
     const t = hhmmToMinutes(slot);
     return t < endPrev;
   }
-  /* ========================================================== */
 
-  /* -------- Crear reservas (bulk o de a una) -------- */
-  /* -------- Crear reservas (bulk con validación + fallback) -------- */
   const createBooking = async () => {
     if (isBlocked) return;
     if (!validateAll()) {
@@ -510,10 +480,7 @@ export default function ReservarPage() {
       return;
     }
 
-    // helpers locales
-    const hasAnyBooking = (r: any) =>
-      !!(r?.booking || (Array.isArray(r?.bookings) && r.bookings.length > 0));
-
+    const hasAnyBooking = (r: any) => !!(r?.booking || (Array.isArray(r?.bookings) && r.bookings.length > 0));
     const getErrors = (r: any) =>
       (Array.isArray(r?.errors) ? r.errors : []).map((e: any) => ({
         index: Number(e.index ?? 0),
@@ -526,10 +493,7 @@ export default function ReservarPage() {
       const sel = selection[sid]!;
       return {
         service: sid,
-        professional:
-          sel.professionalId && sel.professionalId !== "any"
-            ? sel.professionalId
-            : undefined,
+        professional: sel.professionalId && sel.professionalId !== "any" ? sel.professionalId : undefined,
         day: sel.date,
         hour: sel.time,
         startISO: `${sel.date}T${sel.time}:00`,
@@ -545,27 +509,17 @@ export default function ReservarPage() {
     setBulkWarns([]);
 
     try {
-      const slug =
-        SUBDOMAIN ??
-        (typeof window !== "undefined"
-          ? window.location.hostname.split(".")[0]
-          : "");
+      const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
       const bulkUrl = `${API_BASE}/${slug}/create-booking-bulk`;
       const oneUrl = `${API_BASE}/${slug}/create-booking`;
 
-      // 1) Intento BULK
       const bulkRes = await fetch(bulkUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items,
           timezone: tz,
-          client: {
-            name: fullName.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-            dni: dni.trim(),
-          },
+          client: { name: fullName.trim(), email: email.trim(), phone: phone.trim(), dni: dni.trim() },
           notes: notes?.trim() || undefined,
         }),
       });
@@ -573,20 +527,13 @@ export default function ReservarPage() {
       if (bulkRes.ok) {
         const payload = await bulkRes.json();
         const errs = getErrors(payload);
-
-        // ❌ No se creó nada → quedate en Paso 5 y mostrás lista de errores
         if (!hasAnyBooking(payload)) {
           setBulkErrors(errs);
-          toast.error(
-            payload?.message ||
-            "No se pudo crear ninguna reserva. Revisá los errores."
-          );
+          toast.error(payload?.message || "No se pudo crear ninguna reserva. Revisá los errores.");
           setStep(5);
           return;
         }
-
-        // ✅ Hay al menos una reserva
-        if (errs.length) setBulkWarns(errs); // banner de “algunos errores” en Paso 6
+        if (errs.length) setBulkWarns(errs);
         setBookingResult(payload);
         toast.success("¡Reserva(s) creada(s)!");
         setStep(6);
@@ -594,7 +541,6 @@ export default function ReservarPage() {
         return;
       }
 
-      // 2) Fallback: crear de a una (si el bulk devolvió 4xx/5xx)
       const created: BookingCreated[] = [];
       for (const it of items) {
         const r = await fetch(oneUrl, {
@@ -602,48 +548,29 @@ export default function ReservarPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             ...it,
-            client: {
-              name: fullName.trim(),
-              email: email.trim(),
-              phone: phone.trim(),
-              dni: dni.trim(),
-            },
+            client: { name: fullName.trim(), email: email.trim(), phone: phone.trim(), dni: dni.trim() },
             notes: notes?.trim() || undefined,
           }),
         });
 
         if (!r.ok) {
           const e = await r.json().catch(() => ({}));
-          const msg =
-            getPayload(e)?.message || e?.message || "No se pudo crear la reserva";
-          // Abortamos ante el primer error y nos quedamos en Paso 5
+          const msg = getPayload(e)?.message || e?.message || "No se pudo crear la reserva";
           throw new Error(msg);
         }
 
-        const single = (await r.json()) as {
-          booking: BookingCreated;
-          message: string;
-        };
+        const single = (await r.json()) as { booking: BookingCreated; message: string };
         created.push(single.booking);
       }
 
-      if (created.length === 0) {
-        throw new Error("No se pudo crear ninguna reserva");
-      }
+      if (created.length === 0) throw new Error("No se pudo crear ninguna reserva");
 
-      setBookingResult({
-        success: true,
-        bookings: created,
-        message: "Reservas creadas",
-      } as BookingResponse);
+      setBookingResult({ success: true, bookings: created, message: "Reservas creadas" } as BookingResponse);
       toast.success("¡Reserva(s) creada(s)!");
       setStep(6);
       scrollToTop();
     } catch (e) {
-      // Nos quedamos en Paso 5 para que el usuario vea el detalle
-      const msg =
-        (e as Error)?.message ||
-        "No se pudo crear la reserva. Probá nuevamente.";
+      const msg = (e as Error)?.message || "No se pudo crear la reserva. Probá nuevamente.";
       toast.error(msg);
       setStep(5);
     } finally {
@@ -651,9 +578,16 @@ export default function ReservarPage() {
     }
   };
 
+  const isSingleService = selectedServices.length === 1;
 
+  const resultHasMany = Array.isArray((bookingResult as any)?.bookings) && (bookingResult as any).bookings.length > 1;
 
-  /* -------- Gate states -------- */
+  const singleBooking: BookingCreated | null =
+    (bookingResult as any)?.booking ??
+    (Array.isArray((bookingResult as any)?.bookings) && (bookingResult as any).bookings.length === 1
+      ? (bookingResult as any).bookings[0]
+      : null);
+
   if (gateLoading)
     return (
       <div className="min-h-screen grid place-items-center bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
@@ -685,7 +619,6 @@ export default function ReservarPage() {
       </div>
     );
 
-  /* ====================== RENDER ====================== */
   return (
     <div className="min-h-screen relative overflow-hidden">
       <div className="mt-12 relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -693,7 +626,6 @@ export default function ReservarPage() {
           <BookingStepper step={step} includeBranchStep={hasBranchStep && step !== 1} />
         </div>
 
-        {/* PASO 1: Servicios (multi hasta 3) */}
         {step === 1 && (
           <>
             <div className="text-center mb-6">
@@ -712,15 +644,12 @@ export default function ReservarPage() {
                 <ServiceList
                   /* @ts-ignore */
                   services={services}
-                  selectedIds={selectedServices}         // string[]
+                  selectedIds={selectedServices}
                   onToggle={(id) => {
-                    setSelectedServices((prev) =>
-                      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-                    );
+                    setSelectedServices((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
                   }}
                   maxSelectable={3}
                 />
-
 
                 <FloatingNav
                   backDisabled
@@ -734,7 +663,6 @@ export default function ReservarPage() {
           </>
         )}
 
-        {/* PASO 2: Sucursal (si hay > 1) */}
         {step === 2 && hasBranchStep && (
           <>
             <div className="text-center mb-4">
@@ -798,7 +726,6 @@ export default function ReservarPage() {
           </>
         )}
 
-        {/* PASO 3: Profesional (secuencial por servicio) */}
         {step === 3 && (
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>
             {(() => {
@@ -811,19 +738,20 @@ export default function ReservarPage() {
                 <div className="space-y-8">
                   <div className="text-center">
                     <h2 className="text-3xl font-bold text-gray-900 mb-2">Elegí profesional</h2>
-                    <p className="text-gray-600">
-                      Servicio {profIdx + 1} de {selectedServices.length}: {srv?.name}
-                    </p>
+                    {!isSingleService && (
+                      <p className="text-gray-600">
+                        Servicio {profIdx + 1} de {selectedServices.length}: {srv?.name}
+                      </p>
+                    )}
+                    {isSingleService && <p className="text-gray-600">{srv?.name}</p>}
                   </div>
 
                   <div className="max-w-3xl mx-auto">
-                    {/* Card "Indistinto" */}
                     {pros.length > 1 && (
                       <div
-                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any"
-                            ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                            : "border-gray-200 hover:border-amber-300 bg-white/80"
-                          }`}
+                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${
+                          sel === "any" ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50" : "border-gray-200 hover:border-amber-300 bg-white/80"
+                        }`}
                         onClick={() =>
                           setSelection((prev) => ({
                             ...prev,
@@ -837,17 +765,12 @@ export default function ReservarPage() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="font-semibold text-gray-900">Indistinto</div>
-                          <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
-                            Automático
-                          </span>
+                          <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">Automático</span>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Podés seleccionar “Indistinto” para que asignemos uno automáticamente.
-                        </p>
+                        <p className="text-sm text-gray-600 mt-1">Podés seleccionar “Indistinto” para que asignemos uno automáticamente.</p>
                       </div>
                     )}
 
-                    {/* Lista de profesionales (cards estiladas) */}
                     <ProfessionalList
                       professionals={pros.map((p: any) => ({
                         _id: String(p._id),
@@ -869,7 +792,6 @@ export default function ReservarPage() {
                     />
                   </div>
 
-                  {/* Navegación inferior (tu lógica original) */}
                   <FloatingNav
                     onBack={() => {
                       if (hasBranchStep && profIdx === 0) setStep(2);
@@ -883,10 +805,7 @@ export default function ReservarPage() {
                       } else {
                         setScheduleIdx(0);
                         resetCalendar();
-                        void loadAvailableDays(
-                          selectedServices[0],
-                          selection[selectedServices[0]]?.professionalId || "any"
-                        );
+                        void loadAvailableDays(selectedServices[0], selection[selectedServices[0]]?.professionalId || "any");
                         setStep(4);
                         scrollToTop();
                       }
@@ -900,24 +819,23 @@ export default function ReservarPage() {
           </div>
         )}
 
-
-        {/* PASO 4: Fecha y horario (secuencial) */}
         {step === 4 && currentServiceId && (
           <>
             <div className="text-center mb-4">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Elegí fecha y horario</h2>
-              <p className="text-gray-600">
-                Servicio {scheduleIdx + 1} de {selectedServices.length}: {currentService?.name}
-              </p>
-              {(currentService?.durationMinutes ?? currentService?.sessionDuration) ? (
-                <p className="text-xs text-gray-500 mt-1">
-                  Duración: {(currentService?.durationMinutes ?? currentService?.sessionDuration)!} min. Al elegir una hora se bloquea el bloque completo.
+              {!isSingleService ? (
+                <p className="text-gray-600">
+                  Servicio {scheduleIdx + 1} de {selectedServices.length}: {currentService?.name}
                 </p>
+              ) : (
+                <p className="text-gray-600">{currentService?.name}</p>
+              )}
+              {(currentService?.durationMinutes ?? currentService?.sessionDuration) ? (
+                <p className="text-xs text-gray-500 mt-1">Duración: {(currentService?.durationMinutes ?? currentService?.sessionDuration)!} min. Al elegir una hora se bloquea el bloque completo.</p>
               ) : null}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              {/* Calendario */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
@@ -975,7 +893,6 @@ export default function ReservarPage() {
                 </CardContent>
               </Card>
 
-              {/* Horarios */}
               <Card ref={timeSectionRef}>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
@@ -1009,12 +926,13 @@ export default function ReservarPage() {
                             key={time}
                             variant={picked ? "default" : "outline"}
                             disabled={blocked}
-                            className={`h-12 transition-all duration-300 ${picked
-                              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                              : blocked
+                            className={`h-12 transition-all duration-300 ${
+                              picked
+                                ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                                : blocked
                                 ? "opacity-40 cursor-not-allowed border-2"
                                 : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                              }`}
+                            }`}
                             onClick={() => {
                               if (!selectedDateObj) return;
                               handleConfirmTimesForCurrent(selectedDateObj, time);
@@ -1033,7 +951,6 @@ export default function ReservarPage() {
             <FloatingNav
               onBack={async () => {
                 if (scheduleIdx === 0) {
-                  // volver a profesionales secuenciales
                   setStep(3);
                   setProfIdx(selectedServices.length - 1);
                   scrollToTop();
@@ -1064,7 +981,6 @@ export default function ReservarPage() {
           </>
         )}
 
-        {/* PASO 5: Datos del cliente */}
         {step === 5 && (
           <>
             <div className="text-center mb-4">
@@ -1077,9 +993,7 @@ export default function ReservarPage() {
                 <div className="font-semibold mb-2">No se pudieron crear las reservas:</div>
                 <ul className="list-disc pl-5 space-y-1">
                   {bulkErrors.map((e, idx) => (
-                    <li key={`${e.index}-${idx}`}>
-                      {prettyBulkError(e.index, e.message)}
-                    </li>
+                    <li key={`${e.index}-${idx}`}>{prettyBulkError(e.index, e.message)}</li>
                   ))}
                 </ul>
               </div>
@@ -1159,29 +1073,16 @@ export default function ReservarPage() {
 
                   <div className="mt-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Comentarios (opcional)</label>
-                    <textarea
-                      rows={4}
-                      className="w-full px-4 py-1.5 !outline-none border-2 border-gray-200 rounded-xl"
-                      placeholder="¿Alguna consulta o requerimiento especial?"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                    />
+                    <textarea rows={4} className="w-full px-4 py-1.5 !outline-none border-2 border-gray-200 rounded-xl" placeholder="¿Alguna consulta o requerimiento especial?" value={notes} onChange={(e) => setNotes(e.target.value)} />
                   </div>
                 </fieldset>
               </CardContent>
             </Card>
 
-            <FloatingNav
-              onBack={() => setStep(4)}
-              onNext={createBooking}
-              backDisabled={submitting}
-              nextDisabled={submitting || !allTimesChosen || !fullName.trim() || !email.trim() || !phone.trim() || !dni.trim()}
-              nextLabel={submitting ? "Creando…" : "Confirmar Reserva"}
-            />
+            <FloatingNav onBack={() => setStep(4)} onNext={createBooking} backDisabled={submitting} nextDisabled={submitting || !allTimesChosen || !fullName.trim() || !email.trim() || !phone.trim() || !dni.trim()} nextLabel={submitting ? "Creando…" : "Confirmar Reserva"} />
           </>
         )}
 
-        {/* PASO 6: Resultado */}
         {step === 6 && bookingResult && (
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>
             <div className="text-center space-y-8">
@@ -1193,16 +1094,23 @@ export default function ReservarPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset bg-emerald-100 text-emerald-900 ring-emerald-200">
-                      Listo
-                    </div>
-                    <h2 className="text-3xl font-extrabold text-gray-900">
-                      ¡Reserva{Array.isArray((bookingResult as any).bookings) && (bookingResult as any).bookings.length > 1 ? "s" : ""} confirmada!
-                    </h2>
-                    <p className="text-black text-xl">{(bookingResult as any).message || "Se creó la reserva"}</p>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset bg-emerald-100 text-emerald-900 ring-emerald-200">Listo</div>
+                    <h2 className="text-3xl font-extrabold text-gray-900">¡Reserva confirmada!</h2>
+                    {!resultHasMany && (bookingResult as any)?.message ? null : <p className="text-black text-xl">{(bookingResult as any).message || "Se creó la reserva"}</p>}
                   </div>
 
-                  {Array.isArray((bookingResult as any).bookings) ? (
+                  {singleBooking ? (
+                    <div className="mt-8">
+                      <div className="rounded-xl border p-4 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold">{singleBooking.service?.name}</div>
+                          <div className="text-sm">
+                            {format(new Date(singleBooking.start), "PPP", { locale: es })} • {format(new Date(singleBooking.start), "HH:mm")}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : Array.isArray((bookingResult as any).bookings) ? (
                     <div className="mt-8 grid gap-3">
                       {(bookingResult as any).bookings.map((b: BookingCreated) => (
                         <div key={b._id} className="rounded-xl border p-4 bg-white">
@@ -1219,14 +1127,18 @@ export default function ReservarPage() {
 
                   <div className="pt-8">
                     {(() => {
-                      const first = Array.isArray((bookingResult as any).bookings) ? (bookingResult as any).bookings[0] : (bookingResult as any).booking;
+                      const first = singleBooking
+                        ? singleBooking
+                        : Array.isArray((bookingResult as any).bookings)
+                        ? (bookingResult as any).bookings[0]
+                        : (bookingResult as any).booking;
                       if (!first) return null;
                       const gcalUrl = buildGoogleCalendarUrl({
-                        title: Array.isArray((bookingResult as any).bookings) ? "Reserva — Paquete" : `${first.service?.name}${first?.professional?.name ? ` — ${first.professional.name}` : ""}`,
+                        title: singleBooking ? `${first.service?.name}${first?.professional?.name ? ` — ${first.professional.name}` : ""}` : Array.isArray((bookingResult as any).bookings) ? "Reserva — Paquete" : `${first.service?.name}${first?.professional?.name ? ` — ${first.professional.name}` : ""}`,
                         startISO: first.start,
                         endISO: first.end,
-                        details: `Reserva ${Array.isArray((bookingResult as any).bookings) ? "múltiple" : ""}`,
-                        location: branches.length ? "" : "", // setea si querés dirección
+                        details: singleBooking ? "Reserva confirmada" : "Reserva múltiple confirmada",
+                        location: branches.length ? "" : "",
                       });
                       return (
                         <Button asChild variant="outline" className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50">
@@ -1240,13 +1152,16 @@ export default function ReservarPage() {
                   </div>
 
                   <div className="mt-8 grid gap-6">
-                    {(((bookingResult as any).booking && (bookingResult as any).booking.client?.email) ||
-                      (Array.isArray((bookingResult as any).bookings) && (bookingResult as any).bookings[0]?.client?.email)) && (
+                    {(() => {
+                      const first = singleBooking
+                        ? singleBooking
+                        : Array.isArray((bookingResult as any).bookings)
+                        ? (bookingResult as any).bookings[0]
+                        : (bookingResult as any).booking;
+                      return first?.client?.email ? (
                         <div className="pt-2">
                           <Link
-                            href={`/verify-client?email=${encodeURIComponent(
-                              (bookingResult as any).booking?.client?.email || (bookingResult as any).bookings[0]?.client?.email
-                            )}`}
+                            href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}
                             className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white shadow-lg ring-1 ring-inset ring-white/10 transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl"
                           >
                             <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
@@ -1255,19 +1170,14 @@ export default function ReservarPage() {
                           </Link>
                           <p className="mt-2 text-xs text-gray-500">Creá tu cuenta para ver y gestionar tus reservas más rápido.</p>
                         </div>
-                      )}
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               </div>
 
               <div className="flex justify-center gap-3 mt-6">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  disabled={submitting}
-                  className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-white"
-                  onClick={goToServices}
-                >
+                <Button size="lg" variant="outline" disabled={submitting} className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-white" onClick={goToServices}>
                   Nueva reserva
                 </Button>
 
