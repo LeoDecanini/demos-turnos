@@ -25,6 +25,8 @@ function buildGoogleCalendarUrl(opts: { title: string; startISO: string; endISO?
   if (opts.location) params.set("location", opts.location);
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FcGoogle } from "react-icons/fc";
 
 type Professional = { _id: string; name: string; photo?: { path?: string } };
 
@@ -298,6 +300,48 @@ export default function ReservarPage() {
     scrollToTop();
   };
 
+  function getServiceDurationMinutes(serviceId: string) {
+    const srv = services.find((s) => s._id === serviceId);
+    return srv?.durationMinutes ?? srv?.sessionDuration ?? 0;
+  }
+
+  function minutesRangeOverlap(aStart: number, aEnd: number, bStart: number, bEnd: number) {
+    // Se superponen si comienzan antes de que termine el otro y terminan después de que empiece el otro
+    return aStart < bEnd && aEnd > bStart;
+  }
+
+  function isSlotOverlappingWithPrevSelections(slot: string): boolean {
+    if (!selectedDateObj) return false;
+
+    const dateStr = fmtDay(selectedDateObj);
+    const curSrvId = currentServiceId;
+    const curDur = getServiceDurationMinutes(curSrvId);
+    if (!curDur) return false;
+
+    const curStart = hhmmToMinutes(slot);
+    const curEnd = curStart + curDur;
+
+    // Recorre SOLO servicios anteriores al índice actual
+    for (let i = 0; i < scheduleIdx; i++) {
+      const prevSrvId = selectedServices[i];
+      const sel = selection[prevSrvId];
+      if (!sel?.date || !sel?.time) continue;
+      if (sel.date !== dateStr) continue;
+
+      const prevDur = getServiceDurationMinutes(prevSrvId);
+      if (!prevDur) continue;
+
+      const prevStart = hhmmToMinutes(sel.time);
+      const prevEnd = prevStart + prevDur;
+
+      if (minutesRangeOverlap(curStart, curEnd, prevStart, prevEnd)) {
+        return true; // este slot pisa un turno ya elegido
+      }
+    }
+
+    return false;
+  }
+
   useEffect(() => {
     const preflight = async () => {
       setGateLoading(true);
@@ -478,10 +522,10 @@ export default function ReservarPage() {
       typeof booking.depositAmount === "number"
         ? booking.depositAmount
         : typeof booking.depositValueApplied === "number"
-        ? booking.depositValueApplied
-        : typeof booking.depositValue === "number"
-        ? booking.depositValue
-        : null;
+          ? booking.depositValueApplied
+          : typeof booking.depositValue === "number"
+            ? booking.depositValue
+            : null;
 
     if (rawType === "percent" && rawAmount != null) {
       return { label: `${rawAmount}%`, amount: rawAmount, currency, isPercent: true } as const;
@@ -499,8 +543,8 @@ export default function ReservarPage() {
     if (!normalized) return "Pendiente";
     if (["paid", "approved", "completed", "done", "fulfilled"].includes(normalized)) return "Pagada";
     if (["pending", "waiting_payment", "unpaid", "authorized"].includes(normalized)) return "Pendiente";
-  if (["in_process", "processing"].includes(normalized)) return "En proceso";
-  if (["failed", "rejected"].includes(normalized)) return "Rechazada";
+    if (["in_process", "processing"].includes(normalized)) return "En proceso";
+    if (["failed", "rejected"].includes(normalized)) return "Rechazada";
     if (["cancelled", "canceled"].includes(normalized)) return "Cancelada";
     return status ?? "Pendiente";
   };
@@ -510,14 +554,12 @@ export default function ReservarPage() {
       toast.error("No encontramos un link para copiar");
       return;
     }
-
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
         toast.success("Link copiado al portapapeles");
         return;
       }
-
       if (typeof window !== "undefined") {
         const textarea = document.createElement("textarea");
         textarea.value = url;
@@ -533,7 +575,6 @@ export default function ReservarPage() {
           return;
         }
       }
-
       throw new Error("copy-not-supported");
     } catch {
       toast.error("No pudimos copiar el link. Copialo manualmente.");
@@ -717,10 +758,10 @@ export default function ReservarPage() {
       typeof raw?.totalAmount === "number"
         ? raw.totalAmount
         : typeof legacy?.totalDepositAmount === "number"
-        ? legacy.totalDepositAmount
-        : typeof legacy?.totalAmount === "number"
-        ? legacy.totalAmount
-        : undefined;
+          ? legacy.totalDepositAmount
+          : typeof legacy?.totalAmount === "number"
+            ? legacy.totalAmount
+            : undefined;
 
     const currency = raw?.currency || legacy?.currency || bookingsList[0]?.depositCurrency || bookingsList[0]?.service?.currency || "ARS";
 
@@ -774,6 +815,31 @@ export default function ReservarPage() {
   );
 
   const hasPendingDeposit = paymentPending || pendingDeposits.length > 0;
+
+  const requiresDeposit = (b: BookingCreated) =>
+    b.depositRequired ||
+    (typeof b.depositAmount === "number" && b.depositAmount > 0) ||
+    (typeof b.depositValue === "number" && b.depositValue > 0) ||
+    (typeof b.depositValueApplied === "number" && b.depositValueApplied > 0);
+
+  const isBookingConfirmed = (b: BookingCreated) => {
+    // Si existe pago grupal...
+    if (normalizedPayment) {
+      // ...y está pendiente, la reserva sólo se considera confirmada
+      // si esa reserva NO requiere seña.
+      if (paymentPending) return !requiresDeposit(b);
+
+      // Si el pago grupal no está pendiente (pagado / no requerido),
+      // todas las reservas quedan confirmadas.
+      return true;
+    }
+
+    // Sin pago grupal: confirmada si no requiere seña
+    // o si la seña individual está pagada.
+    if (!requiresDeposit(b)) return true;
+    const st = (b.depositStatus || "").toLowerCase();
+    return ["paid", "approved", "completed", "done", "fulfilled"].includes(st);
+  };
 
   if (gateLoading)
     return (
@@ -936,9 +1002,8 @@ export default function ReservarPage() {
                   <div className="max-w-3xl mx-auto">
                     {pros.length > 1 && (
                       <div
-                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${
-                          sel === "any" ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50" : "border-gray-200 hover:border-amber-300 bg-white/80"
-                        }`}
+                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any" ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50" : "border-gray-200 hover:border-amber-300 bg-white/80"
+                          }`}
                         onClick={() =>
                           setSelection((prev) => ({
                             ...prev,
@@ -1103,23 +1168,23 @@ export default function ReservarPage() {
                   ) : (
                     <div className="grid grid-cols-3 gap-3">
                       {timeSlots.map((time) => {
-                        const blockedByDur = isSlotBlockedByDuration(time);
-                        const blockedByPrev = isSlotBlockedByPrevService(time);
+                        const blockedByDur = isSlotBlockedByDuration(time); // mantiene el “bloque” visual del mismo servicio
+                        const blockedByPrev = isSlotOverlappingWithPrevSelections(time); // ✅ nueva lógica correcta
                         const picked = selectedTimeBlock === time;
                         const blocked = (blockedByDur && !picked) || blockedByPrev;
+
 
                         return (
                           <Button
                             key={time}
                             variant={picked ? "default" : "outline"}
                             disabled={blocked}
-                            className={`h-12 transition-all duration-300 ${
-                              picked
-                                ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                                : blocked
+                            className={`h-12 transition-all duration-300 ${picked
+                              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                              : blocked
                                 ? "opacity-40 cursor-not-allowed border-2"
                                 : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                            }`}
+                              }`}
                             onClick={() => {
                               if (!selectedDateObj) return;
                               handleConfirmTimesForCurrent(selectedDateObj, time);
@@ -1274,17 +1339,16 @@ export default function ReservarPage() {
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>
             <div className="text-center space-y-8">
               <div className="max-w-2xl mx-auto">
-                <div className="rounded-3xl p-4 sm:p-10 border backdrop-blur-sm bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200">
+                <div className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${hasPendingDeposit ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200" : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"}`}>
                   <div className="flex items-center justify-center">
-                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg bg-gradient-to-r from-green-500 to-emerald-600">
+                    <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${hasPendingDeposit ? "bg-gradient-to-r from-amber-500 to-amber-600" : "bg-gradient-to-r from-green-500 to-emerald-600"}`}>
                       <CheckCircle className="h-10 w-10 text-white" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div
-                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${
-                        hasPendingDeposit ? "bg-amber-100 text-amber-900 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-emerald-200"
-                      }`}
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${hasPendingDeposit ? "bg-amber-100 text-amber-900 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-emerald-200"
+                        }`}
                     >
                       {hasPendingDeposit ? "Pendiente" : "Listo"}
                     </div>
@@ -1298,27 +1362,99 @@ export default function ReservarPage() {
 
                   {singleBooking ? (
                     <div className="mt-8">
-                      <div className="rounded-xl border p-4 bg-white">
-                        <div className="flex items-center justify-between">
+                      <div className="rounded-xl border p-4 bg-white flex items-center justify-between gap-3">
+                        <div>
                           <div className="font-semibold">{singleBooking.service?.name}</div>
                           <div className="text-sm">
                             {format(new Date(singleBooking.start), "PPP", { locale: es })} • {format(new Date(singleBooking.start), "HH:mm")}
                           </div>
                         </div>
+                        {isBookingConfirmed(singleBooking) && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  className="h-10 w-10 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                  aria-label="Google Calendar"
+                                >
+                                  <a
+                                    href={buildGoogleCalendarUrl({
+                                      title: `${singleBooking.service?.name}${singleBooking?.professional?.name ? ` — ${singleBooking.professional.name}` : ""}`,
+                                      startISO: singleBooking.start,
+                                      endISO: singleBooking.end,
+                                      details: "Reserva confirmada",
+                                    })}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <FcGoogle className="h-5 w-5 mx-auto" />
+                                  </a>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="left" className="text-xs">
+                                Google Calendar
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+
                       </div>
                     </div>
                   ) : Array.isArray((bookingResult as any).bookings) ? (
                     <div className="mt-8 grid gap-3">
-                      {(bookingResult as any).bookings.map((b: BookingCreated) => (
-                        <div key={b._id} className="rounded-xl border p-4 bg-white">
-                          <div className="flex items-center justify-between">
-                            <div className="font-semibold">{b.service?.name}</div>
-                            <div className="text-sm">
-                              {format(new Date(b.start), "PPP", { locale: es })} • {format(new Date(b.start), "HH:mm")}
+                      {(bookingResult as any).bookings.map((b: BookingCreated) => {
+                        const confirmedNoDeposit = !requiresDeposit(b);
+                        return (
+                          <div key={b._id} className="rounded-xl border p-4 bg-white">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-2">
+                                <div className="font-semibold">{b.service?.name}</div>
+                                {confirmedNoDeposit && (
+                                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200">Confirmado</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-sm">
+                                  {format(new Date(b.start), "PPP", { locale: es })} • {format(new Date(b.start), "HH:mm")}
+                                </div>
+                                {isBookingConfirmed(b) && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          asChild
+                                          variant="outline"
+                                          className="h-9 w-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                          aria-label="Google Calendar"
+                                        >
+                                          <a
+                                            href={buildGoogleCalendarUrl({
+                                              title: `${b.service?.name}${b?.professional?.name ? ` — ${b.professional.name}` : ""}`,
+                                              startISO: b.start,
+                                              endISO: b.end,
+                                              details: "Reserva confirmada",
+                                            })}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                          >
+                                            <FcGoogle className="h-4 w-4 mx-auto" />
+                                          </a>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="left" className="text-xs">
+                                        Google Calendar
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : null}
 
@@ -1350,22 +1486,41 @@ export default function ReservarPage() {
                             </div>
 
                             <div className="mt-3 space-y-1 text-xs text-gray-600">
-                              <div>Incluye {bookingsList.length} reserva{bookingsList.length === 1 ? "" : "s"}:</div>
-                              <ul className="space-y-1">
-                                {bookingsList.map((booking) => {
-                                  const depositInfo = getDepositDisplay(booking);
-                                  const startDate = booking.start ? new Date(booking.start) : null;
-                                  const isValidDate = !!(startDate && !Number.isNaN(startDate.getTime()));
-                                  const when = isValidDate ? `${format(startDate!, "PPP", { locale: es })} • ${format(startDate!, "HH:mm")}` : undefined;
-                                  return (
-                                    <li key={booking._id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                                      <span className="font-medium text-gray-800">{booking.service?.name}</span>
-                                      {when ? <span className="text-gray-500">{when}</span> : null}
-                                      {depositInfo.label ? <span className="text-amber-700 font-semibold">Seña: {depositInfo.label}</span> : null}
-                                    </li>
-                                  );
-                                })}
-                              </ul>
+                              {(() => {
+                                // Solo reservas con seña (> 0 o % real)
+                                const depositBookings = bookingsList.filter((b) => requiresDeposit(b));
+                                const count = depositBookings.length;
+
+                                if (count === 0) return null; // si ninguna tiene seña, no mostramos el listado
+
+                                return (
+                                  <>
+                                    <div>
+                                      Incluye {count} reserva{count === 1 ? "" : "s"}:
+                                    </div>
+                                    <ul className="space-y-1">
+                                      {depositBookings.map((booking) => {
+                                        const depositInfo = getDepositDisplay(booking);
+                                        return (
+                                          <li
+                                            key={booking._id}
+                                            className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"
+                                          >
+                                            <span className="font-medium text-gray-800">
+                                              {booking.service?.name}
+                                            </span>
+                                            {depositInfo.label && (
+                                              <span className="text-amber-700 font-semibold">
+                                                Seña: {depositInfo.label}
+                                              </span>
+                                            )}
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
 
@@ -1373,13 +1528,14 @@ export default function ReservarPage() {
                             <div className="flex flex-col sm:flex-row gap-2">
                               <Button
                                 disabled={!normalizedPayment.link}
-                                className="w-full sm:w-auto h-11 bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0 disabled:opacity-60"
+                                className="w-full sm:w-auto h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-80 text-white shadow-lg border-0 disabled:opacity-60"
                                 onClick={() => {
                                   if (!normalizedPayment.link) return;
                                   if (typeof window !== "undefined") window.open(normalizedPayment.link, "_blank", "noopener,noreferrer");
                                 }}
                               >
-                                <CreditCard className="mr-2 h-5 w-5" /> Pagar seña total
+                                <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto mr-2" />
+                                Mercado Pago
                               </Button>
                               {normalizedPayment.link ? (
                                 <Button variant="outline" className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50" onClick={() => handleCopyDepositLink(normalizedPayment.link ?? "")}>
@@ -1419,9 +1575,10 @@ export default function ReservarPage() {
                                   <p className="text-sm font-medium text-emerald-700">Seña registrada. ¡Gracias!</p>
                                 ) : depositLink ? (
                                   <div className="flex flex-col sm:flex-row gap-2">
-                                    <Button asChild className="w-full sm:w-auto h-11 bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0">
+                                    <Button asChild className="w-full sm:w-auto h-11 bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg border-0">
                                       <a href={depositLink} target="_blank" rel="noopener noreferrer">
-                                        <CreditCard className="mr-2 h-5 w-5" /> Pagar seña
+                                        <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto mr-2" />
+                                        Mercado Pago
                                       </a>
                                     </Button>
                                     <Button variant="outline" className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50" onClick={() => handleCopyDepositLink(depositLink)}>
@@ -1439,39 +1596,13 @@ export default function ReservarPage() {
                     </div>
                   ) : null}
 
-                  <div className="pt-8">
-                    {(() => {
-                      const first = singleBooking
-                        ? singleBooking
-                        : Array.isArray((bookingResult as any).bookings)
-                        ? (bookingResult as any).bookings[0]
-                        : (bookingResult as any).booking;
-                      if (!first) return null;
-                      const gcalUrl = buildGoogleCalendarUrl({
-                        title: singleBooking ? `${first.service?.name}${first?.professional?.name ? ` — ${first.professional.name}` : ""}` : Array.isArray((bookingResult as any).bookings) ? "Reserva — Paquete" : `${first.service?.name}${first?.professional?.name ? ` — ${first.professional.name}` : ""}`,
-                        startISO: first.start,
-                        endISO: first.end,
-                        details: singleBooking ? "Reserva confirmada" : "Reserva múltiple confirmada",
-                        location: branches.length ? "" : "",
-                      });
-                      return (
-                        <Button asChild variant="outline" className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50">
-                          <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
-                            <CalendarIcon className="mr-2 h-5 w-5" />
-                            Guardar en Google Calendar
-                          </a>
-                        </Button>
-                      );
-                    })()}
-                  </div>
-
                   <div className="mt-8 grid gap-6">
                     {(() => {
                       const first = singleBooking
                         ? singleBooking
                         : Array.isArray((bookingResult as any).bookings)
-                        ? (bookingResult as any).bookings[0]
-                        : (bookingResult as any).booking;
+                          ? (bookingResult as any).bookings[0]
+                          : (bookingResult as any).booking;
                       return first?.client?.email ? (
                         <div className="pt-2">
                           <Link
