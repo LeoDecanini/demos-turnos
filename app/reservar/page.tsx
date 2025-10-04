@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Clock, User, CheckCircle, ArrowLeft, UserPlus, Lock } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, CheckCircle, ArrowLeft, UserPlus, Lock, CreditCard, Copy } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -68,10 +68,48 @@ type BookingCreated = {
   start: string;
   end: string;
   client?: { email?: string };
+  depositRequired?: boolean;
+  depositStatus?: string;
+  depositAmount?: number;
+  depositValueApplied?: number;
+  depositValue?: number;
+  depositCurrency?: string;
+  depositType?: string;
+  depositInitPoint?: string;
+  depositSandboxInitPoint?: string;
+  depositPreferenceId?: string;
+  depositDeadlineAt?: string;
 };
+type PaymentSummary = {
+  totalAmount?: number;
+  totalDepositAmount?: number;
+  status?: string;
+  link?: string;
+  initPoint?: string;
+  sandboxInitPoint?: string;
+  preferenceId?: string;
+  deferred?: boolean;
+  currency?: string;
+  required?: boolean;
+  bookingIds?: string[];
+};
+
+type NormalizedPayment = {
+  amount?: number;
+  currency?: string;
+  link?: string;
+  status?: string;
+  preferenceId?: string;
+  deferred?: boolean;
+  bookingIds?: string[];
+  required?: boolean;
+  raw?: PaymentSummary | null | undefined;
+  legacy?: PaymentSummary | null | undefined;
+};
+
 type BookingResponse =
-  | { success: true; bookings: BookingCreated[]; message: string }
-  | { success: true; booking: BookingCreated; message: string }
+  | { success: true; bookings: BookingCreated[]; message: string; bulkGroupId?: string; bulkPayment?: PaymentSummary; payment?: PaymentSummary }
+  | { success: true; booking: BookingCreated; message: string; bulkGroupId?: string; bulkPayment?: PaymentSummary; payment?: PaymentSummary }
   | { success: false; message: string };
 
 type Branch = {
@@ -428,7 +466,79 @@ export default function ReservarPage() {
   const currentService = services.find((s) => s._id === currentServiceId);
   const currentProfId = selection[currentServiceId]?.professionalId || "any";
 
-  const money = (n?: number, currency = "ARS") => (typeof n === "number" ? n.toLocaleString("es-AR", { style: "currency", currency, maximumFractionDigits: 0 }).replace(/\s/g, "") : "");
+  const money = (n?: number, currency = "ARS") =>
+    typeof n === "number"
+      ? n.toLocaleString("es-AR", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 2 }).replace(/\s/g, "")
+      : "";
+
+  const getDepositDisplay = (booking: BookingCreated) => {
+    const rawType = (booking.depositType || "").toString().toLowerCase();
+    const currency = booking.depositCurrency || booking.service?.currency || "ARS";
+    const rawAmount =
+      typeof booking.depositAmount === "number"
+        ? booking.depositAmount
+        : typeof booking.depositValueApplied === "number"
+        ? booking.depositValueApplied
+        : typeof booking.depositValue === "number"
+        ? booking.depositValue
+        : null;
+
+    if (rawType === "percent" && rawAmount != null) {
+      return { label: `${rawAmount}%`, amount: rawAmount, currency, isPercent: true } as const;
+    }
+
+    if (rawAmount != null) {
+      return { label: money(rawAmount, currency), amount: rawAmount, currency, isPercent: false } as const;
+    }
+
+    return { label: null, amount: null, currency, isPercent: rawType === "percent" } as const;
+  };
+
+  const formatDepositStatus = (status?: string) => {
+    const normalized = (status || "").toLowerCase();
+    if (!normalized) return "Pendiente";
+    if (["paid", "approved", "completed", "done", "fulfilled"].includes(normalized)) return "Pagada";
+    if (["pending", "waiting_payment", "unpaid", "authorized"].includes(normalized)) return "Pendiente";
+  if (["in_process", "processing"].includes(normalized)) return "En proceso";
+  if (["failed", "rejected"].includes(normalized)) return "Rechazada";
+    if (["cancelled", "canceled"].includes(normalized)) return "Cancelada";
+    return status ?? "Pendiente";
+  };
+
+  const handleCopyDepositLink = async (url: string) => {
+    if (!url) {
+      toast.error("No encontramos un link para copiar");
+      return;
+    }
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copiado al portapapeles");
+        return;
+      }
+
+      if (typeof window !== "undefined") {
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        const success = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (success) {
+          toast.success("Link copiado al portapapeles");
+          return;
+        }
+      }
+
+      throw new Error("copy-not-supported");
+    } catch {
+      toast.error("No pudimos copiar el link. Copialo manualmente.");
+    }
+  };
 
   const handleConfirmTimesForCurrent = (date: Date, time: string) => {
     const dateStr = fmtDay(date);
@@ -587,6 +697,83 @@ export default function ReservarPage() {
     (Array.isArray((bookingResult as any)?.bookings) && (bookingResult as any).bookings.length === 1
       ? (bookingResult as any).bookings[0]
       : null);
+
+  const bookingsList = useMemo(() => {
+    if (!bookingResult) return [] as BookingCreated[];
+    if (Array.isArray((bookingResult as any)?.bookings)) return (bookingResult as any).bookings as BookingCreated[];
+    if ((bookingResult as any)?.booking) return [(bookingResult as any).booking as BookingCreated];
+    return [] as BookingCreated[];
+  }, [bookingResult]);
+
+  const bulkGroupId = useMemo(() => ((bookingResult as any)?.bulkGroupId ?? undefined) as string | undefined, [bookingResult]);
+
+  const normalizedPayment = useMemo<NormalizedPayment | undefined>(() => {
+    if (!bookingResult) return undefined;
+    const raw = ((bookingResult as any)?.payment ?? null) as PaymentSummary | null;
+    const legacy = ((bookingResult as any)?.bulkPayment ?? null) as PaymentSummary | null;
+    if (!raw && !legacy) return undefined;
+
+    const totalAmount =
+      typeof raw?.totalAmount === "number"
+        ? raw.totalAmount
+        : typeof legacy?.totalDepositAmount === "number"
+        ? legacy.totalDepositAmount
+        : typeof legacy?.totalAmount === "number"
+        ? legacy.totalAmount
+        : undefined;
+
+    const currency = raw?.currency || legacy?.currency || bookingsList[0]?.depositCurrency || bookingsList[0]?.service?.currency || "ARS";
+
+    const link = raw?.initPoint || raw?.sandboxInitPoint || raw?.link || legacy?.link || legacy?.initPoint || legacy?.sandboxInitPoint || "";
+
+    const status = (legacy?.status || raw?.status || "").toString();
+    const required = raw?.required ?? legacy?.required ?? (!!totalAmount && (!status || status.toLowerCase() !== "paid"));
+
+    return {
+      amount: totalAmount,
+      currency,
+      link: link || undefined,
+      status: status || (required ? "pending" : "paid"),
+      preferenceId: raw?.preferenceId || legacy?.preferenceId,
+      deferred: raw?.deferred ?? legacy?.deferred,
+      bookingIds: raw?.bookingIds || legacy?.bookingIds,
+      required,
+      raw,
+      legacy,
+    };
+  }, [bookingResult, bookingsList]);
+
+  const bookingsWithDeposit = useMemo(
+    () =>
+      bookingsList.filter(
+        (b) =>
+          b.depositRequired ||
+          (typeof b.depositAmount === "number" && b.depositAmount > 0) ||
+          (typeof b.depositValue === "number" && b.depositValue > 0) ||
+          (typeof b.depositValueApplied === "number" && b.depositValueApplied > 0)
+      ),
+    [bookingsList]
+  );
+
+  const pendingDeposits = useMemo(
+    () =>
+      bookingsWithDeposit.filter((b) => {
+        const status = (b.depositStatus || "").toLowerCase();
+        return !["paid", "approved", "completed", "done", "fulfilled"].includes(status);
+      }),
+    [bookingsWithDeposit]
+  );
+
+  const paymentStatusNorm = (normalizedPayment?.status || "").toLowerCase();
+  const paymentAmount = typeof normalizedPayment?.amount === "number" ? normalizedPayment.amount : null;
+  const paymentPaidStatuses = ["paid", "approved", "completed", "done", "fulfilled"];
+  const paymentPending = !!(
+    normalizedPayment &&
+    (normalizedPayment.required || ((paymentAmount ?? 0) > 0)) &&
+    !paymentPaidStatuses.includes(paymentStatusNorm)
+  );
+
+  const hasPendingDeposit = paymentPending || pendingDeposits.length > 0;
 
   if (gateLoading)
     return (
@@ -1094,9 +1281,19 @@ export default function ReservarPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset bg-emerald-100 text-emerald-900 ring-emerald-200">Listo</div>
-                    <h2 className="text-3xl font-extrabold text-gray-900">¡Reserva confirmada!</h2>
-                    {!resultHasMany && (bookingResult as any)?.message ? null : <p className="text-black text-xl">{(bookingResult as any).message || "Se creó la reserva"}</p>}
+                    <div
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${
+                        hasPendingDeposit ? "bg-amber-100 text-amber-900 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-emerald-200"
+                      }`}
+                    >
+                      {hasPendingDeposit ? "Pendiente" : "Listo"}
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-gray-900">{hasPendingDeposit ? "Reserva pendiente de seña" : "¡Reserva confirmada!"}</h2>
+                    {(() => {
+                      if (hasPendingDeposit) return <p className="text-black text-xl">Tu reserva queda pendiente hasta que registremos el pago de la seña requerida.</p>;
+                      if (!resultHasMany && (bookingResult as any)?.message) return null;
+                      return <p className="text-black text-xl">{(bookingResult as any)?.message || "Se creó la reserva"}</p>;
+                    })()}
                   </div>
 
                   {singleBooking ? (
@@ -1122,6 +1319,123 @@ export default function ReservarPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  ) : null}
+
+                  {(normalizedPayment && paymentAmount !== null) || bookingsWithDeposit.length > 0 ? (
+                    <div className="mt-8 space-y-4 rounded-3xl border border-amber-200 bg-amber-50/60 p-5 text-left">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 rounded-full bg-amber-500/10 p-2 text-amber-600">
+                          <CreditCard className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-lg font-semibold text-amber-900">Seña requerida</h3>
+                          <p className="text-sm text-amber-800">{normalizedPayment ? "Aboná la seña total para confirmar todas tus reservas." : "Aboná la seña para confirmar tu reserva. También te enviamos el link por mail."}</p>
+                          {bulkGroupId ? <p className="text-[11px] uppercase tracking-wide text-amber-700/70">ID de reserva grupal: {bulkGroupId}</p> : null}
+                        </div>
+                      </div>
+
+                      {normalizedPayment && paymentAmount !== null ? (
+                        <div className="space-y-4">
+                          <div className="rounded-2xl border border-amber-200 bg-white/80 p-4 space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="space-y-1">
+                                <div className="text-sm font-semibold text-gray-900">Seña total del lote</div>
+                                <div className="text-xs text-gray-600">
+                                  Estado: <span className={paymentPending ? "text-amber-700 font-semibold" : "text-emerald-600 font-semibold"}>{formatDepositStatus(normalizedPayment.status)}</span>
+                                  {normalizedPayment.deferred ? <span className="ml-2 text-[11px] uppercase tracking-wide text-amber-500">Pago diferido</span> : null}
+                                </div>
+                              </div>
+                              <div className="text-xl font-bold text-amber-700">{money(paymentAmount, normalizedPayment.currency || bookingsList[0]?.service?.currency || "ARS")}</div>
+                            </div>
+
+                            <div className="mt-3 space-y-1 text-xs text-gray-600">
+                              <div>Incluye {bookingsList.length} reserva{bookingsList.length === 1 ? "" : "s"}:</div>
+                              <ul className="space-y-1">
+                                {bookingsList.map((booking) => {
+                                  const depositInfo = getDepositDisplay(booking);
+                                  const startDate = booking.start ? new Date(booking.start) : null;
+                                  const isValidDate = !!(startDate && !Number.isNaN(startDate.getTime()));
+                                  const when = isValidDate ? `${format(startDate!, "PPP", { locale: es })} • ${format(startDate!, "HH:mm")}` : undefined;
+                                  return (
+                                    <li key={booking._id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                                      <span className="font-medium text-gray-800">{booking.service?.name}</span>
+                                      {when ? <span className="text-gray-500">{when}</span> : null}
+                                      {depositInfo.label ? <span className="text-amber-700 font-semibold">Seña: {depositInfo.label}</span> : null}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          </div>
+
+                          {paymentPending ? (
+                            <div className="flex flex-col sm:flex-row gap-2">
+                              <Button
+                                disabled={!normalizedPayment.link}
+                                className="w-full sm:w-auto h-11 bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0 disabled:opacity-60"
+                                onClick={() => {
+                                  if (!normalizedPayment.link) return;
+                                  if (typeof window !== "undefined") window.open(normalizedPayment.link, "_blank", "noopener,noreferrer");
+                                }}
+                              >
+                                <CreditCard className="mr-2 h-5 w-5" /> Pagar seña total
+                              </Button>
+                              {normalizedPayment.link ? (
+                                <Button variant="outline" className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50" onClick={() => handleCopyDepositLink(normalizedPayment.link ?? "")}>
+                                  <Copy className="mr-2 h-5 w-5" /> Copiar link
+                                </Button>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <p className="text-sm font-medium text-emerald-700">Seña registrada para todo el grupo. ¡Gracias!</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {bookingsWithDeposit.map((booking) => {
+                            const depositInfo = getDepositDisplay(booking);
+                            const depositLink = booking.depositInitPoint || booking.depositSandboxInitPoint || "";
+                            const normalizedStatus = (booking.depositStatus || "").toLowerCase();
+                            const isDepositPaid = ["paid", "approved", "completed", "done", "fulfilled"].includes(normalizedStatus);
+                            const statusLabel = formatDepositStatus(booking.depositStatus);
+                            const deadlineDate = booking.depositDeadlineAt ? new Date(booking.depositDeadlineAt) : null;
+                            const hasValidDeadline = !!(deadlineDate && !Number.isNaN(deadlineDate.getTime()));
+                            const deadlineText = hasValidDeadline ? format(deadlineDate as Date, "PPPp", { locale: es }) : null;
+
+                            return (
+                              <div key={booking._id} className="rounded-2xl border border-amber-200 bg-white/80 p-4 space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                  <div>
+                                    <div className="font-semibold text-gray-900">{booking.service?.name}</div>
+                                    <div className="text-xs text-gray-600">
+                                      Estado de seña: <span className={isDepositPaid ? "text-emerald-600 font-semibold" : "text-amber-700 font-semibold"}>{statusLabel}</span>
+                                    </div>
+                                  </div>
+                                  {depositInfo.label && <div className="text-base font-bold text-amber-700">Seña: {depositInfo.label}</div>}
+                                </div>
+                                {deadlineText ? <p className="text-xs text-gray-500">Pagá antes de {deadlineText}</p> : null}
+                                {isDepositPaid ? (
+                                  <p className="text-sm font-medium text-emerald-700">Seña registrada. ¡Gracias!</p>
+                                ) : depositLink ? (
+                                  <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button asChild className="w-full sm:w-auto h-11 bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0">
+                                      <a href={depositLink} target="_blank" rel="noopener noreferrer">
+                                        <CreditCard className="mr-2 h-5 w-5" /> Pagar seña
+                                      </a>
+                                    </Button>
+                                    <Button variant="outline" className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50" onClick={() => handleCopyDepositLink(depositLink)}>
+                                      <Copy className="mr-2 h-5 w-5" /> Copiar link
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-500">No encontramos el link de pago. Contactanos para completar la seña.</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ) : null}
 
