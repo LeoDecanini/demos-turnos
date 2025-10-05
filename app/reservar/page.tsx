@@ -1954,8 +1954,12 @@ export default function ReservarPage() {
                               <div className="rounded-2xl border border-amber-200 bg-white/80 p-4 space-y-2">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                   <div className="space-y-1">
-                                    <div className="text-sm font-semibold text-gray-900">Seña total del lote</div>
-                                    <div className="text-xs text-gray-600">
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {bookingsList.filter((b) => requiresDeposit(b)).length <= 1
+                                        ? "Seña requerida"
+                                        : "Seña total requerida"}
+                                    </div>
+                                    {/* <div className="text-xs text-gray-600">
                                       Estado:{" "}
                                       <span className={paymentPending ? "text-amber-700 font-semibold" : "text-emerald-600 font-semibold"}>
                                         {formatDepositStatus(normalizedPayment.status)}
@@ -1963,7 +1967,7 @@ export default function ReservarPage() {
                                       {normalizedPayment.deferred ? (
                                         <span className="ml-2 text-[11px] uppercase tracking-wide text-amber-500">Pago diferido</span>
                                       ) : null}
-                                    </div>
+                                    </div> */}
                                   </div>
                                   <div className="text-xl font-bold text-amber-700">
                                     {money(paymentAmount, normalizedPayment.currency || bookingsList[0]?.service?.currency || "ARS")}

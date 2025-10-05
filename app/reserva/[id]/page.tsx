@@ -18,6 +18,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+/* NUEVO: tooltip + icono Google */
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FcGoogle } from "react-icons/fc";
+
 const toGCalDateUTC = (d: Date) => {
     const iso = d.toISOString();
     return iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -193,21 +197,15 @@ export default async function BookingPublicPage({
     let isGroupMode = false;
 
     if (esGrupo) {
-        // Para grupos, usamos el endpoint con groupMode=true
         url = `${API_BASE}/${id}?groupMode=true`;
-        console.log('Fetching group data from:', url);
         try {
             const res = await fetch(url, { cache: "no-store" });
             if (!res.ok) throw new Error("No se pudo obtener el grupo");
             const response = await res.json();
-
-            // La nueva API retorna: { ok: true, data: firstBooking, group: groupDetails, isGroupMode: true }
             if (response.ok && response.data) {
                 booking = response.data;
                 groupData = response.group;
                 isGroupMode = response.isGroupMode;
-
-                // Asegurar que el booking tiene la estructura correcta
                 if (booking) {
                     booking.service = booking.service || { name: "Servicio", _id: "" };
                     booking.professional = booking.professional || null;
@@ -222,7 +220,6 @@ export default async function BookingPublicPage({
             booking = null;
         }
     } else {
-        // Para reservas individuales, la lógica original
         url = `${API_BASE}/${id}`;
         try {
             const res = await fetch(url, { cache: "no-store" });
@@ -264,21 +261,15 @@ export default async function BookingPublicPage({
     const startTime = fmtTime(booking.start, tz);
     const endTime = fmtTime(booking.end, tz);
 
-    // Para grupos, usar los totales del grupo de la nueva API
     const totalTarget = esGrupo && groupData?.totals ? groupData.totals.depositTarget : booking.depositValueApplied;
     const totalCollected = esGrupo && groupData?.totals ? groupData.totals.netCollected : 0;
     const totalRemaining = esGrupo && groupData?.totals ? groupData.totals.remaining : (booking.depositValueApplied || 0);
     const isGroupFullyPaid = esGrupo && groupData?.totals ? groupData.totals.fullyPaid : (booking.depositStatus === 'paid');
     const groupCurrency = esGrupo && groupData?.totals ? groupData.totals.currency : (booking.depositCurrency || booking.currency);
 
-    const statusTone = pickTone(booking.status);
-    const payTone = pickTone(booking.paymentStatus);
-    const depositTone = pickTone(booking.depositStatus);
-
-    // Para el callout de depósito, usar los enlaces de pago del grupo si está disponible
-    const showDepositCallout = esGrupo ?
-        (totalRemaining > 0 && groupData?.mp && (groupData.mp.initPoint || groupData.mp.sandboxInitPoint)) :
-        (booking.depositRequired &&
+    const showDepositCallout = esGrupo
+        ? (totalRemaining > 0 && groupData?.mp && (groupData.mp.initPoint || groupData.mp.sandboxInitPoint))
+        : (booking.depositRequired &&
             (booking.depositStatus === "unpaid" || booking.depositStatus === "pending") &&
             (booking.depositInitPoint || booking.depositSandboxInitPoint));
 
@@ -292,15 +283,18 @@ export default async function BookingPublicPage({
         }).format(depositDeadline)
         : null;
 
-    const señaAplicada = esGrupo ?
-        fmtMoney(totalTarget, groupCurrency) :
-        (typeof booking.depositValueApplied === "number"
+    const señaAplicada = esGrupo
+        ? fmtMoney(totalTarget, groupCurrency)
+        : (typeof booking.depositValueApplied === "number"
             ? fmtMoney(booking.depositValueApplied, booking.depositCurrency || booking.currency)
             : booking.depositAmount && booking.depositType === "percent"
                 ? `${booking.depositAmount}%`
                 : fmtMoney(booking.depositAmount, booking.depositCurrency || booking.currency));
 
     const isConfirmed = esGrupo ? isGroupFullyPaid : ((booking.status || "").toLowerCase() === "confirmed");
+    const isCanceled =
+        (booking.status || "").toLowerCase() === "canceled" || booking.depositStatus === "expired";
+
 
     const gcalUrl = buildGoogleCalendarUrl({
         title: `${service?.name || "Reserva"}${professional?.name && professional.name !== "Indistinto" ? ` — ${professional.name}` : ""}${esGrupo ? ` (Grupo de ${groupData?.bookings?.length || 1} reservas)` : ""}`,
@@ -316,9 +310,9 @@ export default async function BookingPublicPage({
         location: undefined,
     });
 
-    const paymentLink = esGrupo && groupData?.mp ?
-        (groupData.mp.initPoint || groupData.mp.sandboxInitPoint) :
-        (booking.depositInitPoint || booking.depositSandboxInitPoint);
+    const paymentLink = esGrupo && groupData?.mp
+        ? (groupData.mp.initPoint || groupData.mp.sandboxInitPoint)
+        : (booking.depositInitPoint || booking.depositSandboxInitPoint);
 
     return (
         <main className="min-h-screen relative overflow-hidden pt-16">
@@ -332,7 +326,7 @@ export default async function BookingPublicPage({
                             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900">
                                 {esGrupo ? "¡Reservas confirmadas!" : "¡Reserva confirmada!"}
                             </h1>
-                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-xl">
+                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-green-100/50 text-black border-green-400 border">
                                 <p className="text-sm md:text-base">
                                     {esGrupo ? `Tus ${groupData?.bookings?.length || 1} turnos quedaron confirmados.` : "Tu turno quedó confirmado."} Te enviamos un correo con el detalle.
                                 </p>
@@ -347,7 +341,7 @@ export default async function BookingPublicPage({
                             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900">
                                 {esGrupo ? "Reservas canceladas" : "Reserva cancelada"}
                             </h1>
-                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-xl">
+                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-rose-100/50 text-black border-rose-400 border">
                                 <p className="text-sm md:text-base">
                                     {esGrupo ? "Estas reservas ya no se encuentran activas." : "Esta reserva ya no se encuentra activa."}
                                 </p>
@@ -361,9 +355,11 @@ export default async function BookingPublicPage({
                             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900">
                                 {esGrupo ? "Reservas pendientes" : "Reserva pendiente"}
                             </h1>
-                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-xl">
-                                <p className="text-sm md:text-base">
-                                    Aguardamos la confirmación del pago de seña (si corresponde).
+                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-yellow-100/50 text-black border-yellow-400 border">
+                                <p className="text-sm">
+                                    Recordá abonar la seña antes del {deadlineHuman || `${dateStr} a las ${startTime}`} 😊
+                                    <br />
+                                    De no hacerlo, {esGrupo && groupData?.bookings?.length > 1 ? "las reservas se cancelarán" : "la reserva se cancelará"} automáticamente.
                                 </p>
                             </div>
                         </div>
@@ -384,31 +380,68 @@ export default async function BookingPublicPage({
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <div className="space-y-3">
-                                        {groupData.bookings.map((b: any, i: number) => (
-                                            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                <div>
-                                                    <div className="font-medium">{b.service?.name || "Servicio"}</div>
-                                                    <div className="text-sm text-gray-600">
-                                                        {fmtDate(b.start, b.timezone)} - {fmtTime(b.start, b.timezone)}
+                                        {groupData.bookings.map((b: any, i: number) => {
+                                            const perUrl = buildGoogleCalendarUrl({
+                                                title: `${b.service?.name || "Reserva"}${b?.professional?.name ? ` — ${b.professional.name}` : ""}`,
+                                                startISO: b.start,
+                                                endISO: b.end,
+                                                details: `Reserva #${b._id || ""}${b?.notes ? `\n\nNotas:\n${b.notes}` : ""}`,
+                                            });
+                                            return (
+                                                <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                                    <div>
+                                                        <div className="font-medium">{b.service?.name || "Servicio"}</div>
+                                                        <div className="text-sm text-gray-600">
+                                                            {fmtDate(b.start, b.timezone)} - {fmtTime(b.start, b.timezone)}
+                                                        </div>
+                                                        {b.professional?.name && (
+                                                            <div className="text-xs text-gray-500">{b.professional.name}</div>
+                                                        )}
                                                     </div>
-                                                    {b.professional?.name && (
-                                                        <div className="text-xs text-gray-500">{b.professional.name}</div>
-                                                    )}
-                                                </div>
-                                                <div className="text-right">
-                                                    <StatusBadge
-                                                        label={b.paymentSummary?.isFullyPaid ? "Pagado" : "Pendiente"}
-                                                        kind={b.paymentSummary?.isFullyPaid ? "success" : "warn"}
-                                                    />
-                                                    <div className="text-xs text-gray-500 mt-1">
-                                                        {fmtMoney(b.depositValueApplied, groupCurrency)}
+                                                    <div className="flex items-center gap-3">
+                                                        {/* Botón por reserva si está confirmada */}
+                                                        {isConfirmed && (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button
+                                                                            asChild
+                                                                            variant="outline"
+                                                                            className="h-9 w-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                                                            aria-label="Google Calendar"
+                                                                        >
+                                                                            <a href={perUrl} target="_blank" rel="noopener noreferrer">
+                                                                                <FcGoogle className="h-4 w-4 mx-auto" />
+                                                                            </a>
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent side="left" className="text-xs">
+                                                                        Google Calendar
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+
+                                                        {/* Estado y monto de seña solo si NO está confirmada */}
+                                                        {!isConfirmed && !isCanceled && (
+                                                            <>
+                                                                <StatusBadge
+                                                                    label={b.paymentSummary?.isFullyPaid ? "Pagado" : "Pendiente"}
+                                                                    kind={b.paymentSummary?.isFullyPaid ? "success" : "warn"}
+                                                                />
+                                                                <div className="text-xs text-gray-500 mt-1">
+                                                                    {fmtMoney(b.depositValueApplied, groupCurrency)}
+                                                                </div>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
 
-                                    {esGrupo && groupData?.totals && (
+                                    {/* Totales ocultos si está confirmada */}
+                                    {!isConfirmed && !isCanceled && esGrupo && groupData?.totals && (
                                         <div className="mt-4 pt-4 border-t border-gray-200">
                                             <div className="flex justify-between text-sm">
                                                 <span>Total seña:</span>
@@ -427,6 +460,57 @@ export default async function BookingPublicPage({
                                 </CardContent>
                             </Card>
                         )}
+
+                        <div className="w-full col-span-3 space-y-8">
+                            {showDepositCallout && !isCanceled && (
+                                <>
+                                    <Card className="border shadow bg-white md:rounded-2xl">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                                                <Wallet className="w-5 h-5 text-amber-600" />
+                                                {esGrupo ? "Seña grupal pendiente" : "Seña pendiente"}
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <div className="text-sm text-gray-600">
+                                                        {esGrupo ? `Importe total (${groupData?.bookings?.length || 1} reservas)` : "Importe a abonar"}
+                                                    </div>
+                                                    <div className="text-2xl font-bold text-gray-900">{señaAplicada}</div>
+                                                    {esGrupo && totalCollected > 0 && (
+                                                        <div className="text-sm text-emerald-600">
+                                                            Pagado: {fmtMoney(totalCollected, groupCurrency)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {deadlineHuman && (
+                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 text-sm">
+                                                    Fecha límite: <span className="font-semibold">{deadlineHuman}</span>
+                                                </div>
+                                            )}
+
+                                            <a
+                                                href={paymentLink || "#"}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex w-full sm:w-auto h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-5 font-semibold text-white shadow-lg border-0 hover:opacity-80 disabled:opacity-60 transition"
+                                            >
+                                                <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto" />
+                                                {esGrupo ? "Pagar seña grupal" : "Pagar seña"} con Mercado Pago
+                                            </a>
+
+
+                                            <p className="text-xs text-gray-500">
+                                                Al hacer clic se abrirá una nueva pestaña con el proveedor de pagos.
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                </>
+                            )}
+                        </div>
 
                         <Card className="border shadow bg-white md:rounded-2xl">
                             <CardHeader className="pb-0">
@@ -456,20 +540,32 @@ export default async function BookingPublicPage({
                                     </div>
                                 )}
 
-                                {!showDepositCallout && (
-                                    <div className="pt-10">
-                                        <Button
-                                            asChild
-                                            variant="outline"
-                                            className="w-full sm:w-auto h-12 px-5 border-2 border-amber-300 hover:bg-amber-50"
-                                        >
-                                            <a href={gcalUrl} target="_blank" rel="noopener noreferrer">
-                                                <CalendarIcon className="mr-2 h-5 w-5" />
-                                                Guardar en Google Calendar
-                                            </a>
-                                        </Button>
-                                    </div>
-                                )}
+                                {/* Botón global de Calendar: removido */}
+                                {/* Para reserva única, mostramos botón por-reserva si está confirmada */}
+                                {/*  {isConfirmed && (
+                  <div className="pt-6">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="h-11 px-4 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                            aria-label="Google Calendar"
+                          >
+                            <a href={gcalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
+                              <FcGoogle className="h-5 w-5" />
+                              <span>Google Calendar</span>
+                            </a>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="text-xs">
+                          Google Calendar
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )} */}
                             </CardContent>
                         </Card>
 
@@ -510,56 +606,6 @@ export default async function BookingPublicPage({
                                 </p>
                             </div>
                         ) : null}
-                    </div>
-
-                    <div className="w-full col-span-3 space-y-8">
-                        {showDepositCallout && (
-                            <>
-                               <Card className="border shadow bg-white md:rounded-2xl">
-                                    <CardHeader>
-                                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                                            <Wallet className="w-5 h-5 text-amber-600" />
-                                            {esGrupo ? "Seña grupal pendiente" : "Seña pendiente"}
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-start justify-between">
-                                            <div>
-                                                <div className="text-sm text-gray-600">
-                                                    {esGrupo ? `Importe total (${groupData?.bookings?.length || 1} reservas)` : "Importe a abonar"}
-                                                </div>
-                                                <div className="text-2xl font-bold text-gray-900">{señaAplicada}</div>
-                                                {esGrupo && totalCollected > 0 && (
-                                                    <div className="text-sm text-emerald-600">
-                                                        Pagado: {fmtMoney(totalCollected, groupCurrency)}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {deadlineHuman && (
-                                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 text-sm">
-                                                Fecha límite: <span className="font-semibold">{deadlineHuman}</span>
-                                            </div>
-                                        )}
-
-                                        <a
-                                            href={paymentLink || "#"}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 px-4 py-3 font-semibold text-white shadow-lg hover:brightness-[1.05] transition"
-                                        >
-                                            <ExternalLink className="w-4 h-4" />
-                                            {esGrupo ? "Pagar seña grupal (Mercado Pago)" : "Pagar seña (Mercado Pago)"}
-                                        </a>
-
-                                        <p className="text-xs text-gray-500">
-                                            Al hacer clic se abrirá una nueva pestaña con el proveedor de pagos.
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            </>
-                        )}
                     </div>
                 </div>
             </section>
