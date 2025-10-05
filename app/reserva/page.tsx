@@ -19,8 +19,18 @@ export default async function ReservaLanding({
       Array.isArray(extRaw) ? extRaw[0] : extRaw
 
   if (ext && typeof ext === "string") {
-    // external_reference = "b:<bookingId>:a:<accountId>"
     const parts = ext.split(":")
+
+    // Caso grupo: "g:<groupId>:a:<accountId>"
+    const gIdx = parts.indexOf("g")
+    if (gIdx >= 0) {
+      const groupId = parts[gIdx + 1]
+      if (groupId) {
+        redirect(`/reserva/${groupId}?grupo=true`)
+      }
+    }
+
+    // Caso individual: "b:<bookingId>:a:<accountId>"
     const bIdx = parts.indexOf("b")
     const bookingId = bIdx >= 0 ? parts[bIdx + 1] : null
     if (bookingId) {
