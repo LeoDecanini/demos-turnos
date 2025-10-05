@@ -89,11 +89,11 @@ const applyDepositPolicy = (list: RawService[], cfg?: DepositCfg) => {
   return list.map((s) =>
     s.usesGlobalDepositConfig
       ? {
-          ...s,
-          depositRequired: cfg.defaultRequired,
-          depositType: cfg.defaultType,
-          depositValue: cfg.defaultValue,
-        }
+        ...s,
+        depositRequired: cfg.defaultRequired,
+        depositType: cfg.defaultType,
+        depositValue: cfg.defaultValue,
+      }
       : s
   );
 };
@@ -147,21 +147,21 @@ type NormalizedPayment = {
 
 type BookingResponse =
   | {
-      success: true;
-      bookings: BookingCreated[];
-      message: string;
-      bulkGroupId?: string;
-      bulkPayment?: PaymentSummary;
-      payment?: PaymentSummary;
-    }
+    success: true;
+    bookings: BookingCreated[];
+    message: string;
+    bulkGroupId?: string;
+    bulkPayment?: PaymentSummary;
+    payment?: PaymentSummary;
+  }
   | {
-      success: true;
-      booking: BookingCreated;
-      message: string;
-      bulkGroupId?: string;
-      bulkPayment?: PaymentSummary;
-      payment?: PaymentSummary;
-    }
+    success: true;
+    booking: BookingCreated;
+    message: string;
+    bulkGroupId?: string;
+    bulkPayment?: PaymentSummary;
+    payment?: PaymentSummary;
+  }
   | { success: false; message: string };
 
 type Branch = {
@@ -201,16 +201,39 @@ function FloatingNav({
   backLabel = "Volver",
   nextLabel = "Continuar",
 }: {
-  onBack?: () => void;
-  onNext?: () => void;
-  backDisabled?: boolean;
-  nextDisabled?: boolean;
-  backLabel?: string;
-  nextLabel?: string;
+  onBack?: () => void
+  onNext?: () => void
+  backDisabled?: boolean
+  nextDisabled?: boolean
+  backLabel?: string
+  nextLabel?: string
 }) {
+  const [bottom, setBottom] = React.useState(24)
+
+  React.useEffect(() => {
+    const compute = () => {
+      const footer = document.querySelector("footer") as HTMLElement | null
+      let extra = 0
+      if (footer) {
+        const r = footer.getBoundingClientRect()
+        extra = Math.max(0, window.innerHeight - r.top)
+      }
+      setBottom(24 + extra)
+    }
+    compute()
+    window.addEventListener("scroll", compute, { passive: true })
+    window.addEventListener("resize", compute)
+    return () => {
+      window.removeEventListener("scroll", compute)
+      window.removeEventListener("resize", compute)
+    }
+  }, [])
+
   return (
-    // sticky evita que “pise” el footer
-    <div className="sticky bottom-6 z-50 flex justify-center pointer-events-none">
+    <div
+      className="fixed left-1/2 z-[60] -translate-x-1/2 pointer-events-none"
+      style={{ bottom: `calc(${bottom}px + env(safe-area-inset-bottom, 0px))` }}
+    >
       <div className="pointer-events-auto rounded-full bg-white/90 backdrop-blur border shadow-lg px-3 py-2 flex gap-2">
         <Button
           variant="outline"
@@ -230,8 +253,9 @@ function FloatingNav({
         </Button>
       </div>
     </div>
-  );
+  )
 }
+
 
 export default function ReservarPage() {
   const { user } = useAuth();
@@ -291,9 +315,8 @@ export default function ReservarPage() {
     const srv = services.find((s) => s._id === srvId);
     const sel = selection[srvId];
     const when = sel?.date && sel?.time ? `${sel.date} • ${sel.time}` : "";
-    return `${srv?.name ?? `Ítem #${idx + 1}`} ${
-      when ? `(${when}) ` : ""
-    }— ${msg}`;
+    return `${srv?.name ?? `Ítem #${idx + 1}`} ${when ? `(${when}) ` : ""
+      }— ${msg}`;
   };
 
   const ERROR_MAP: Array<[test: RegExp, nice: string]> = [
@@ -475,11 +498,11 @@ export default function ReservarPage() {
           const nextSel = { ...selection };
           serviceIds.forEach(
             (sid) =>
-              (nextSel[sid] = {
-                ...(nextSel[sid] || { serviceId: sid }),
-                branchId,
-                professionalId: nextSel[sid]?.professionalId || "any",
-              })
+            (nextSel[sid] = {
+              ...(nextSel[sid] || { serviceId: sid }),
+              branchId,
+              professionalId: nextSel[sid]?.professionalId || "any",
+            })
           );
           setSelection(nextSel);
         }
@@ -633,13 +656,13 @@ export default function ReservarPage() {
   const money = (n?: number, currency = "ARS") =>
     typeof n === "number"
       ? n
-          .toLocaleString("es-AR", {
-            style: "currency",
-            currency,
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-          })
-          .replace(/\s/g, "")
+        .toLocaleString("es-AR", {
+          style: "currency",
+          currency,
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })
+        .replace(/\s/g, "")
       : "";
 
   const getDepositDisplay = (booking: BookingCreated) => {
@@ -649,10 +672,10 @@ export default function ReservarPage() {
       typeof booking.depositAmount === "number"
         ? booking.depositAmount
         : typeof booking.depositValueApplied === "number"
-        ? booking.depositValueApplied
-        : typeof booking.depositValue === "number"
-        ? booking.depositValue
-        : null;
+          ? booking.depositValueApplied
+          : typeof booking.depositValue === "number"
+            ? booking.depositValue
+            : null;
 
     if (rawType === "percent" && rawAmount != null) {
       return { label: `${rawAmount}%`, amount: rawAmount, currency, isPercent: true } as const;
@@ -833,7 +856,7 @@ export default function ReservarPage() {
           setBulkErrors(errs);
           toast.error(
             payload?.message ||
-              "No se pudo crear ninguna reserva. Revisá los errores."
+            "No se pudo crear ninguna reserva. Revisá los errores."
           );
           setStep(5);
           return;
@@ -907,7 +930,7 @@ export default function ReservarPage() {
   const singleBooking: BookingCreated | null =
     (bookingResult as any)?.booking ??
     (Array.isArray((bookingResult as any)?.bookings) &&
-    (bookingResult as any).bookings.length === 1
+      (bookingResult as any).bookings.length === 1
       ? (bookingResult as any).bookings[0]
       : null);
 
@@ -941,10 +964,10 @@ export default function ReservarPage() {
       typeof raw?.totalAmount === "number"
         ? raw.totalAmount
         : typeof legacy?.totalDepositAmount === "number"
-        ? legacy.totalDepositAmount
-        : typeof legacy?.totalAmount === "number"
-        ? legacy.totalAmount
-        : undefined;
+          ? legacy.totalDepositAmount
+          : typeof legacy?.totalAmount === "number"
+            ? legacy.totalAmount
+            : undefined;
 
     const currency =
       raw?.currency ||
@@ -1188,20 +1211,19 @@ export default function ReservarPage() {
                             const next = { ...selection };
                             selectedServices.forEach(
                               (sid) =>
-                                (next[sid] = {
-                                  ...(next[sid] || { serviceId: sid }),
-                                  branchId: b._id,
-                                  professionalId:
-                                    next[sid]?.professionalId || "any",
-                                })
+                              (next[sid] = {
+                                ...(next[sid] || { serviceId: sid }),
+                                branchId: b._id,
+                                professionalId:
+                                  next[sid]?.professionalId || "any",
+                              })
                             );
                             setSelection(next);
                           }}
-                          className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${
-                            selected
+                          className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected
                               ? "border-amber-500 bg-amber-50/60"
                               : "border-gray-200 hover:border-amber-300 bg-white"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="font-semibold text-gray-900">
@@ -1282,11 +1304,10 @@ export default function ReservarPage() {
                   <div className="max-w-3xl mx-auto">
                     {pros.length > 1 && (
                       <div
-                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${
-                          sel === "any"
+                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any"
                             ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
                             : "border-gray-200 hover:border-amber-300 bg-white/80"
-                        }`}
+                          }`}
                         onClick={() => {
                           setSelection((prev) => ({
                             ...prev,
@@ -1353,7 +1374,7 @@ export default function ReservarPage() {
                         void loadAvailableDays(
                           selectedServices[0],
                           selection[selectedServices[0]]?.professionalId ||
-                            "any"
+                          "any"
                         );
                         setStep(4);
                         scrollToTop();
@@ -1500,13 +1521,12 @@ export default function ReservarPage() {
                             key={time}
                             variant={picked ? "default" : "outline"}
                             disabled={blocked}
-                            className={`h-12 transition-all duration-300 ${
-                              picked
+                            className={`h-12 transition-all duration-300 ${picked
                                 ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
                                 : blocked
-                                ? "opacity-40 cursor-not-allowed border-2"
-                                : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
-                            }`}
+                                  ? "opacity-40 cursor-not-allowed border-2"
+                                  : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                              }`}
                             onClick={() => {
                               if (!selectedDateObj) return;
                               handleConfirmTimesForCurrent(selectedDateObj, time);
@@ -1609,9 +1629,8 @@ export default function ReservarPage() {
                     </label>
                     <input
                       type="text"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${
-                        errors.fullName ? "border-red-500" : "border-gray-200"
-                      }`}
+                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.fullName ? "border-red-500" : "border-gray-200"
+                        }`}
                       placeholder="Tu nombre y apellido"
                       value={fullName}
                       onChange={(e) => {
@@ -1634,9 +1653,8 @@ export default function ReservarPage() {
                     </label>
                     <input
                       type="email"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${
-                        errors.email ? "border-red-500" : "border-gray-200"
-                      }`}
+                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.email ? "border-red-500" : "border-gray-200"
+                        }`}
                       placeholder="tu@email.com"
                       value={email}
                       onChange={(e) => {
@@ -1657,9 +1675,8 @@ export default function ReservarPage() {
                     </label>
                     <input
                       type="tel"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${
-                        errors.phone ? "border-red-500" : "border-gray-200"
-                      }`}
+                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.phone ? "border-red-500" : "border-gray-200"
+                        }`}
                       placeholder="+54 11 1234-5678"
                       value={phone}
                       onChange={(e) => {
@@ -1680,9 +1697,8 @@ export default function ReservarPage() {
                     </label>
                     <input
                       type="text"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${
-                        errors.dni ? "border-red-500" : "border-gray-200"
-                      }`}
+                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.dni ? "border-red-500" : "border-gray-200"
+                        }`}
                       placeholder="Tu DNI"
                       value={dni}
                       onChange={(e) => {
@@ -1735,30 +1751,27 @@ export default function ReservarPage() {
             <div className="text-center space-y-8">
               <div className="max-w-2xl mx-auto">
                 <div
-                  className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${
-                    hasPendingDeposit
+                  className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${hasPendingDeposit
                       ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
                       : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-center">
                     <div
-                      className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${
-                        hasPendingDeposit
+                      className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${hasPendingDeposit
                           ? "bg-gradient-to-r from-amber-500 to-amber-600"
                           : "bg-gradient-to-r from-green-500 to-emerald-600"
-                      }`}
+                        }`}
                     >
                       <CheckCircle className="h-10 w-10 text-white" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div
-                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${
-                        hasPendingDeposit
+                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${hasPendingDeposit
                           ? "bg-amber-100 text-amber-900 ring-amber-200"
                           : "bg-emerald-100 text-emerald-900 ring-emerald-200"
-                      }`}
+                        }`}
                     >
                       {hasPendingDeposit ? "Pendiente" : "Listo"}
                     </div>
@@ -1812,11 +1825,10 @@ export default function ReservarPage() {
                                 >
                                   <a
                                     href={buildGoogleCalendarUrl({
-                                      title: `${singleBooking.service?.name}${
-                                        singleBooking?.professional?.name
+                                      title: `${singleBooking.service?.name}${singleBooking?.professional?.name
                                           ? ` — ${singleBooking.professional.name}`
                                           : ""
-                                      }`,
+                                        }`,
                                       startISO: singleBooking.start,
                                       endISO: singleBooking.end,
                                       details: "Reserva confirmada",
@@ -1868,11 +1880,10 @@ export default function ReservarPage() {
                                         >
                                           <a
                                             href={buildGoogleCalendarUrl({
-                                              title: `${b.service?.name}${
-                                                b?.professional?.name
+                                              title: `${b.service?.name}${b?.professional?.name
                                                   ? ` — ${b.professional.name}`
                                                   : ""
-                                              }`,
+                                                }`,
                                               startISO: b.start,
                                               endISO: b.end,
                                               details: "Reserva confirmada",
@@ -1899,7 +1910,7 @@ export default function ReservarPage() {
                   ) : null}
 
                   {(normalizedPayment && paymentAmount !== null) ||
-                  bookingsWithDeposit.length > 0 ? (
+                    bookingsWithDeposit.length > 0 ? (
                     <div className="mt-8 space-y-4 rounded-3xl border border-amber-200 bg-amber-50/60 p-5 text-left">
                       <div className="flex items-start gap-3">
                         <div className="mt-1 rounded-full bg-amber-500/10 p-2 text-amber-600">
@@ -1952,8 +1963,8 @@ export default function ReservarPage() {
                                 {money(
                                   paymentAmount,
                                   normalizedPayment.currency ||
-                                    bookingsList[0]?.service?.currency ||
-                                    "ARS"
+                                  bookingsList[0]?.service?.currency ||
+                                  "ARS"
                                 )}
                               </div>
                             </div>
@@ -2153,8 +2164,8 @@ export default function ReservarPage() {
                       const first = singleBooking
                         ? singleBooking
                         : Array.isArray((bookingResult as any).bookings)
-                        ? (bookingResult as any).bookings[0]
-                        : (bookingResult as any).booking;
+                          ? (bookingResult as any).bookings[0]
+                          : (bookingResult as any).booking;
                       return first?.client?.email ? (
                         <div className="pt-2">
                           <Link
