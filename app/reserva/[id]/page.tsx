@@ -511,9 +511,13 @@ export default async function BookingPublicPage({
                                                 rel="noopener noreferrer"
                                             >
                                                 <Button
-                                                    className="w-full sm:w-auto mb-3 h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-80 text-white shadow-lg border-0 disabled:opacity-60"
+                                                    className="w-full sm:w-auto h-11 bg-[#00a6ff] hover:bg-[#0096e6] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm"
                                                 >
-                                                    <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto mr-2" />
+                                                    <img
+                                                        src="/mercadopago.png"
+                                                        alt="Mercado Pago"
+                                                        className="h-5 w-auto"
+                                                    />
                                                     Pagar con Mercado Pago
                                                 </Button>
                                             </a>

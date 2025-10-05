@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import ReusableBadge from "@/components/reusable-badge";
 import Link from "next/link";
+import OpinionesPage from "@/components/testimonials-section"
 
 export default function Home() {
     const router = useRouter()
@@ -125,7 +126,7 @@ export default function Home() {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-10">
+                        <div className="grid grid-cols-1 gap-10 max-w-4xl mx-auto">
                             {/* Card grande (Faciales) */}
                             {[
                                 {
@@ -556,7 +557,7 @@ export default function Home() {
                 <section
                     className="py-24 bg-gradient-to-br from-gray-50 via-white to-amber-50/30 relative overflow-hidden">
                     <div
-                        className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(251,191,36,0.1),transparent_50%)]"></div>
+                        className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"></div>
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-20">
                             <ReusableBadge>
@@ -573,96 +574,8 @@ export default function Home() {
                                 compromiso con la excelencia.
                             </p>
                         </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                            {[
-                                {
-                                    name: "Laura Martínez",
-                                    image:
-                                        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1974&auto=format&fit=crop",
-                                    treatment: "Tratamiento Facial",
-                                    quote:
-                                        "Increíble experiencia. Los resultados superaron mis expectativas y el trato fue excelente. Recomiendo totalmente el tratamiento de hidrafacial.",
-                                },
-                                {
-                                    name: "Carlos Rodríguez",
-                                    image:
-                                        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop",
-                                    treatment: "Botox",
-                                    quote:
-                                        "Muy profesionales y atentos. Me explicaron todo el procedimiento y me sentí muy seguro. Los resultados son naturales, justo lo que buscaba.",
-                                },
-                                {
-                                    name: "María González",
-                                    image:
-                                        "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
-                                    treatment: "Criolipólisis",
-                                    quote:
-                                        "Después de dos sesiones, los resultados son visibles. El personal es muy amable y las instalaciones son modernas y limpias. Volveré sin duda.",
-                                },
-                            ].map((testimonial, i) => (
-                                <Card
-                                    key={i}
-                                    className="group relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/90 backdrop-blur-sm"
-                                >
-                                    <div
-                                        className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-yellow-50/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                    <div className="relative">
-                                        <CardHeader className="pb-4">
-                                            <div className="flex items-center gap-6">
-                                                <div className="relative">
-                                                    <div
-                                                        className="h-16 w-16 rounded-full overflow-hidden ring-4 ring-amber-100 group-hover:ring-amber-200 transition-all duration-300">
-                                                        <img
-                                                            src={testimonial.image || "/placeholder.svg"}
-                                                            alt={testimonial.name}
-                                                            className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                        />
-                                                    </div>
-                                                    <div
-                                                        className="absolute -bottom-1 -right-1 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-full p-1.5 shadow-lg">
-                                                        <Star className="h-3 w-3 text-white fill-current" />
-                                                    </div>
-                                                </div>
-                                                <div className="flex-1">
-                                                    <CardTitle
-                                                        className="text-xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
-                                                        {testimonial.name}
-                                                    </CardTitle>
-                                                    <CardDescription className="text-amber-600 font-medium text-base">
-                                                        {testimonial.treatment}
-                                                    </CardDescription>
-                                                </div>
-                                            </div>
-                                        </CardHeader>
-                                        <CardContent className="pt-0">
-                                            <div className="flex mb-6 justify-center">
-                                                {[...Array(5)].map((_, j) => (
-                                                    <Star
-                                                        key={j}
-                                                        className="h-5 w-5 fill-amber-400 text-amber-400 mx-0.5 group-hover:scale-110 transition-transform duration-300"
-                                                        style={{ transitionDelay: `${j * 50}ms` }}
-                                                    />
-                                                ))}
-                                            </div>
-                                            <div className="relative">
-                                                <div
-                                                    className="absolute -top-2 -left-2 text-6xl text-amber-200 font-serif leading-none">"
-                                                </div>
-                                                <p className="text-gray-700 italic text-lg leading-relaxed-moveup pl-6 font-light">
-                                                    {testimonial.quote}
-                                                </p>
-                                                <div
-                                                    className="absolute -bottom-4 -right-2 text-6xl text-amber-200 font-serif leading-none rotate-180">
-                                                    "
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </div>
-                                </Card>
-                            ))}
-                        </div>
                     </div>
+                        <OpinionesPage />
                 </section>
 
                 {/* Equipo */}

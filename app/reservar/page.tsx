@@ -2005,7 +2005,7 @@ export default function ReservarPage() {
                                 <div className="flex flex-col sm:flex-row gap-2">
                                   <Button
                                     disabled={!normalizedPayment.link}
-                                    className="w-full sm:w-auto h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-80 text-white shadow-lg border-0 disabled:opacity-60"
+                                    className="w-full sm:w-auto h-11 bg-[#00a6ff] hover:bg-[#0096e6] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm"
                                     onClick={() => {
                                       if (!normalizedPayment.link) return;
                                       if (typeof window !== "undefined")
@@ -2062,7 +2062,7 @@ export default function ReservarPage() {
                                       <p className="text-sm font-medium text-emerald-700">Seña registrada. ¡Gracias!</p>
                                     ) : depositLink ? (
                                       <div className="flex flex-col sm:flex-row gap-2">
-                                        <Button asChild className="w-full sm:w-auto h-11 bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg border-0">
+                                        <Button asChild className="w-full sm:w-auto h-11 bg-[#00a6ff] hover:bg-[#0096e6] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm">
                                           <a href={depositLink} target="_blank" rel="noopener noreferrer">
                                             <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto mr-2" />
                                             Pagar con Mercado Pago
