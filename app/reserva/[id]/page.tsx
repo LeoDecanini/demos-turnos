@@ -607,18 +607,13 @@ export default async function BookingPublicPage({
 
                         {isConfirmed && booking.client?.email ? (
                             <div className="pt-2">
-                                <Link
-                                    href={`/verify-client?email=${encodeURIComponent(booking.client.email)}`}
-                                    className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl
-                 bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white
-                 shadow-lg shadow-indigo-500/25 ring-1 ring-inset ring-white/10
-                 transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl
-                 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                                <Button
+                                    size="lg"
+                                    className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                                    asChild
                                 >
-                                    <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
-                                    <UserPlus className="h-5 w-5 shrink-0" />
-                                    <span>Crear cuenta</span>
-                                </Link>
+                                    <Link href={`/verify-client?email=${encodeURIComponent(booking.client.email)}`}><span>Crear cuenta</span></Link>
+                                </Button>
 
                                 <p className="mt-2 text-xs text-gray-500">
                                     Creá tu cuenta para ver y gestionar tus reservas más rápido.

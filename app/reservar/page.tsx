@@ -1814,12 +1814,16 @@ export default function ReservarPage() {
                           {hasPendingDeposit ? "Pendiente" : "Listo"}
                         </div>
                         <h2 className="text-3xl font-extrabold text-gray-900">
-                          {hasPendingDeposit ? "Reserva pendiente de seña" : "¡Reserva confirmada!"}
+                          {hasPendingDeposit
+                            ? `Reserva${resultHasMany ? "s" : ""} pendiente${resultHasMany ? "s" : ""} de seña`
+                            : `¡Reserva${resultHasMany ? "s" : ""} confirmada${resultHasMany ? "s" : ""}!`}
                         </h2>
                         {hasPendingDeposit ? (
                           <>
                             <p className="text-black text-xl">
-                              Tu reserva queda pendiente hasta que registremos el pago de la seña requerida.
+                              {resultHasMany
+                                ? "Tus reservas quedan pendientes hasta que registremos el pago de la seña requerida."
+                                : "Tu reserva queda pendiente hasta que registremos el pago de la seña requerida."}
                             </p>
                             {groupDeadlineText ? (
                               <p className="text-amber-800 text-sm">Podés pagar hasta <span className="font-semibold">{groupDeadlineText}</span></p>
@@ -2096,14 +2100,22 @@ export default function ReservarPage() {
                               : (bookingResult as any).booking;
                           return first?.client?.email ? (
                             <div className="pt-2">
-                              <Link
+                              {/* <Link
                                 href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}
                                 className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white shadow-lg ring-1 ring-inset ring-white/10 transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl"
                               >
                                 <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
                                 <UserPlus className="h-5 w-5 shrink-0" />
                                 <span>Crear cuenta</span>
-                              </Link>
+                              </Link> */}
+                              <Button
+                                size="lg"
+                                disabled={submitting}
+                                className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                                asChild
+                              >
+                                <Link href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}><span>Crear cuenta</span></Link>
+                              </Button>
                               <p className="mt-2 text-xs text-gray-500">Creá tu cuenta para ver y gestionar tus reservas más rápido.</p>
                             </div>
                           ) : null;
