@@ -319,6 +319,47 @@ export default function ReservarPage() {
       }— ${msg}`;
   };
 
+  function getServiceDuration(serviceId: string): number {
+    const s = services.find(x => x._id === serviceId);
+    return (s?.durationMinutes ?? s?.sessionDuration ?? 0) || 0;
+  }
+
+  function overlaps(startA: number, durA: number, startB: number, durB: number) {
+    const endA = startA + durA;
+    const endB = startB + durB;
+    return startA < endB && startB < endA; // hay cruce si ambos comienzos son menores al fin del otro
+  }
+
+  function isSlotOverlappingWithPrevSelections(slot: string): boolean {
+    if (!selectedDateObj) return false;
+
+    const currentDur = getServiceDuration(currentServiceId);
+    if (!currentDur) return false;
+
+    const slotStart = hhmmToMinutes(slot);
+    const sameDayStr = fmtDay(selectedDateObj);
+
+    // Sólo miramos servicios ya fijados (índices < scheduleIdx)
+    for (let i = 0; i < scheduleIdx; i++) {
+      const sid = selectedServices[i];
+      const sel = selection[sid];
+      if (!sel?.date || !sel?.time) continue;
+      if (sel.date !== sameDayStr) continue;
+
+      const prevDur = getServiceDuration(sid);
+      if (!prevDur) continue;
+
+      const prevStart = hhmmToMinutes(sel.time);
+
+      // si se solapan, bloqueamos este slot
+      if (overlaps(slotStart, currentDur, prevStart, prevDur)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   const ERROR_MAP: Array<[test: RegExp, nice: string]> = [
     [
       /superpone/i,
@@ -1221,8 +1262,8 @@ export default function ReservarPage() {
                             setSelection(next);
                           }}
                           className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected
-                              ? "border-amber-500 bg-amber-50/60"
-                              : "border-gray-200 hover:border-amber-300 bg-white"
+                            ? "border-amber-500 bg-amber-50/60"
+                            : "border-gray-200 hover:border-amber-300 bg-white"
                             }`}
                         >
                           <div className="flex items-center justify-between">
@@ -1305,8 +1346,8 @@ export default function ReservarPage() {
                     {pros.length > 1 && (
                       <div
                         className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any"
-                            ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                            : "border-gray-200 hover:border-amber-300 bg-white/80"
+                          ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
+                          : "border-gray-200 hover:border-amber-300 bg-white/80"
                           }`}
                         onClick={() => {
                           setSelection((prev) => ({
@@ -1511,8 +1552,8 @@ export default function ReservarPage() {
                   ) : (
                     <div className="grid grid-cols-3 gap-3">
                       {timeSlots.map((time) => {
-                        const blockedByDur = isSlotBlockedByDuration(time);
-                        const blockedByPrev = isSlotBlockedByPrevService(time);
+                        const blockedByDur = isSlotBlockedByDuration(time); // tu bloque para “pintar” el bloque cuando ya elegiste en el mismo servicio
+                        const blockedByPrev = isSlotOverlappingWithPrevSelections(time); // ← nuevo
                         const picked = selectedTimeBlock === time;
                         const blocked = (blockedByDur && !picked) || blockedByPrev;
 
@@ -1752,15 +1793,15 @@ export default function ReservarPage() {
               <div className="max-w-2xl mx-auto">
                 <div
                   className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${hasPendingDeposit
-                      ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
-                      : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
+                    ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200"
+                    : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"
                     }`}
                 >
                   <div className="flex items-center justify-center">
                     <div
                       className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${hasPendingDeposit
-                          ? "bg-gradient-to-r from-amber-500 to-amber-600"
-                          : "bg-gradient-to-r from-green-500 to-emerald-600"
+                        ? "bg-gradient-to-r from-amber-500 to-amber-600"
+                        : "bg-gradient-to-r from-green-500 to-emerald-600"
                         }`}
                     >
                       <CheckCircle className="h-10 w-10 text-white" />
@@ -1769,8 +1810,8 @@ export default function ReservarPage() {
                   <div className="space-y-2">
                     <div
                       className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${hasPendingDeposit
-                          ? "bg-amber-100 text-amber-900 ring-amber-200"
-                          : "bg-emerald-100 text-emerald-900 ring-emerald-200"
+                        ? "bg-amber-100 text-amber-900 ring-amber-200"
+                        : "bg-emerald-100 text-emerald-900 ring-emerald-200"
                         }`}
                     >
                       {hasPendingDeposit ? "Pendiente" : "Listo"}
@@ -1826,8 +1867,8 @@ export default function ReservarPage() {
                                   <a
                                     href={buildGoogleCalendarUrl({
                                       title: `${singleBooking.service?.name}${singleBooking?.professional?.name
-                                          ? ` — ${singleBooking.professional.name}`
-                                          : ""
+                                        ? ` — ${singleBooking.professional.name}`
+                                        : ""
                                         }`,
                                       startISO: singleBooking.start,
                                       endISO: singleBooking.end,
@@ -1881,8 +1922,8 @@ export default function ReservarPage() {
                                           <a
                                             href={buildGoogleCalendarUrl({
                                               title: `${b.service?.name}${b?.professional?.name
-                                                  ? ` — ${b.professional.name}`
-                                                  : ""
+                                                ? ` — ${b.professional.name}`
+                                                : ""
                                                 }`,
                                               startISO: b.start,
                                               endISO: b.end,
