@@ -519,7 +519,7 @@ export default async function BookingPublicPage({
                                             </a>
 
                                             <p className="text-xs text-gray-500">
-                                                Al hacer clic se abrirá una nueva pestaña con el proveedor de pagos.
+                                                Al hacer clic se abrirá una nueva pestaña de Mercado Pago.
                                             </p>
                                         </CardContent>
                                     </Card>
