@@ -314,6 +314,10 @@ export default async function BookingPublicPage({
         ? (groupData.mp.initPoint || groupData.mp.sandboxInitPoint)
         : (booking.depositInitPoint || booking.depositSandboxInitPoint);
 
+    const requiresDeposit = (x: any) =>
+        (typeof x.depositValueApplied === "number" && x.depositValueApplied > 0) ||
+        (typeof x.depositAmount === "number" && x.depositAmount > 0);
+
     return (
         <main className="min-h-screen relative overflow-hidden pt-16">
             <section className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -375,7 +379,7 @@ export default async function BookingPublicPage({
                                 <CardHeader className="pb-2">
                                     <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                                         <NotebookText className="w-5 h-5 text-amber-600" />
-                                        Resumen del grupo ({groupData.bookings.length} reservas)
+                                        Resumen de reservas
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-0">
@@ -425,15 +429,24 @@ export default async function BookingPublicPage({
                                                         {/* Estado y monto de seña solo si NO está confirmada */}
                                                         {!isConfirmed && !isCanceled && (
                                                             <>
-                                                                <StatusBadge
-                                                                    label={b.paymentSummary?.isFullyPaid ? "Pagado" : "Pendiente"}
-                                                                    kind={b.paymentSummary?.isFullyPaid ? "success" : "warn"}
-                                                                />
-                                                                <div className="text-xs text-gray-500 mt-1">
-                                                                    {fmtMoney(b.depositValueApplied, groupCurrency)}
-                                                                </div>
+                                                                {requiresDeposit(b) ? (
+                                                                    <>
+                                                                        <StatusBadge
+                                                                            label={b.paymentSummary?.isFullyPaid ? "Pagado" : "Pendiente"}
+                                                                            kind={b.paymentSummary?.isFullyPaid ? "success" : "warn"}
+                                                                        />
+                                                                        {typeof b.depositValueApplied === "number" && b.depositValueApplied > 0 && (
+                                                                            <div className="text-xs text-gray-500 mt-1">
+                                                                                {fmtMoney(b.depositValueApplied, groupCurrency)}
+                                                                            </div>
+                                                                        )}
+                                                                    </>
+                                                                ) : (
+                                                                    <StatusBadge label="No requiere seña" kind="neutral" />
+                                                                )}
                                                             </>
                                                         )}
+
                                                     </div>
                                                 </div>
                                             );
@@ -468,7 +481,7 @@ export default async function BookingPublicPage({
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                                                 <Wallet className="w-5 h-5 text-amber-600" />
-                                                {esGrupo ? "Seña grupal pendiente" : "Seña pendiente"}
+                                                Seña pendiente
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent className="space-y-4">
@@ -496,12 +509,14 @@ export default async function BookingPublicPage({
                                                 href={paymentLink || "#"}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="inline-flex w-full sm:w-auto h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-5 font-semibold text-white shadow-lg border-0 hover:opacity-80 disabled:opacity-60 transition"
                                             >
-                                                <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto" />
-                                                {esGrupo ? "Pagar seña grupal" : "Pagar seña"} con Mercado Pago
+                                                <Button
+                                                    className="w-full sm:w-auto mb-3 h-11 bg-gradient-to-r from-blue-500 to-blue-600 hover:opacity-80 text-white shadow-lg border-0 disabled:opacity-60"
+                                                >
+                                                    <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto mr-2" />
+                                                    Pagar con Mercado Pago
+                                                </Button>
                                             </a>
-
 
                                             <p className="text-xs text-gray-500">
                                                 Al hacer clic se abrirá una nueva pestaña con el proveedor de pagos.
