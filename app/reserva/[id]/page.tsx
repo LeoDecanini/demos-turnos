@@ -47,8 +47,8 @@ type Booking = {
     _id: string;
     account: string;
     service:
-        | { _id: string; name: string; description?: string; price?: number; currency?: string }
-        | string;
+    | { _id: string; name: string; description?: string; price?: number; currency?: string }
+    | string;
     professional?: { _id: string; name: string } | string | null;
     client?: { name?: string; email?: string; phone?: string; dni?: string };
     start: string;
@@ -134,16 +134,16 @@ const pickTone = (status?: string): keyof typeof toneClasses => {
 function StatusBadge({ label, kind }: { label: string; kind: keyof typeof toneClasses }) {
     return (
         <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClasses[kind]}`}>
-      {label}
-    </span>
+            {label}
+        </span>
     );
 }
 
 function InfoRow({
-                     icon,
-                     label,
-                     value,
-                 }: {
+    icon,
+    label,
+    value,
+}: {
     icon: React.ReactNode;
     label: string;
     value?: React.ReactNode;
@@ -160,9 +160,9 @@ function InfoRow({
 }
 
 export default async function BookingPublicPage({
-                                                    params,
-                                                    searchParams,
-                                                }: {
+    params,
+    searchParams,
+}: {
     params: { id: string };
     searchParams: { grupo?: string };
 }) {
@@ -339,7 +339,7 @@ export default async function BookingPublicPage({
                             </div>
                         </div>
                     ) : booking.status?.toLowerCase() === "canceled" ||
-                    booking.depositStatus === "expired" ? (
+                        booking.depositStatus === "expired" ? (
                         <div className="space-y-4">
                             <div className="flex justify-center">
                                 <XCircle className="w-16 h-16 text-rose-500" />
@@ -512,51 +512,53 @@ export default async function BookingPublicPage({
                         ) : null}
                     </div>
 
-                    <div className="lg:col-span-2 space-y-8">
+                    <div className="w-full col-span-3 space-y-8">
                         {showDepositCallout && (
-                            <Card className="border-0 shadow-none bg-transparent md:shadow-xl md:bg-white/90 md:backdrop-blur md:rounded-2xl">
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                                        <Wallet className="w-5 h-5 text-amber-600" />
-                                        {esGrupo ? "Seña grupal pendiente" : "Seña pendiente"}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <div className="text-sm text-gray-600">
-                                                {esGrupo ? `Importe total (${groupData?.bookings?.length || 1} reservas)` : "Importe a abonar"}
-                                            </div>
-                                            <div className="text-2xl font-bold text-gray-900">{señaAplicada}</div>
-                                            {esGrupo && totalCollected > 0 && (
-                                                <div className="text-sm text-emerald-600">
-                                                    Pagado: {fmtMoney(totalCollected, groupCurrency)}
+                            <>
+                               <Card className="border shadow bg-white md:rounded-2xl">
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                                            <Wallet className="w-5 h-5 text-amber-600" />
+                                            {esGrupo ? "Seña grupal pendiente" : "Seña pendiente"}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="flex items-start justify-between">
+                                            <div>
+                                                <div className="text-sm text-gray-600">
+                                                    {esGrupo ? `Importe total (${groupData?.bookings?.length || 1} reservas)` : "Importe a abonar"}
                                                 </div>
-                                            )}
+                                                <div className="text-2xl font-bold text-gray-900">{señaAplicada}</div>
+                                                {esGrupo && totalCollected > 0 && (
+                                                    <div className="text-sm text-emerald-600">
+                                                        Pagado: {fmtMoney(totalCollected, groupCurrency)}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    {deadlineHuman && (
-                                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 text-sm">
-                                            Fecha límite: <span className="font-semibold">{deadlineHuman}</span>
-                                        </div>
-                                    )}
+                                        {deadlineHuman && (
+                                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 text-sm">
+                                                Fecha límite: <span className="font-semibold">{deadlineHuman}</span>
+                                            </div>
+                                        )}
 
-                                    <a
-                                        href={paymentLink || "#"}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 px-4 py-3 font-semibold text-white shadow-lg hover:brightness-[1.05] transition"
-                                    >
-                                        <ExternalLink className="w-4 h-4" />
-                                        {esGrupo ? "Pagar seña grupal (Mercado Pago)" : "Pagar seña (Mercado Pago)"}
-                                    </a>
+                                        <a
+                                            href={paymentLink || "#"}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-sky-600 px-4 py-3 font-semibold text-white shadow-lg hover:brightness-[1.05] transition"
+                                        >
+                                            <ExternalLink className="w-4 h-4" />
+                                            {esGrupo ? "Pagar seña grupal (Mercado Pago)" : "Pagar seña (Mercado Pago)"}
+                                        </a>
 
-                                    <p className="text-xs text-gray-500">
-                                        Al hacer clic se abrirá una nueva pestaña con el proveedor de pagos.
-                                    </p>
-                                </CardContent>
-                            </Card>
+                                        <p className="text-xs text-gray-500">
+                                            Al hacer clic se abrirá una nueva pestaña con el proveedor de pagos.
+                                        </p>
+                                    </CardContent>
+                                </Card>
+                            </>
                         )}
                     </div>
                 </div>
