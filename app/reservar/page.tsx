@@ -555,20 +555,29 @@ export default function ReservarPage() {
       setSelection(nextSel);
 
       // ¿Hay que mostrar paso por sucursal?
-      const mustPickBranch =
-        serviceIds.length > 1 || serviceIds.some((sid) => (map[sid]?.length ?? 0) > 1);
+      /*       const mustPickBranch =
+              serviceIds.length > 1 || serviceIds.some((sid) => (map[sid]?.length ?? 0) > 1); */
+
+      const mustPickBranch = serviceIds.some((sid) => (map[sid]?.length ?? 0) > 1);
+
+      // ¡Setealo explícitamente SIEMPRE!
+      setHasBranchStep(mustPickBranch);
 
       if (mustPickBranch) {
-        setHasBranchStep(true);
+        setBranchesByService(map);
         setBranchIdx(0);
         setStep(2);
+        scrollToTop();
       } else {
-        // si ningún servicio exige elección, pasá directo a profesionales
+        // autoselección ya aplicada en nextSel arriba
+        setSelection(nextSel);
+        setBranchesByService(map);
+        setHasBranchStep(false); // redundante pero explícito
         await loadProfessionalsForServices(serviceIds);
         setProfIdx(0);
         setStep(3);
+        scrollToTop();
       }
-      scrollToTop();
     } catch {
       setBranches([]);
       setBranchesByService({});
@@ -1332,8 +1341,8 @@ export default function ReservarPage() {
                                   }));
                                 }}
                                 className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected
-                                    ? "border-amber-500 bg-amber-50/60"
-                                    : "border-gray-200 hover:border-amber-300 bg-white"
+                                  ? "border-amber-500 bg-amber-50/60"
+                                  : "border-gray-200 hover:border-amber-300 bg-white"
                                   }`}
                               >
                                 <div className="flex items-center justify-between">
@@ -1492,7 +1501,7 @@ export default function ReservarPage() {
                   <FloatingNav
                     onBack={() => {
                       if (hasBranchStep && profIdx === 0) setStep(2);
-                      else if (!hasBranchStep && profIdx === 0) setStep(1);
+                      else if (!hasBranchStep && profIdx === 0) setStep(1); // ← vuelve a Servicios si NO hubo paso de sucursal
                       else setProfIdx((i) => Math.max(0, i - 1));
                       scrollToTop();
                     }}
