@@ -23,6 +23,7 @@ import {
 import ReusableBadge from "@/components/reusable-badge";
 import Link from "next/link";
 import OpinionesPage from "@/components/testimonials-section"
+import Contacto from "@/components/Contacto"
 
 export default function Home() {
     const router = useRouter()
@@ -460,13 +461,13 @@ export default function Home() {
                                         Más de 7 años de experiencia en medicina estética
                                     </h2>
                                     <p className="text-lg text-gray-700 mb-6">
-                                       Somos Gastón Adonis Franco y Melanye Guirland, dos médicos con más de 10 años de experiencia en el campo de la medicina. Nuestra historia comenzó en el Sanatorio Güemes, donde nos conocimos durante nuestra formación en Clínica Médica. Fue allí donde descubrimos nuestra pasión por la estética y decidimos especializarnos en este campo.
+                                        Somos Gastón Adonis Franco y Melanye Guirland, dos médicos con más de 10 años de experiencia en el campo de la medicina. Nuestra historia comenzó en el Sanatorio Güemes, donde nos conocimos durante nuestra formación en Clínica Médica. Fue allí donde descubrimos nuestra pasión por la estética y decidimos especializarnos en este campo.
                                     </p>
                                     <p className="text-lg text-gray-700 mb-8">
-                                       En 2018, comenzamos a explorar el mundo de la medicina estética y realizamos nuestros primeros posgrados en SAENI (Asociación Médica Argentina) y SAEME (Universidad de Buenos Aires). Desde entonces, este mundo nos ha apasionado y hemos seguido actualizándonos constantemente para ofrecer los mejores tratamientos y resultados a nuestros pacientes.
+                                        En 2018, comenzamos a explorar el mundo de la medicina estética y realizamos nuestros primeros posgrados en SAENI (Asociación Médica Argentina) y SAEME (Universidad de Buenos Aires). Desde entonces, este mundo nos ha apasionado y hemos seguido actualizándonos constantemente para ofrecer los mejores tratamientos y resultados a nuestros pacientes.
                                     </p>
                                     <p className="text-lg text-gray-700 mb-8">
-                                       En 2022, después de años de formación y dedicación, decidimos abrir nuestro primer consultorio gracias a la ayuda de nuestra familia y amigos. Desde entonces, hemos podido crecer y desarrollarnos como profesionales, y estamos comprometidos con brindar la mejor atención posible a nuestros pacientes.
+                                        En 2022, después de años de formación y dedicación, decidimos abrir nuestro primer consultorio gracias a la ayuda de nuestra familia y amigos. Desde entonces, hemos podido crecer y desarrollarnos como profesionales, y estamos comprometidos con brindar la mejor atención posible a nuestros pacientes.
                                     </p>
                                 </div>
 
@@ -575,7 +576,7 @@ export default function Home() {
                             </p>
                         </div>
                     </div>
-                        <OpinionesPage />
+                    <OpinionesPage />
                 </section>
 
                 {/* Equipo */}
@@ -710,170 +711,7 @@ export default function Home() {
                 </section>
 
                 {/* Contacto */}
-                <section
-                    id="contacto"
-                    className="py-24 relative overflow-hidden bg-gray-50"
-                >
-
-                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-                            <div>
-                                <ReusableBadge>Contacto</ReusableBadge>
-                                <h2 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4 leading-tight">
-                                    ¿Tenés alguna pregunta?
-                                </h2>
-                                <div
-                                    className="w-24 h-1 bg-gradient-to-r from-amber-500 to-yellow-600 mb-4 rounded-full"></div>
-                                <p className="text-gray-600 mb-4 leading-relaxed-moveup">
-                                    Estamos acá para ayudarte. Contáctanos para más información sobre nuestros
-                                    servicios o para programar
-                                    una consulta personalizada.
-                                </p>
-
-                                <div className="space-y-4">
-                                    {[
-                                        {
-                                            icon: MapPin,
-                                            title: "Ubicación",
-                                            content: "Paraná 1315, PB 4, Recoleta",
-                                            color: "from-blue-500 to-cyan-600",
-                                        },
-                                        {
-                                            icon: Phone,
-                                            title: "Teléfono",
-                                            content: "+54 11 2401-3754",
-                                            color: "from-green-500 to-emerald-600",
-                                        },
-                                        {
-                                            icon: Mail,
-                                            title: "Email",
-                                            content: "mgestetica22@outlook.com",
-                                            color: "from-purple-500 to-violet-600",
-                                        },
-                                        {
-                                            icon: Clock,
-                                            title: "Horarios",
-                                            content: "Lunes a Viernes: 9:00 - 20:00\nSábados: 9:00 - 14:00",
-                                            color: "from-amber-500 to-yellow-600",
-                                        },
-                                    ].map((item, i) => (
-                                        <div
-                                            key={i}
-                                            className="group flex items-start hover:bg-white/50 rounded-2xl transition-all duration-300 "
-                                        >
-                                            <div className="flex-shrink-0">
-                                                <div
-                                                    className={`bg-gradient-to-r ${item.color} p-2 rounded-lg shadow-lg group-hover:scale-110 transition-transform duration-300`}
-                                                >
-                                                    <item.icon className="h-6 w-6 text-white" />
-                                                </div>
-                                            </div>
-                                            <div className="ml-3">
-                                                <h3 className="text-lg mb-0 font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
-                                                    {item.title}
-                                                </h3>
-                                                <p className="text-gray-600 mt-0 text-sm leading-relaxed-moveup whitespace-pre-line font-medium">{item.content}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="mt-4">
-                                    <Link
-                                        href={"https://www.instagram.com/mgestetica22"}
-                                        target={"_blank"}
-                                    >
-                                        <Button
-                                            variant="outline"
-                                            className="bg-gradient-to-r from-pink-50 to-rose-50 border-2 border-pink-200 hover:from-pink-500 hover:to-rose-600 hover:text-white transition-all duration-300 font-semibold py-3 px-6"
-                                        >
-                                            <Instagram className="h-5 w-5 mr-2" />
-                                            Seguinos en Instagram
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </div>
-
-                            <div className="relative">
-                                <div
-                                    className="bg-white/80 backdrop-blur-sm rounded-3xl p-10 shadow-2xl border border-white/20 relative overflow-hidden">
-                                    <div
-                                        className="absolute inset-0 bg-white"></div>
-                                    <div className="relative">
-                                        <div className="text-center mb-8">
-                                            <h3 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4">
-                                                Envíanos un mensaje
-                                            </h3>
-                                            <div
-                                                className="w-16 h-1 bg-gradient-to-r from-amber-500 to-yellow-600 mx-auto rounded-full"></div>
-                                        </div>
-                                        <form className="space-y-6">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                <div className="group">
-                                                    <label
-                                                        htmlFor="name"
-                                                        className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-amber-600 transition-colors duration-300"
-                                                    >
-                                                        Nombre
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        id="name"
-                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white/80"
-                                                    />
-                                                </div>
-                                                <div className="group">
-                                                    <label
-                                                        htmlFor="email"
-                                                        className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-amber-600 transition-colors duration-300"
-                                                    >
-                                                        Email
-                                                    </label>
-                                                    <input
-                                                        type="email"
-                                                        id="email"
-                                                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white/80"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="group">
-                                                <label
-                                                    htmlFor="subject"
-                                                    className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-amber-600 transition-colors duration-300"
-                                                >
-                                                    Asunto
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    id="subject"
-                                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white/80"
-                                                />
-                                            </div>
-                                            <div className="group">
-                                                <label
-                                                    htmlFor="message"
-                                                    className="block text-sm font-semibold text-gray-700 mb-2 group-focus-within:text-amber-600 transition-colors duration-300"
-                                                >
-                                                    Mensaje
-                                                </label>
-                                                <textarea
-                                                    id="message"
-                                                    rows={5}
-                                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all duration-300 bg-white/50 backdrop-blur-sm hover:bg-white/80 resize-none"
-                                                ></textarea>
-                                            </div>
-                                            <Button
-                                                className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-bold py-4 shadow-xl transition-all duration-300 hover:scale-105 border-0">
-                                                <Mail className="mr-3 h-5 w-5" />
-                                                Enviar Mensaje
-                                            </Button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                <Contacto />
             </div>
         </>
     )
