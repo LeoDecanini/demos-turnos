@@ -747,7 +747,7 @@ export default function Home() {
                                         {
                                             icon: Mail,
                                             title: "Email",
-                                            content: "mgestetica22@outlook.con",
+                                            content: "mgestetica22@outlook.com",
                                             color: "from-purple-500 to-violet-600",
                                         },
                                         {

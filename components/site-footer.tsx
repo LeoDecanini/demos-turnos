@@ -83,7 +83,7 @@ export function SiteFooter() {
                 </div>
                 <div className="ml-3">
                   <p className="text-white font-medium">Email</p>
-                  <p className="text-gray-300 text-sm break-all">mgestetica22@outlook.con</p>
+                  <p className="text-gray-300 text-sm break-all">mgestetica22@outlook.com</p>
                 </div>
               </li>
 
