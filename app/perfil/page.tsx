@@ -22,6 +22,7 @@ import ProfessionalList from '@/components/ProfessionalList';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Calendar, Clock, User, ArrowLeft } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type TabKey = 'perfil' | 'reservas';
 const API_BASE = `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookingmodule/public`;
@@ -95,7 +96,7 @@ export default function PerfilPage() {
           <hr className="my-4 border-slate-200" />
           <button
             onClick={logout}
-            className="w-full rounded-xl border border-red-200 bg-white text-red-600 hover:bg-red-50 py-2 font-medium transition"
+            className="w-full cursor-pointer rounded-xl border border-red-200 bg-white text-red-600 hover:bg-red-50 py-2 font-medium transition"
           >
             Cerrar sesión
           </button>
@@ -146,7 +147,7 @@ function SidebarBtn({
     <button
       onClick={onClick}
       className={[
-        'w-full flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition',
+        'w-full flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-left transition',
         active ? 'border-yellow-400 bg-yellow-50 text-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50',
       ].join(' ')}
     >
@@ -450,22 +451,26 @@ function ReservasView() {
         <div className="text-sm text-slate-600">Total: {total}</div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-600">Por página</span>
-          <select
-            value={limit}
-            onChange={(e) => {
-              const v = parseInt(e.target.value, 10);
-              if (v !== limit) {
+          <Select
+            value={String(limit)}
+            onValueChange={(v) => {
+              const n = Number(v);
+              if (n !== limit) {
                 setPage(1);
-                setLimit(v);
+                setLimit(n);
               }
             }}
-            className="h-9 rounded-lg border border-slate-300 px-2 py-1 text-sm"
           >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
+            <SelectTrigger className="h-9 w-[88px] cursor-pointer rounded-lg border border-slate-300">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem className='cursor-pointer' value="5">5</SelectItem>
+              <SelectItem className='cursor-pointer' value="10">10</SelectItem>
+              <SelectItem className='cursor-pointer' value="20">20</SelectItem>
+              <SelectItem className='cursor-pointer' value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -511,7 +516,7 @@ function ReservasView() {
                             <button
                               type="button"
                               onClick={() => window.open(b.depositInitPoint, '_blank')}
-                              className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs border-sky-300 text-sky-700 hover:bg-sky-50"
+                              className="inline-flex cursor-pointer items-center rounded-full border px-2.5 py-1 text-xs border-sky-300 text-sky-700 hover:bg-sky-50"
                             >
                               Pagar
                             </button>
@@ -527,7 +532,7 @@ function ReservasView() {
                             onClick={() => openReschedule(b)}
                             disabled={b.status === 'canceled'}
                             className={[
-                              'inline-flex items-center rounded-full px-2.5 py-1 text-xs border',
+                              'inline-flex cursor-pointer items-center rounded-full px-2.5 py-1 text-xs border',
                               b.status === 'canceled'
                                 ? 'border-slate-200 text-slate-400 cursor-not-allowed'
                                 : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50',
@@ -546,7 +551,7 @@ function ReservasView() {
                             onClick={() => openCancel(b._id)}
                             disabled={b.status === 'canceled'}
                             className={[
-                              'inline-flex items-center rounded-full px-2.5 py-1 text-xs border',
+                              'inline-flex cursor-pointer items-center rounded-full px-2.5 py-1 text-xs border',
                               b.status === 'canceled'
                                 ? 'border-slate-200 text-slate-400 cursor-not-allowed'
                                 : 'border-rose-300 text-rose-700 hover:bg-rose-50',
@@ -586,7 +591,7 @@ function ReservasView() {
                     {b.status === 'pending' && b.depositInitPoint && (
                       <button
                         onClick={() => window.open(b.depositInitPoint, '_blank')}
-                        className="w-full rounded-xl border px-3 py-2 text-sm border-sky-300 text-sky-600 hover:bg-sky-50"
+                        className="w-full cursor-pointer rounded-xl border px-3 py-2 text-sm border-sky-300 text-sky-600 hover:bg-sky-50"
                       >
                         Pagar seña
                       </button>
@@ -595,7 +600,7 @@ function ReservasView() {
                       onClick={() => openReschedule(b)}
                       disabled={b.status === 'canceled'}
                       className={[
-                        'w-full rounded-xl border px-3 py-2 text-sm',
+                        'w-full rounded-xl cursor-pointer border px-3 py-2 text-sm',
                         b.status === 'canceled'
                           ? 'border-slate-200 text-slate-400 cursor-not-allowed'
                           : 'border-green-300 text-green-600 hover:bg-green-50',
@@ -607,7 +612,7 @@ function ReservasView() {
                       onClick={() => openCancel(b._id)}
                       disabled={b.status === 'canceled'}
                       className={[
-                        'w-full rounded-xl border px-3 py-2 text-sm',
+                        'w-full rounded-xl cursor-pointer border px-3 py-2 text-sm',
                         b.status === 'canceled'
                           ? 'border-slate-200 text-slate-400 cursor-not-allowed'
                           : 'border-red-300 text-red-600 hover:bg-red-50',
