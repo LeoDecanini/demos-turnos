@@ -303,6 +303,11 @@ export default function ReservarPage() {
     null
   );
 
+  const [branchesByService, setBranchesByService] =
+    useState<Record<string, Branch[]>>({});
+
+  const [branchIdx, setBranchIdx] = useState(0);
+
   const [bulkErrors, setBulkErrors] = useState<
     Array<{ index: number; message: string }>
   >([]);
@@ -506,63 +511,73 @@ export default function ReservarPage() {
         (typeof window !== "undefined"
           ? window.location.hostname.split(".")[0]
           : "");
+
       const promises = serviceIds.map((sid) =>
         fetch(`${API_BASE}/${slug}/services/${sid}/branches`, {
           cache: "no-store",
         }).then((r) => r.json().catch(() => ({})))
       );
       const raws = await Promise.all(promises);
+
       if (raws.some((r: any) => r?.message === "Reservas bloqueadas")) {
         setIsBlocked(true);
         setBlockMsg("Reservas bloqueadas");
         return;
       }
-      const merged: Record<string, Branch> = {};
-      raws.forEach((raw: any) => {
+
+      const map: Record<string, Branch[]> = {};
+      raws.forEach((raw: any, idx) => {
         const payload = getPayload(raw);
         const list: Branch[] = Array.isArray(payload)
           ? payload
           : payload?.data ?? payload?.items ?? [];
-        list.forEach((b) => (merged[b._id] = b));
+        // ordená: default primero
+        list.sort(
+          (a, b) => Number(!!b.default) - Number(!!a.default) || a.name.localeCompare(b.name)
+        );
+        map[serviceIds[idx]] = list;
       });
-      const list = Object.values(merged).sort(
-        (a, b) =>
-          Number(!!b.default) - Number(!!a.default) ||
-          a.name.localeCompare(b.name)
-      );
-      setBranches(list);
 
-      if (list.length <= 1) {
-        setHasBranchStep(false);
-        const branchId = list[0]?._id;
-        if (branchId) {
-          const nextSel = { ...selection };
-          serviceIds.forEach(
-            (sid) =>
-            (nextSel[sid] = {
-              ...(nextSel[sid] || { serviceId: sid }),
-              branchId,
-              professionalId: nextSel[sid]?.professionalId || "any",
-            })
-          );
-          setSelection(nextSel);
+      setBranchesByService(map);
+
+      // Autoselección si un servicio tiene 1 sola sucursal
+      const nextSel = { ...selection };
+      serviceIds.forEach((sid) => {
+        const list = map[sid] ?? [];
+        if (list.length === 1) {
+          nextSel[sid] = {
+            ...(nextSel[sid] || { serviceId: sid }),
+            branchId: list[0]._id,
+            professionalId: nextSel[sid]?.professionalId || "any",
+          };
         }
-        await loadProfessionalsForServices(serviceIds, list[0]?._id);
+      });
+      setSelection(nextSel);
+
+      // ¿Hay que mostrar paso por sucursal?
+      const mustPickBranch =
+        serviceIds.length > 1 || serviceIds.some((sid) => (map[sid]?.length ?? 0) > 1);
+
+      if (mustPickBranch) {
+        setHasBranchStep(true);
+        setBranchIdx(0);
+        setStep(2);
+      } else {
+        // si ningún servicio exige elección, pasá directo a profesionales
+        await loadProfessionalsForServices(serviceIds, /* branchId? */ undefined);
         setProfIdx(0);
         setStep(3);
-        scrollToTop();
-      } else {
-        setHasBranchStep(true);
-        setStep(2);
-        scrollToTop();
       }
+      scrollToTop();
     } catch {
       setBranches([]);
+      setBranchesByService({});
       toast.error("Error al cargar sucursales");
     } finally {
       setLoadingBranches(false);
     }
   };
+
 
   /* const loadProfessionalsForServices = async (
     serviceIds: string[],
@@ -606,10 +621,7 @@ export default function ReservarPage() {
     }
   }; */
 
-  const loadProfessionalsForServices = async (
-    serviceIds: string[],
-    branchId?: string
-  ) => {
+  const loadProfessionalsForServices = async (serviceIds: string[]) => {
     setLoadingProfessionals(true);
     try {
       const slug =
@@ -619,49 +631,36 @@ export default function ReservarPage() {
           : "");
 
       const promises = serviceIds.map((sid) => {
-        const url = branchId
-          ? `${API_BASE}/${slug}/services/${sid}/branches/${branchId}/professionals`
+        const branchIdForService = selection[sid]?.branchId;
+        const url = branchIdForService
+          ? `${API_BASE}/${slug}/services/${sid}/branches/${branchIdForService}/professionals`
           : `${API_BASE}/${slug}/services/${sid}/professionals`;
+
         return fetch(url, { cache: "no-store" })
-          .then((r) => r.json().catch(() => ({})));
+          .then((r) => r.json().catch(() => ({})))
+          .then((raw) => ({ sid, raw }));
       });
 
-      const raws = await Promise.all(promises);
+      const results = await Promise.all(promises);
 
-      // Si algún endpoint devuelve "Reservas bloqueadas", salimos prolijamente
-      if (raws.some((r: any) => r?.message === "Reservas bloqueadas")) {
+      if (results.some(({ raw }) => raw?.message === "Reservas bloqueadas")) {
         setIsBlocked(true);
         setBlockMsg("Reservas bloqueadas");
         return;
       }
 
       const coerceList = (raw: any): any[] => {
-        const payload = getPayload(raw);               // data ?? raw
+        const payload = getPayload(raw);
         if (Array.isArray(payload)) return payload;
         if (Array.isArray(payload?.items)) return payload.items;
         if (Array.isArray(payload?.data)) return payload.data;
-        return []; // fallback
+        return [];
       };
 
-      const matchBranch = (b: any, target: string) =>
-        b === target ||
-        b?._id === target ||
-        b?.toString?.() === target ||
-        b?._id?.toString?.() === target;
-
       const map: Record<string, Professional[]> = {};
-      raws.forEach((raw: any, idx) => {
-        const list: any[] = coerceList(raw);
-
-        // Si viene branchId, filtramos defensivamente por si el backend no filtró
-        const filtered = branchId
-          ? list.filter((p: any) =>
-            Array.isArray(p?.branches) &&
-            p.branches.some((b: any) => matchBranch(b, branchId))
-          )
-          : list;
-
-        map[serviceIds[idx]] = filtered as Professional[];
+      results.forEach(({ sid, raw }) => {
+        const list = coerceList(raw);
+        map[sid] = list as Professional[];
       });
 
       setProfessionalsByService(map);
@@ -672,6 +671,7 @@ export default function ReservarPage() {
       setLoadingProfessionals(false);
     }
   };
+
 
   const loadAvailableDays = async (
     srvId: string,
@@ -1285,105 +1285,127 @@ export default function ReservarPage() {
           </>
         )}
 
-        {step === 2 && hasBranchStep && (
+        {step === 2 && (
           <>
-            <div className="text-center mb-4">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Elegí la sucursal
-              </h2>
-              <p className="text-gray-600 text-lg">
-                Se aplicará a todos los servicios seleccionados
-              </p>
-            </div>
+            {(() => {
+              const sid = selectedServices[branchIdx];
+              const srv = services.find(s => s._id === sid);
+              const list = branchesByService[sid] ?? [];
 
-            <Card className="max-w-3xl mx-auto">
-              <CardContent className="p-6">
-                {loadingBranches ? (
-                  <div className="grid gap-3">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <Skeleton key={i} className="h-16 w-full" />
-                    ))}
+              return (
+                <>
+                  <div className="text-center mb-4">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                      Elegí la sucursal
+                    </h2>
+                    <p className="text-gray-600 text-lg">
+                      Servicio {branchIdx + 1} de {selectedServices.length}: {srv?.name}
+                    </p>
                   </div>
-                ) : branches.length === 0 ? (
-                  <p className="text-gray-600">No hay sucursales disponibles.</p>
-                ) : (
-                  <div className="grid gap-3">
-                    {branches.map((b) => {
-                      const selected = selectedServices.every(
-                        (sid) => selection[sid]?.branchId === b._id
-                      );
-                      return (
-                        <button
-                          key={b._id}
-                          type="button"
-                          onClick={() => {
-                            const next = { ...selection };
-                            selectedServices.forEach(
-                              (sid) =>
-                              (next[sid] = {
-                                ...(next[sid] || { serviceId: sid }),
-                                branchId: b._id,
-                                professionalId:
-                                  next[sid]?.professionalId || "any",
-                              })
+
+                  <Card className="max-w-3xl mx-auto">
+                    <CardContent className="p-6">
+                      {loadingBranches ? (
+                        <div className="grid gap-3">
+                          {Array.from({ length: 4 }).map((_, i) => (
+                            <Skeleton key={i} className="h-16 w-full" />
+                          ))}
+                        </div>
+                      ) : list.length === 0 ? (
+                        <p className="text-gray-600">No hay sucursales para este servicio.</p>
+                      ) : (
+                        <div className="grid gap-3">
+                          {list.map((b) => {
+                            const selected = selection[sid]?.branchId === b._id;
+                            return (
+                              <button
+                                key={b._id}
+                                type="button"
+                                onClick={() => {
+                                  setSelection((prev) => ({
+                                    ...prev,
+                                    [sid]: {
+                                      ...(prev[sid] || { serviceId: sid }),
+                                      branchId: b._id,
+                                      professionalId: prev[sid]?.professionalId || "any",
+                                    },
+                                  }));
+                                }}
+                                className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected
+                                    ? "border-amber-500 bg-amber-50/60"
+                                    : "border-gray-200 hover:border-amber-300 bg-white"
+                                  }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="font-semibold text-gray-900">
+                                    {b.name}{" "}
+                                    {b.default && (
+                                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                                        Default
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {b.active ? "Activa" : "Inactiva"}
+                                  </div>
+                                </div>
+                                <div className="text-sm text-gray-600 mt-1">
+                                  {[
+                                    b.location?.addressLine,
+                                    b.location?.city,
+                                    b.location?.state,
+                                    b.location?.country,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(", ") || "—"}
+                                </div>
+                              </button>
                             );
-                            setSelection(next);
-                          }}
-                          className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected
-                            ? "border-amber-500 bg-amber-50/60"
-                            : "border-gray-200 hover:border-amber-300 bg-white"
-                            }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="font-semibold text-gray-900">
-                              {b.name}{" "}
-                              {b.default && (
-                                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                                  Default
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {b.active ? "Activa" : "Inactiva"}
-                            </div>
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            {[
-                              b.location?.addressLine,
-                              b.location?.city,
-                              b.location?.state,
-                              b.location?.country,
-                            ]
-                              .filter(Boolean)
-                              .join(", ") || "—"}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                          })}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-            <FloatingNav
-              onBack={goToServices}
-              onNext={async () => {
-                await loadProfessionalsForServices(
-                  selectedServices,
-                  selection[selectedServices[0]]?.branchId
-                );
-                setProfIdx(0);
-                setStep(3);
-                scrollToTop();
-              }}
-              backDisabled={submitting}
-              nextDisabled={
-                submitting ||
-                !selectedServices.every((sid) => selection[sid]?.branchId)
-              }
-            />
+                  <FloatingNav
+                    onBack={() => {
+                      if (branchIdx === 0) {
+                        // volver a servicios
+                        setStep(1);
+                        scrollToTop();
+                      } else {
+                        setBranchIdx((i) => i - 1);
+                        scrollToTop();
+                      }
+                    }}
+                    onNext={async () => {
+                      // requerimos sucursal elegida para este servicio
+                      if (!selection[sid]?.branchId) return;
+
+                      if (branchIdx + 1 < selectedServices.length) {
+                        setBranchIdx((i) => i + 1);
+                        scrollToTop();
+                      } else {
+                        // ya elegimos sucursal para todos -> cargar profesionales por servicio y pasar a paso 3
+                        await loadProfessionalsForServices(
+                          selectedServices,
+                          /* branchId? ya NO, ahora por servicio abajo */
+                        );
+                        setProfIdx(0);
+                        setStep(3);
+                        scrollToTop();
+                      }
+                    }}
+                    backDisabled={submitting}
+                    nextDisabled={submitting || !selection[sid]?.branchId}
+                    nextLabel={branchIdx + 1 < selectedServices.length ? "Siguiente servicio" : "Continuar"}
+                  />
+                </>
+              );
+            })()}
           </>
         )}
+
 
         {step === 3 && (
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>
@@ -2114,8 +2136,8 @@ export default function ReservarPage() {
                                         <a
                                           href={buildGoogleCalendarUrl({
                                             title: `${singleBooking.service?.name}${singleBooking.professional?.name
-                                                ? ` — ${singleBooking.professional.name}`
-                                                : ""
+                                              ? ` — ${singleBooking.professional.name}`
+                                              : ""
                                               }`,
                                             startISO: singleBooking.start,
                                             endISO: singleBooking.end,
@@ -2161,8 +2183,8 @@ export default function ReservarPage() {
                                             <a
                                               href={buildGoogleCalendarUrl({
                                                 title: `${singleBooking.service?.name}${singleBooking?.professional?.name
-                                                    ? ` — ${singleBooking.professional.name}`
-                                                    : ""
+                                                  ? ` — ${singleBooking.professional.name}`
+                                                  : ""
                                                   }`,
                                                 startISO: singleBooking.start,
                                                 endISO: singleBooking.end,
