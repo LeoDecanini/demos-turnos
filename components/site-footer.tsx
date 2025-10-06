@@ -31,7 +31,7 @@ export function SiteFooter() {
             <Link href="https://www.instagram.com/mgestetica22" target="_blank">
               <Button
                 variant="outline"
-                className="w-full md:w-auto border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-black transition-all"
+                className="w-full md:w-auto bg-black border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-black transition-all"
               >
                 <Instagram className="h-4 w-4 mr-2" />
                 Seguinos en Instagram
