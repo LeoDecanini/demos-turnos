@@ -630,6 +630,20 @@ export default function ReservarPage() {
     }
   }; */
 
+  useEffect(() => {
+    if (step !== 3) return;
+    const sid = selectedServices[profIdx];
+    if (!sid) return;
+    setSelection(prev => {
+      const curr = prev[sid] || { serviceId: sid };
+      if (!curr.professionalId) {
+        return { ...prev, [sid]: { ...curr, professionalId: "any", branchId: curr.branchId } };
+      }
+      return prev;
+    });
+  }, [step, profIdx, selectedServices]);
+
+
   const loadProfessionalsForServices = async (serviceIds: string[]) => {
     setLoadingProfessionals(true);
     try {
@@ -1423,6 +1437,7 @@ export default function ReservarPage() {
               const srv = services.find((s) => s._id === srvId);
               const pros = professionalsByService[srvId] || [];
               const sel = selection[srvId]?.professionalId || "any";
+              const hasProSelected = !!(selection[srvId]?.professionalId ?? "any");
 
               return (
                 <div className="space-y-8">
@@ -1521,7 +1536,8 @@ export default function ReservarPage() {
                       }
                     }}
                     backDisabled={submitting}
-                    nextDisabled={submitting || !selection[srvId]?.professionalId}
+                    /*  nextDisabled={submitting || !selection[srvId]?.professionalId} */
+                    nextDisabled={submitting || !hasProSelected}
                   />
                 </div>
               );
