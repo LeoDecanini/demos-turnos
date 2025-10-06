@@ -564,7 +564,7 @@ export default function ReservarPage() {
         setStep(2);
       } else {
         // si ningún servicio exige elección, pasá directo a profesionales
-        await loadProfessionalsForServices(serviceIds, /* branchId? */ undefined);
+        await loadProfessionalsForServices(serviceIds);
         setProfIdx(0);
         setStep(3);
       }
