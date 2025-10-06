@@ -1238,7 +1238,7 @@ export default function ReservarPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      <div className="mt-12 relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="mt-12 pb-[100px] relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-4">
           <BookingStepper
             step={step}
