@@ -1475,18 +1475,31 @@ export default function ReservarPage() {
                           goNextAfterProfessional();
                         }}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="font-semibold text-gray-900">
-                            Indistinto
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="h-12 w-12 rounded-full overflow-hidden border border-gray-200 bg-gray-100 shrink-0 relative">
+                            <img
+                              src={"/indistinto.png"}
+                              alt={""}
+                              sizes="48px"
+                              className="object-cover"
+                            />
                           </div>
-                          <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
-                            Automático
-                          </span>
+                          <div className="w-full">
+                            <div className="flex items-center justify-between">
+                              <div className="font-semibold text-gray-900">
+                                Indistinto
+                              </div>
+                              <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
+                                Automático
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Podés seleccionar “Indistinto” para que asignemos uno
+                              automáticamente.
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          Podés seleccionar “Indistinto” para que asignemos uno
-                          automáticamente.
-                        </p>
                       </div>
                     )}
 
