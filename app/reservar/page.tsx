@@ -1354,9 +1354,9 @@ export default function ReservarPage() {
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-xs text-gray-500">
+                                  {/* <div className="text-xs text-gray-500">
                                     {b.active ? "Activa" : "Inactiva"}
-                                  </div>
+                                  </div> */}
                                 </div>
                                 <div className="text-sm text-gray-600 mt-1">
                                   {[
@@ -2355,37 +2355,32 @@ export default function ReservarPage() {
                       ) : null}
 
 
-
-                      <div className="mt-8 grid gap-6">
-                        {(() => {
-                          const first = singleBooking
-                            ? singleBooking
-                            : Array.isArray((bookingResult as any).bookings)
-                              ? (bookingResult as any).bookings[0]
-                              : (bookingResult as any).booking;
-                          return first?.client?.email ? (
-                            <div className="pt-2">
-                              {/* <Link
-                                href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}
-                                className="group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-600 to-orange-600 px-5 py-3 font-semibold text-white shadow-lg ring-1 ring-inset ring-white/10 transition-all duration-300 hover:scale-[1.02] hover:brightness-105 hover:shadow-xl"
-                              >
-                                <span className="absolute inset-0 rounded-xl bg-white/10 opacity-0 transition-opacity duration-300 group-hover:opacity-10" />
-                                <UserPlus className="h-5 w-5 shrink-0" />
-                                <span>Crear cuenta</span>
-                              </Link> */}
-                              <Button
-                                size="lg"
-                                disabled={submitting}
-                                className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
-                                asChild
-                              >
-                                <Link href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}><span>Crear cuenta</span></Link>
-                              </Button>
-                              <p className="mt-2 text-xs text-gray-500">Creá tu cuenta para ver y gestionar tus reservas más rápido.</p>
-                            </div>
-                          ) : null;
-                        })()}
-                      </div>
+                      {!user && (
+                        <div className="mt-8 grid gap-6">
+                          {(() => {
+                            const first = singleBooking
+                              ? singleBooking
+                              : Array.isArray((bookingResult as any).bookings)
+                                ? (bookingResult as any).bookings[0]
+                                : (bookingResult as any).booking;
+                            return first?.client?.email ? (
+                              <div className="pt-2">
+                                <>
+                                  <Button
+                                    size="lg"
+                                    disabled={submitting}
+                                    className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                                    asChild
+                                  >
+                                    <Link href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}><span>Crear cuenta</span></Link>
+                                  </Button>
+                                  <p className="mt-2 text-xs text-gray-500">Creá tu cuenta para ver y gestionar tus reservas más rápido.</p>
+                                </>
+                              </div>
+                            ) : null;
+                          })()}
+                        </div>
+                      )}
                     </div>
                   </div>
 
