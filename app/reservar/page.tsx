@@ -1209,7 +1209,8 @@ export default function ReservarPage() {
                   backDisabled
                   nextDisabled={selectedServices.length === 0 || submitting}
                   onNext={async () => {
-                    await loadBranchesForServices(selectedServices);
+                    const res = await loadBranchesForServices(selectedServices);
+                    console.log(res)
                   }}
                 />
               </>
@@ -1826,7 +1827,7 @@ export default function ReservarPage() {
                                 : "Tu reserva queda pendiente hasta que registremos el pago de la seña requerida."}
                             </p>
                             {groupDeadlineText ? (
-                              <p className="text-amber-800 text-sm">Podés pagar hasta <span className="font-semibold">{groupDeadlineText}</span></p>
+                              <p className="text-amber-800 text-sm">Podés pagar hasta el <span className="font-semibold">{groupDeadlineText}</span></p>
                             ) : null}
                           </>
                         ) : (
@@ -1837,107 +1838,6 @@ export default function ReservarPage() {
                           )
                         )}
                       </div>
-
-                      {singleBooking ? (
-                        <div className="mt-8">
-                          <div className="rounded-2xl border p-4 bg-white w-full flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-5">
-                              <div className="font-semibold">{singleBooking.service?.name}</div>
-                            </div>
-                            <div className="text-sm">
-                              {format(new Date(singleBooking.start), "PPP", { locale: es })} • {format(new Date(singleBooking.start), "HH:mm")}
-                            </div>
-                          </div>
-
-                          {isBookingConfirmed(singleBooking) && (
-                            <div className="mt-3 flex justify-end">
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      asChild
-                                      variant="outline"
-                                      className="h-10 w-10 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
-                                      aria-label="Google Calendar"
-                                    >
-                                      <a
-                                        href={buildGoogleCalendarUrl({
-                                          title: `${singleBooking.service?.name}${singleBooking?.professional?.name ? ` — ${singleBooking.professional.name}` : ""}`,
-                                          startISO: singleBooking.start,
-                                          endISO: singleBooking.end,
-                                          details: "Reserva confirmada",
-                                        })}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <FcGoogle className="h-5 w-5 mx-auto" />
-                                      </a>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="left" className="text-xs">
-                                    Google Calendar
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </div>
-                          )}
-                        </div>
-                      ) : Array.isArray((bookingResult as any).bookings) ? (
-                        <div className="mt-8 grid gap-3">
-                          {(bookingResult as any).bookings.map((b: BookingCreated) => {
-                            const confirmedNoDeposit = !requiresDeposit(b);
-                            return (
-                              <div key={b._id} className="rounded-2xl border p-4 bg-white w-full">
-                                <div className="flex items-center justify-between gap-3">
-                                  <div className="flex items-center gap-2">
-                                    <div className="font-semibold">{b.service?.name}</div>
-                                    {confirmedNoDeposit && (
-                                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200">
-                                        Confirmado
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-sm">
-                                      {format(new Date(b.start), "PPP", { locale: es })} • {format(new Date(b.start), "HH:mm")}
-                                    </div>
-                                    {isBookingConfirmed(b) && (
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <Button
-                                              asChild
-                                              variant="outline"
-                                              className="h-9 w-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
-                                              aria-label="Google Calendar"
-                                            >
-                                              <a
-                                                href={buildGoogleCalendarUrl({
-                                                  title: `${b.service?.name}${b?.professional?.name ? ` — ${b.professional.name}` : ""}`,
-                                                  startISO: b.start,
-                                                  endISO: b.end,
-                                                  details: "Reserva confirmada",
-                                                })}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                              >
-                                                <FcGoogle className="h-4 w-4 mx-auto" />
-                                              </a>
-                                            </Button>
-                                          </TooltipTrigger>
-                                          <TooltipContent side="left" className="text-xs">
-                                            Google Calendar
-                                          </TooltipContent>
-                                        </Tooltip>
-                                      </TooltipProvider>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : null}
 
                       {(normalizedPayment && paymentAmount !== null) || bookingsWithDeposit.length > 0 ? (
                         <div className="mt-8 space-y-4 rounded-3xl border border-amber-200 bg-amber-50/60 p-5 text-left">
@@ -2090,6 +1990,176 @@ export default function ReservarPage() {
                           )}
                         </div>
                       ) : null}
+
+                      {singleBooking ? (
+                        <div className="mt-8">
+                          <div className="rounded-2xl border p-4 bg-white w-full flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-5">
+                              <div className="font-semibold">{singleBooking.service?.name}</div>
+                            </div>
+                            <div className="text-sm">
+                              {format(new Date(singleBooking.start), "PPP", { locale: es })} • {format(new Date(singleBooking.start), "HH:mm")}
+                            </div>
+                          </div>
+
+                          {isBookingConfirmed(singleBooking) && (
+                            <div className="mt-3 flex justify-end">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      asChild
+                                      variant="outline"
+                                      className="h-10 w-10 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                      aria-label="Google Calendar"
+                                    >
+                                      <a
+                                        href={buildGoogleCalendarUrl({
+                                          title: `${singleBooking.service?.name}${singleBooking?.professional?.name ? ` — ${singleBooking.professional.name}` : ""}`,
+                                          startISO: singleBooking.start,
+                                          endISO: singleBooking.end,
+                                          details: "Reserva confirmada",
+                                        })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <FcGoogle className="h-5 w-5 mx-auto" />
+                                      </a>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="text-xs">
+                                    Google Calendar
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          )}
+                        </div>
+                      ) : Array.isArray((bookingResult as any).bookings) ? (
+                        <div className="mt-8 grid gap-3">
+                          {(bookingResult as any).bookings.map((b: any) => {
+                            const confirmedNoDeposit = !requiresDeposit(b)
+
+                            if (confirmedNoDeposit) {
+                              return (
+                                <div key={b._id} className="rounded-2xl border p-4 bg-white w-full">
+                                  <div className="flex flex-col gap-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="font-semibold text-base">{b.service?.name}</div>
+                                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200">
+                                        Confirmado
+                                      </span>
+                                    </div>
+
+                                    <div className="text-sm w-full text-left text-gray-700 space-y-1">
+                                      <div>
+                                        <strong>Profesional:</strong> {b.professional?.name}
+                                      </div>
+                                      <div>
+                                        <strong>Inicio:</strong>{" "}
+                                        {format(new Date(b.start), "PPPp", { locale: es })}
+                                      </div>
+                                      <div>
+                                        <strong>Duración:</strong> {b.sessionDuration} minutos
+                                      </div>
+                                      <div>
+                                        <strong>Precio:</strong>{" "}
+                                        {b.price.toLocaleString("es-AR", {
+                                          style: "currency",
+                                          currency: b.currency || "ARS",
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                      <Button
+                                        asChild
+                                        variant="outline"
+                                        className="h-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                        aria-label="Google Calendar"
+                                      >
+                                        <a
+                                          href={buildGoogleCalendarUrl({
+                                            title: `${b.service?.name}${b.professional?.name
+                                              ? ` — ${b.professional.name}`
+                                              : ""
+                                              }`,
+                                            startISO: b.start,
+                                            endISO: b.end,
+                                            details: "Reserva confirmada",
+                                          })}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          <FcGoogle className="h-4 w-4 mx-auto" />
+                                          <span>Agregar al calendario</span>
+                                        </a>
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )
+                            }
+
+                            // si confirmedNoDeposit es false -> deja todo igual
+                            return (
+                              <div key={b._id} className="rounded-2xl border p-4 bg-white w-full">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-semibold">{b.service?.name}</div>
+                                    {confirmedNoDeposit && (
+                                      <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200">
+                                        Confirmado
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="text-sm">
+                                      {format(new Date(b.start), "PPP", { locale: es })} •{" "}
+                                      {format(new Date(b.start), "HH:mm")}
+                                    </div>
+                                    {isBookingConfirmed(b) && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <Button
+                                              asChild
+                                              variant="outline"
+                                              className="h-9 w-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                              aria-label="Google Calendar"
+                                            >
+                                              <a
+                                                href={buildGoogleCalendarUrl({
+                                                  title: `${b.service?.name}${b?.professional?.name
+                                                    ? ` — ${b.professional.name}`
+                                                    : ""
+                                                    }`,
+                                                  startISO: b.start,
+                                                  endISO: b.end,
+                                                  details: "Reserva confirmada",
+                                                })}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                              >
+                                                <FcGoogle className="h-4 w-4 mx-auto" />
+                                              </a>
+                                            </Button>
+                                          </TooltipTrigger>
+                                          <TooltipContent side="left" className="text-xs">
+                                            Google Calendar
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : null}
+
+
 
                       <div className="mt-8 grid gap-6">
                         {(() => {
