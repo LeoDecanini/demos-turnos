@@ -2148,7 +2148,6 @@ export default function ReservarPage() {
             })()}
           </div>
         )}
-
       </div>
     </div>
   );
