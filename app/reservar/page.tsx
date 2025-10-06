@@ -1565,7 +1565,7 @@ export default function ReservarPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="flex justify-center">
+                  <div className="w-full"> {/* <- antes: flex justify-center */}
                     {!loadingDays ? (
                       <CalendarComponent
                         mode="single"
@@ -1573,22 +1573,14 @@ export default function ReservarPage() {
                         month={visibleMonth}
                         onMonthChange={async (m) => {
                           setVisibleMonth(m);
-                          await loadAvailableDays(
-                            currentServiceId,
-                            currentProfId,
-                            fmtMonth(m)
-                          );
+                          await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m));
                         }}
                         onSelect={async (date) => {
                           setSelectedDateObj(date || undefined);
                           if (date && availableDays.includes(fmtDay(date))) {
                             setTimeSlots([]);
                             setSelectedTimeBlock(null);
-                            await loadTimeSlots(
-                              currentServiceId,
-                              currentProfId,
-                              date
-                            );
+                            await loadTimeSlots(currentServiceId, currentProfId, date);
                             scrollToTimes();
                           } else {
                             setTimeSlots([]);
@@ -1602,17 +1594,38 @@ export default function ReservarPage() {
                           return !availableDays.includes(fmtDay(date));
                         }}
                         locale={es}
-                        className="rounded-xl border-2 border-amber-200 w-full"
+                        className="rounded-lg border-2 border-amber-200 w-full p-3"
                         classNames={{
-                          months:
-                            "flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0 w-full",
-                          month: "space-y-2 w-full",
+                          // layout ancho completo
+                          months: "w-full",
+                          month: "w-full",
                           table: "w-full border-collapse",
-                          head_row: "flex w-full",
-                          row: "flex w-full mt-2",
+                          head_row: "grid grid-cols-7",
+                          row: "grid grid-cols-7 mt-2",
                           head_cell:
-                            "w-9 text-center text-muted-foreground text-[0.8rem]",
-                          cell: "h-9 w-9 p-0 relative text-center",
+                            "text-center text-muted-foreground text-[0.8rem] py-1",
+                          cell: "p-0 relative w-full",
+
+                          // botón del día (hover + rounded)
+                          day:
+                            "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors " +
+                            "hover:bg-amber-100 hover:text-amber-900 " +
+                            "focus:outline-none focus:ring-2 focus:ring-amber-300",
+
+                          // estados
+                          day_selected:
+                            "bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 rounded-lg",
+                          day_today:
+                            "bg-amber-50 text-amber-700 font-semibold rounded-lg",
+                          day_outside:
+                            "text-muted-foreground opacity-60",
+                          day_disabled:
+                            "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
+
+                          // (opcional) si usás rango alguna vez
+                          day_range_start: "rounded-l-lg",
+                          day_range_end: "rounded-r-lg",
+                          day_range_middle: "rounded-none",
                         }}
                       />
                     ) : (
