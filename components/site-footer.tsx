@@ -79,15 +79,11 @@ export function SiteFooter() {
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-6">
               <li className="flex items-start">
                 <div className="flex-shrink-0 w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                  <MapPin className="h-5 w-5 text-yellow-400" />
+                  <Mail className="h-5 w-5 text-yellow-400" />
                 </div>
                 <div className="ml-3">
-                  <p className="text-white font-medium">Ubicación</p>
-                  <p className="text-gray-300 text-sm">
-                    Av. Principal 123, Ciudad
-                    <br />
-                    Código Postal 12345
-                  </p>
+                  <p className="text-white font-medium">Email</p>
+                  <p className="text-gray-300 text-sm break-all">mgestetica22@outlook.con</p>
                 </div>
               </li>
 
@@ -103,11 +99,13 @@ export function SiteFooter() {
 
               <li className="flex items-start">
                 <div className="flex-shrink-0 w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                  <Mail className="h-5 w-5 text-yellow-400" />
+                  <MapPin className="h-5 w-5 text-yellow-400" />
                 </div>
                 <div className="ml-3">
-                  <p className="text-white font-medium">Email</p>
-                  <p className="text-gray-300 text-sm break-all">mgestetica22@outlook.com</p>
+                  <p className="text-white font-medium">Ubicación</p>
+                  <p className="text-gray-300 text-sm">
+                    Paraná 1315, PB 4, Recoleta
+                  </p>
                 </div>
               </li>
 
@@ -117,7 +115,7 @@ export function SiteFooter() {
                 </div>
                 <div className="ml-3">
                   <p className="text-white font-medium">Horarios</p>
-                  <p className="text-gray-300 text-sm">Lun - Vie: 9:00 - 19:00</p>
+                  <p className="text-gray-300 text-sm">{`lunes a Viernes: 9:00 - 20:00\nSábados: 9:00 - 14:00`}</p>
                 </div>
               </li>
             </ul>
