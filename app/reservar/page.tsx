@@ -1197,20 +1197,28 @@ export default function ReservarPage() {
   };
 
   // --- Avance automático al elegir profesional
+
+
   const goNextAfterProfessional = () => {
     if (profIdx + 1 < selectedServices.length) {
       setProfIdx((i) => i + 1);
     } else {
       setScheduleIdx(0);
       resetCalendar();
-      void loadAvailableDays(
-        selectedServices[0],
-        selection[selectedServices[0]]?.professionalId || "any"
-      );
-      setStep(4);
+      setStep(4); // el useEffect de abajo hará el fetch con el profesional actualizado
       scrollToTop();
     }
   };
+
+  useEffect(() => {
+    if (step !== 4 || !currentServiceId) return;
+    const pid = selection[currentServiceId]?.professionalId || "any";
+    void loadAvailableDays(currentServiceId, pid);
+    // al entrar al paso 4 o cambiar el profesional del servicio actual,
+    // cargamos los días con el valor NUEVO ya aplicado
+// eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, currentServiceId, selection[currentServiceId]?.professionalId]);
+
 
   if (gateLoading)
     return (
@@ -1539,15 +1547,11 @@ export default function ReservarPage() {
                       } else {
                         setScheduleIdx(0);
                         resetCalendar();
-                        void loadAvailableDays(
-                          selectedServices[0],
-                          selection[selectedServices[0]]?.professionalId ||
-                          "any"
-                        );
-                        setStep(4);
+                        setStep(4); // sin loadAvailableDays acá
                         scrollToTop();
                       }
                     }}
+
                     backDisabled={submitting}
                     /*  nextDisabled={submitting || !selection[srvId]?.professionalId} */
                     nextDisabled={submitting || !hasProSelected}
