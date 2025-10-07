@@ -21,7 +21,7 @@ export default function RecoverPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState('');
-  const [requested, setRequested] = useState(false); // paso 2 habilitado
+  const [requested, setRequested] = useState(false);
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [devCode, setDevCode] = useState<string | undefined>(undefined);
@@ -39,19 +39,23 @@ export default function RecoverPage() {
       const slug = getSlug();
       if (!slug) throw new Error('No se detectó el tenant');
 
-      // ✅ Ruta pública con slug y :email
       const r = await fetch(
         `${API}/bookingmodule/public/${slug}/clients/${encodeURIComponent(email)}/start-password-reset`,
         { method: 'POST', headers: { 'Content-Type': 'application/json' } }
       );
 
-      if (!r.ok) throw new Error((await r.text()) || 'No se pudo enviar el código');
+      const data = await r.json().catch(() => ({} as any));
 
-      const data = await r.json().catch(() => ({}));
-      if (data?.devCode) setDevCode(String(data.devCode)); // útil en dev
+      if (!r.ok) {
+        const msg = data?.message || 'No se pudo enviar el código';
+        throw new Error(msg);
+      }
 
+      if (data?.devCode) setDevCode(String(data.devCode));
       setRequested(true);
     } catch (e: any) {
+
+      /* if (e?.message === "Cliente no encontrado para este negocio") router.replace(`/register?email=${encodeURIComponent(email)}`); */
       setErr(e?.message || 'Error, intenta nuevamente');
     } finally {
       setPending(false);
@@ -67,7 +71,6 @@ export default function RecoverPage() {
       const slug = getSlug();
       if (!slug) throw new Error('No se detectó el tenant');
 
-      // ✅ Ruta pública con slug y :email + body { code, newPassword }
       const r = await fetch(
         `${API}/bookingmodule/public/${slug}/clients/${encodeURIComponent(email)}/reset-password`,
         {
@@ -77,7 +80,17 @@ export default function RecoverPage() {
         }
       );
 
-      if (!r.ok) throw new Error((await r.text()) || 'No se pudo cambiar la contraseña');
+      if (!r.ok) {
+        let msg = 'No se pudo cambiar la contraseña';
+        try {
+          const j = await r.json();
+          msg = j?.message || msg;
+        } catch {
+          const t = await r.text().catch(() => '');
+          if (t) msg = t;
+        }
+        throw new Error(msg);
+      }
 
       router.replace('/login');
     } catch (e: any) {
@@ -100,7 +113,6 @@ export default function RecoverPage() {
   return (
     <main className="pt-20 bg-white">
       <div className="max-w-6xl mx-auto px-4 py-12">
-        {/* título con acento amarillo */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">
             Recuperar contraseña
@@ -111,7 +123,6 @@ export default function RecoverPage() {
           </p>
         </div>
 
-        {/* card */}
         <div className="max-w-md mx-auto">
           <div className="rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-6 md:p-8">
             {err && (
@@ -145,7 +156,6 @@ export default function RecoverPage() {
                 </button>
               ) : (
                 <>
-
                   <div>
                     <label className="block text-sm font-medium text-slate-700">
                       Código (8 dígitos)
@@ -186,13 +196,11 @@ export default function RecoverPage() {
                         aria-label={showPwd ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                       >
                         {showPwd ? (
-                          // ojo abierto
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M12 5C5 5 1 12 1 12s4 7 11 7 11-7 11-7-4-7-11-7Z" stroke="currentColor" strokeWidth="1.6" />
                             <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="1.6" />
                           </svg>
                         ) : (
-                          // ojo tachado
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                             <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.6" />
                             <path d="M9.88 9.88A3.5 3.5 0 0012 15.5c1.93 0 3.5-1.57 3.5-3.5 0-.53-.12-1.02-.34-1.46M6.2 6.2C4.12 7.47 2.7 9.11 2 12c0 0 4 7 10 7 2.02 0 3.74-.6 5.14-1.48M18.9 15.7C20.52 14.35 22 12 22 12s-4-7-10-7c-1.34 0-2.56.25-3.66.67" stroke="currentColor" strokeWidth="1.6" />
@@ -223,7 +231,6 @@ export default function RecoverPage() {
             </div>
           </div>
 
-          {/* CTA secundaria */}
           <div className="text-center mt-6">
             <Link
               href="/reservar"
