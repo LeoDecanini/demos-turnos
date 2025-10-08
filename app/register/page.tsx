@@ -1,7 +1,7 @@
 // app/register/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../auth/AuthProvider';
@@ -18,6 +18,36 @@ function getSlug() {
   return '';
 }
 
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+const onlyDigits = (v: string) => v.replace(/\D+/g, '');
+const normPhone = (v: string) => v.replace(/[^\d+\s-]/g, '');
+
+function validateName(v: string) {
+  const s = v.trim();
+  if (s.length < 2) return 'Ingresá tu nombre y apellido';
+  if (s.length > 80) return 'Demasiado largo';
+  return '';
+}
+function validateEmail(v: string) {
+  const s = v.trim();
+  if (!emailRe.test(s)) return 'Email inválido';
+  return '';
+}
+function validatePhone(v: string) {
+  const s = onlyDigits(v);
+  if (s.length < 8) return 'Teléfono inválido';
+  return '';
+}
+function validateDni(v: string) {
+  const s = onlyDigits(v);
+  if (s.length < 6 || s.length > 10) return 'DNI inválido';
+  return '';
+}
+function validatePassword(v: string) {
+  if (v.length < 6) return 'Mínimo 6 caracteres';
+  return '';
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,6 +60,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
 
+  const [touched, setTouched] = useState<{[k:string]:boolean}>({});
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -38,23 +69,43 @@ export default function RegisterPage() {
     if (qp) setEmail(qp);
   }, [searchParams]);
 
+  const errors = useMemo(() => ({
+    name: validateName(name),
+    email: validateEmail(email),
+    phone: validatePhone(phone),
+    dni: validateDni(dni),
+    password: validatePassword(password),
+  }), [name, email, phone, dni, password]);
+
+  const canSubmit = useMemo(() =>
+    !pending &&
+    !errors.name &&
+    !errors.email &&
+    !errors.phone &&
+    !errors.dni &&
+    !errors.password, [errors, pending]);
+
   const onSubmit = async () => {
-    if (pending) return;
+    if (pending || !canSubmit) return;
     try {
       setPending(true);
       setErr(null);
-
       const slug = getSlug();
       if (!slug) throw new Error('No se detectó el tenant');
 
-      const r = await fetch(
-        `${API}/bookingmodule/public/${slug}/clients/register`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, phone, dni, password }),
-        }
-      );
+      const payload = {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        dni: onlyDigits(dni),
+        password
+      };
+
+      const r = await fetch(`${API}/bookingmodule/public/${slug}/clients/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
       if (!r.ok) throw new Error((await r.text()) || 'No se pudo crear la cuenta');
 
@@ -70,16 +121,11 @@ export default function RegisterPage() {
   };
 
   const onEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && canSubmit) onSubmit();
+    if (e.key === 'Enter') {
+      setTouched({ name: true, email: true, phone: true, dni: true, password: true });
+      if (canSubmit) onSubmit();
+    }
   };
-
-  const canSubmit =
-    name.trim().length >= 2 &&
-    /\S+@\S+\.\S+/.test(email) &&
-    phone.trim().length >= 6 &&
-    dni.trim().length >= 6 &&
-    password.length >= 6 &&
-    !pending;
 
   return (
     <main className="pt-20 bg-white">
@@ -105,10 +151,18 @@ export default function RegisterPage() {
                   type="text"
                   value={name}
                   onChange={e => setName(e.target.value)}
+                  onBlur={() => setTouched(s => ({...s, name: true}))}
                   onKeyDown={onEnter}
                   placeholder="Tu nombre y apellido"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                  className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
+                    touched.name && errors.name
+                      ? 'border-red-300 focus:ring-red-200'
+                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                  }`}
                 />
+                {touched.name && errors.name && (
+                  <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+                )}
               </div>
 
               <div>
@@ -117,11 +171,19 @@ export default function RegisterPage() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
+                  onBlur={() => setTouched(s => ({...s, email: true}))}
                   onKeyDown={onEnter}
                   placeholder="nombre@correo.com"
                   autoComplete="email"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                  className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
+                    touched.email && errors.email
+                      ? 'border-red-300 focus:ring-red-200'
+                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                  }`}
                 />
+                {touched.email && errors.email && (
+                  <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+                )}
               </div>
 
               <div>
@@ -129,24 +191,41 @@ export default function RegisterPage() {
                 <input
                   type="tel"
                   value={phone}
-                  onChange={e => setPhone(e.target.value)}
+                  onChange={e => setPhone(normPhone(e.target.value))}
+                  onBlur={() => setTouched(s => ({...s, phone: true}))}
                   onKeyDown={onEnter}
                   placeholder="+54 11 1234-5678"
                   autoComplete="tel"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                  className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
+                    touched.phone && errors.phone
+                      ? 'border-red-300 focus:ring-red-200'
+                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                  }`}
                 />
+                {touched.phone && errors.phone && (
+                  <p className="mt-1 text-xs text-red-600">{errors.phone}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-700">DNI</label>
                 <input
                   type="text"
+                  inputMode="numeric"
                   value={dni}
-                  onChange={e => setDni(e.target.value)}
+                  onChange={e => setDni(onlyDigits(e.target.value))}
+                  onBlur={() => setTouched(s => ({...s, dni: true}))}
                   onKeyDown={onEnter}
                   placeholder="Tu DNI"
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                  className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
+                    touched.dni && errors.dni
+                      ? 'border-red-300 focus:ring-red-200'
+                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                  }`}
                 />
+                {touched.dni && errors.dni && (
+                  <p className="mt-1 text-xs text-red-600">{errors.dni}</p>
+                )}
               </div>
 
               <div>
@@ -156,10 +235,15 @@ export default function RegisterPage() {
                     type={showPwd ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
+                    onBlur={() => setTouched(s => ({...s, password: true}))}
                     onKeyDown={onEnter}
                     placeholder="Mínimo 6 caracteres"
                     autoComplete="new-password"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                    className={`w-full rounded-xl border bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
+                      touched.password && errors.password
+                        ? 'border-red-300 focus:ring-red-200'
+                        : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                    }`}
                   />
                   <button
                     type="button"
@@ -180,10 +264,16 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
+                {touched.password && errors.password && (
+                  <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+                )}
               </div>
 
               <button
-                onClick={onSubmit}
+                onClick={() => {
+                  setTouched({ name: true, email: true, phone: true, dni: true, password: true });
+                  onSubmit();
+                }}
                 disabled={!canSubmit}
                 className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
               >

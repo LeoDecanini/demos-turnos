@@ -1216,7 +1216,7 @@ export default function ReservarPage() {
     void loadAvailableDays(currentServiceId, pid);
     // al entrar al paso 4 o cambiar el profesional del servicio actual,
     // cargamos los días con el valor NUEVO ya aplicado
-// eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, currentServiceId, selection[currentServiceId]?.professionalId]);
 
 
@@ -1272,7 +1272,7 @@ export default function ReservarPage() {
           <>
             <div className="text-center mb-6">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Elegí hasta 3 servicios
+                Elegí hasta 3 Tratamientos
               </h2>
               <p className="text-gray-600 text-lg">
                 Podés combinar distintos tratamientos
@@ -1437,7 +1437,6 @@ export default function ReservarPage() {
           </>
         )}
 
-
         {step === 3 && (
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>
             {(() => {
@@ -1465,7 +1464,7 @@ export default function ReservarPage() {
                   </div>
 
                   <div className="max-w-3xl mx-auto">
-                    {pros.length > 1 && (
+                   {/*  {pros.length > 1 && (
                       <div
                         className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any"
                           ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
@@ -1509,7 +1508,7 @@ export default function ReservarPage() {
                           </div>
                         </div>
                       </div>
-                    )}
+                    )} */}
 
                     <ProfessionalList
                       professionals={pros.map((p: any) => ({
@@ -1517,20 +1516,22 @@ export default function ReservarPage() {
                         name: p.name,
                         photo: p.photo ? { path: p.photo.path } : undefined,
                       }))}
-                      selectedId={sel === "any" ? undefined : sel}
+                      selectedId={sel}                 // ahora puede ser "any"
                       onSelect={(id: string) => {
                         setSelection((prev) => ({
                           ...prev,
                           [srvId]: {
                             ...(prev[srvId] || { serviceId: srvId }),
-                            professionalId: id,
+                            professionalId: id,        // id puede ser "any"
                             branchId: prev[srvId]?.branchId,
                           },
                         }));
                         goNextAfterProfessional();
                       }}
                       backendBaseUrl={process.env.NEXT_PUBLIC_CDN_URL || ""}
+                      includeAny={pros.length > 1}
                     />
+
                   </div>
 
                   {/* Dejo el FloatingNav para "Volver" si hace falta */}

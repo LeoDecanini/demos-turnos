@@ -24,6 +24,7 @@ import ReusableBadge from "@/components/reusable-badge";
 import Link from "next/link";
 import OpinionesPage from "@/components/testimonials-section"
 import Contacto from "@/components/Contacto"
+import Servicios from "@/components/Servicios"
 
 export default function Home() {
     const router = useRouter()
@@ -107,7 +108,7 @@ export default function Home() {
                     </div>
                 </section>
 
-                <section id="servicios"
+                {/* <section id="servicios"
                     className="py-24 relative overflow-hidden">
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-8">
@@ -128,7 +129,6 @@ export default function Home() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-10 max-w-4xl mx-auto">
-                            {/* Card grande (Faciales) */}
                             {[
                                 {
                                     title: "Tratamientos Faciales",
@@ -217,7 +217,6 @@ export default function Home() {
                                 </Card>
                             ))}
 
-                            {/* Grid con los 2 cards chicos */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 {[
                                     {
@@ -291,8 +290,6 @@ export default function Home() {
                             </div>
                         </div>
 
-
-
                         <div className="mt-16 text-center">
                             <Link href={"/reservar"}>
                                 <Button
@@ -305,7 +302,9 @@ export default function Home() {
                             </Link>
                         </div>
                     </div>
-                </section>
+                </section> */}
+
+                <Servicios />
 
                 <section
                     id="diferenciales"
