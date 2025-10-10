@@ -294,7 +294,8 @@ export default function ReservarPage() {
   const [selectedTimeBlock, setSelectedTimeBlock] = useState<string | null>(
     null
   );
-
+  const [brandName, setBrandName] = useState<string>("");
+  const [brandLocation, setBrandLocation] = useState<string | undefined>(undefined);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -471,7 +472,7 @@ export default function ReservarPage() {
   };
 
   useEffect(() => {
-    const preflight = async () => {
+    /* const preflight = async () => {
       setGateLoading(true);
       setLoadingServices(true);
       try {
@@ -506,7 +507,83 @@ export default function ReservarPage() {
         setLoadingServices(false);
         setGateLoading(false);
       }
+    }; */
+
+    const preflight = async () => {
+      setGateLoading(true);
+      setLoadingServices(true);
+      try {
+        const slug =
+          SUBDOMAIN ??
+          (typeof window !== "undefined"
+            ? window.location.hostname.split(".")[0]
+            : "");
+
+        // pedir ambas cosas en paralelo
+        const [servicesRes, cfgRes] = await Promise.all([
+          fetch(`${API_BASE}/${slug}/services`, { cache: "no-store" }),
+          fetch(`${API_BASE}/${slug}/config`, { cache: "no-store" }),
+        ]);
+
+        const [servicesRaw, cfgRaw] = await Promise.all([
+          servicesRes.json().catch(() => ({})),
+          cfgRes.json().catch(() => ({})),
+        ]);
+
+        if (
+          servicesRaw?.message === "Reservas bloqueadas" ||
+          cfgRaw?.message === "Reservas bloqueadas"
+        ) {
+          setIsBlocked(true);
+          setBlockMsg("Reservas bloqueadas");
+          setServices([]);
+          return;
+        }
+
+        // --- branding público desde config (robusto a distintos esquemas)
+        const cfg = getPayload(cfgRaw);
+        const pub =
+          cfg?.branding?.public ||
+          cfg?.publicBrand ||
+          cfg?.brand?.public ||
+          {};
+
+        const bn =
+          pub?.name ||
+          cfg?.tenant?.publicBrand?.name ||
+          cfg?.tenant?.name ||
+          SUBDOMAIN ||
+          "Reserva";
+
+        setBrandName(String(bn));
+
+        const locParts = [
+          pub?.location?.addressLine ?? pub?.addressLine ?? pub?.address,
+          pub?.location?.city ?? pub?.city,
+          pub?.location?.state ?? pub?.state,
+          pub?.location?.country ?? pub?.country,
+        ].filter(Boolean);
+        setBrandLocation(locParts.join(", ") || undefined);
+
+        // --- servicios (igual que antes, con política de depósito)
+        const depositCfg: DepositCfg | undefined = servicesRaw?.config?.deposit;
+        const payload = getPayload(servicesRaw);
+        const list: RawService[] = Array.isArray(payload)
+          ? payload
+          : payload?.items ?? [];
+        const listWithDeposit = applyDepositPolicy(list, depositCfg);
+        setServices(listWithDeposit);
+        if (listWithDeposit.length === 0)
+          toast.error("No hay servicios disponibles en este momento");
+      } catch {
+        setServices([]);
+        toast.error("Error al cargar los servicios");
+      } finally {
+        setLoadingServices(false);
+        setGateLoading(false);
+      }
     };
+
     preflight();
   }, []);
 
@@ -1250,6 +1327,49 @@ export default function ReservarPage() {
       };
     });
   }, [step, profIdx, selectedServices, professionalsByService, setSelection]);
+
+  function calendarTitle(serviceName?: string, professionalName?: string) {
+    return `${serviceName || "Reserva"}${professionalName ? ` — ${professionalName}` : ""
+      }${brandName ? ` — ${brandName}` : ""}`;
+  }
+
+  function calendarDetails(startISO: string, serviceName?: string, professionalName?: string) {
+    const d = new Date(startISO);
+    const dia = format(d, "PPP", { locale: es });
+    const hora = format(d, "HH:mm");
+    return [
+      `Servicio: ${serviceName || "—"}`,
+      `Profesional: ${professionalName || "Indistinto"}`,
+      `Día: ${dia}`,
+      `Hora: ${hora}`,
+    ].join("\n");
+  }
+
+  // Ubicación: primero sucursal elegida (si corresponde), si no, branding público
+  function calendarLocationFor(serviceId?: string, serviceName?: string) {
+    const sid =
+      serviceId ||
+      selectedServices.find((id) => {
+        const s = services.find((x) => x._id === id);
+        return s?.name === serviceName;
+      });
+
+    const branchId = sid ? selection[sid]?.branchId : undefined;
+    const branch = sid ? (branchesByService[sid] || []).find((b) => b._id === branchId) : undefined;
+
+    const loc = branch?.location;
+    const branchStr = [
+      branch?.name,
+      loc?.addressLine,
+      loc?.city,
+      loc?.state,
+      loc?.country,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    return branchStr || brandLocation || undefined;
+  }
 
   if (gateLoading)
     return (
@@ -2279,13 +2399,11 @@ export default function ReservarPage() {
                                       >
                                         <a
                                           href={buildGoogleCalendarUrl({
-                                            title: `${singleBooking.service?.name}${singleBooking.professional?.name
-                                              ? ` — ${singleBooking.professional.name}`
-                                              : ""
-                                              }`,
+                                            title: calendarTitle(singleBooking.service?.name, singleBooking.professional?.name),
                                             startISO: singleBooking.start,
                                             endISO: singleBooking.end,
-                                            details: "Reserva confirmada",
+                                            details: calendarDetails(singleBooking.start, singleBooking.service?.name, singleBooking.professional?.name),
+                                            location: calendarLocationFor(undefined, singleBooking.service?.name),
                                           })}
                                           target="_blank"
                                           rel="noopener noreferrer"
@@ -2326,13 +2444,11 @@ export default function ReservarPage() {
                                           >
                                             <a
                                               href={buildGoogleCalendarUrl({
-                                                title: `${singleBooking.service?.name}${singleBooking?.professional?.name
-                                                  ? ` — ${singleBooking.professional.name}`
-                                                  : ""
-                                                  }`,
+                                                title: calendarTitle(singleBooking.service?.name, singleBooking.professional?.name),
                                                 startISO: singleBooking.start,
                                                 endISO: singleBooking.end,
-                                                details: "Reserva confirmada",
+                                                details: calendarDetails(singleBooking.start, singleBooking.service?.name, singleBooking.professional?.name),
+                                                location: calendarLocationFor(undefined, singleBooking.service?.name),
                                               })}
                                               target="_blank"
                                               rel="noopener noreferrer"
@@ -2397,13 +2513,11 @@ export default function ReservarPage() {
                                       >
                                         <a
                                           href={buildGoogleCalendarUrl({
-                                            title: `${b.service?.name}${b.professional?.name
-                                              ? ` — ${b.professional.name}`
-                                              : ""
-                                              }`,
+                                            title: calendarTitle(b.service?.name, b.professional?.name),
                                             startISO: b.start,
                                             endISO: b.end,
-                                            details: "Reserva confirmada",
+                                            details: calendarDetails(b.start, b.service?.name, b.professional?.name),
+                                            location: calendarLocationFor(undefined, b.service?.name),
                                           })}
                                           target="_blank"
                                           rel="noopener noreferrer"
@@ -2447,13 +2561,11 @@ export default function ReservarPage() {
                                             >
                                               <a
                                                 href={buildGoogleCalendarUrl({
-                                                  title: `${b.service?.name}${b?.professional?.name
-                                                    ? ` — ${b.professional.name}`
-                                                    : ""
-                                                    }`,
+                                                  title: calendarTitle(b.service?.name, b.professional?.name),
                                                   startISO: b.start,
                                                   endISO: b.end,
-                                                  details: "Reserva confirmada",
+                                                  details: calendarDetails(b.start, b.service?.name, b.professional?.name),
+                                                  location: calendarLocationFor(undefined, b.service?.name),
                                                 })}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
