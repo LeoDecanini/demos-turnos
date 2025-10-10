@@ -339,6 +339,8 @@ export default function ReservarPage() {
   }
 
   function isSlotOverlappingWithPrevSelections(slot: string): boolean {
+    // nunca bloquear en el primer servicio ni si es un único servicio
+    if (scheduleIdx === 0 || selectedServices.length <= 1) return false;
     if (!selectedDateObj) return false;
 
     const currentDur = getServiceDuration(currentServiceId);
@@ -347,7 +349,6 @@ export default function ReservarPage() {
     const slotStart = hhmmToMinutes(slot);
     const sameDayStr = fmtDay(selectedDateObj);
 
-    // Sólo miramos servicios ya fijados (índices < scheduleIdx)
     for (let i = 0; i < scheduleIdx; i++) {
       const sid = selectedServices[i];
       const sel = selection[sid];
@@ -358,16 +359,11 @@ export default function ReservarPage() {
       if (!prevDur) continue;
 
       const prevStart = hhmmToMinutes(sel.time);
-
-      // si se solapan, bloqueamos este slot
-      if (overlaps(slotStart, currentDur, prevStart, prevDur)) {
-        return true;
-      }
+      if (overlaps(slotStart, currentDur, prevStart, prevDur)) return true;
     }
 
     return false;
   }
-
   const ERROR_MAP: Array<[test: RegExp, nice: string]> = [
     [
       /superpone/i,
@@ -898,10 +894,14 @@ export default function ReservarPage() {
     return hh * 60 + mm;
   }
   function isSlotBlockedByDuration(slot: string): boolean {
+    // nunca bloquear en el primer servicio ni si es un único servicio
+    if (scheduleIdx === 0 || selectedServices.length <= 1) return false;
     if (!selectedTimeBlock) return false;
+
     const dur =
       currentService?.durationMinutes ?? currentService?.sessionDuration ?? 0;
     if (!dur) return false;
+
     const start = hhmmToMinutes(selectedTimeBlock);
     const end = start + dur;
     const t = hhmmToMinutes(slot);
@@ -1713,6 +1713,13 @@ export default function ReservarPage() {
                         const blockedByPrev = isSlotOverlappingWithPrevSelections(time); // ← nuevo
                         const picked = selectedTimeBlock === time;
                         const blocked = (blockedByDur && !picked) || blockedByPrev;
+
+                        const hasPrevFixed = selectedServices
+                          .slice(0, scheduleIdx)
+                          .some(sid => selection[sid]?.date && selection[sid]?.time);
+
+                        const blockHelpersActive = selectedServices.length > 1 && scheduleIdx > 0 && hasPrevFixed;
+
 
                         return (
                           <Button
