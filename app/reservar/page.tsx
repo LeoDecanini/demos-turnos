@@ -1377,17 +1377,17 @@ export default function ReservarPage() {
 
   if (isBlocked)
     return (
-      <div className="min-h-screen grid place-items-center bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
+      <div className="min-h-screen p-3 grid place-items-center bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
         <Card className="max-w-md w/full border-amber-300/50">
           <CardContent className="p-8 text-center space-y-4">
             <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center">
               <Lock className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {blockMsg || "Reservas bloqueadas"}
+              {"Reservas no disponibles por el momento"}
             </h2>
             <p className="text-gray-600">
-              Por el momento no estamos tomando reservas en línea.
+              Estamos ajustando nuestra agenda. En breve volverán a estar habilitadas las reservas en línea.
             </p>
             <div className="pt-2">
               <Button
@@ -1416,10 +1416,10 @@ export default function ReservarPage() {
           <>
             <div className="text-center mb-6">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Elegí hasta 3 Tratamientos
+                Nuestros tratamientos
               </h2>
               <p className="text-gray-600 text-lg">
-                Podés combinar distintos tratamientos
+                Elegí y combiná hasta 3 tratamientos en un solo proceso
               </p>
             </div>
 
