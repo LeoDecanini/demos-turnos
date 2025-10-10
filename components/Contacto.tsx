@@ -19,6 +19,7 @@ const getBrowserInfo = () => {
 }
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL!
+const ACCOUNTID = process.env.NEXT_PUBLIC_ACCOUNT_ID!
 
 const Contacto = () => {
   const router = useRouter()
@@ -76,7 +77,7 @@ const Contacto = () => {
     const browserInfo = getBrowserInfo()
 
     const payload: any = {
-      accountId: "68dd659fb7f7e2260f80f59a",
+      accountId: `${ACCOUNTID}`,
       name: formData.name,
       email: formData.email,
       subject: "Mensaje de contacto",
