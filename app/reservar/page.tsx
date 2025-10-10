@@ -2400,7 +2400,7 @@ export default function ReservarPage() {
                                               singleBooking.service?.name,
                                               singleBooking.professional?.name
                                             ),
-                                            location: calendarLocationFor(undefined, singleBooking.service?.name),
+                                            /*location: calendarLocationFor(undefined, singleBooking.service?.name),*/
                                           })}
                                           target="_blank"
                                           rel="noopener noreferrer"
@@ -2449,7 +2449,7 @@ export default function ReservarPage() {
                                                   singleBooking.service?.name,
                                                   singleBooking.professional?.name
                                                 ),
-                                                location: calendarLocationFor(undefined, singleBooking.service?.name),
+                                                /*location: calendarLocationFor(undefined, singleBooking.service?.name),*/
                                               })}
                                               target="_blank"
                                               rel="noopener noreferrer"
@@ -2518,7 +2518,7 @@ export default function ReservarPage() {
                                             startISO: b.start,
                                             endISO: b.end,
                                             details: calendarDetails(b.start, b.service?.name, b.professional?.name),
-                                            location: calendarLocationFor(undefined, b.service?.name),
+                                            /*location: calendarLocationFor(undefined, b.service?.name),*/
                                           })}
                                           target="_blank"
                                           rel="noopener noreferrer"
@@ -2566,7 +2566,7 @@ export default function ReservarPage() {
                                                   startISO: b.start,
                                                   endISO: b.end,
                                                   details: calendarDetails(b.start, b.service?.name, b.professional?.name),
-                                                  location: calendarLocationFor(undefined, b.service?.name),
+                                                  /*location: calendarLocationFor(undefined, b.service?.name),*/
                                                 })}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
