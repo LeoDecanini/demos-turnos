@@ -25,6 +25,9 @@ import { useAuth } from "../auth/AuthProvider";
 import ProfessionalList from "@/components/ProfessionalList";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { FcGoogle } from "react-icons/fc";
+import { isValidPhoneNumber, isPossiblePhoneNumber } from "react-phone-number-input";
+import { PhoneInput } from "@/components/ui/phone-input";
+import { cn } from "@/lib/utils";
 
 const toGCalDateUTC = (d: Date) =>
   d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -423,16 +426,24 @@ export default function ReservarPage() {
   ) => {
     let msg = "";
     const v = value?.trim() || "";
+
     if (name === "fullName" && v.length < 2) msg = "Ingresá un nombre válido";
     if (name === "email" && !emailRe.test(v)) msg = "Ingresá un email válido";
+
     if (name === "phone") {
-      const digits = v.replace(/\D/g, "");
-      if (digits.length < 8) msg = "Ingresá un teléfono válido";
+      // El <PhoneInput /> te da E.164 (+549...) cuando es válido.
+      // Aceptamos válido o posible por tolerancia.
+      const ok =
+        (v && (isValidPhoneNumber(v) || isPossiblePhoneNumber(v))) ||
+        false;
+      if (!ok) msg = "Ingresá un teléfono válido";
     }
+
     if (name === "dni") {
       const digits = v.replace(/\D/g, "");
       if (digits.length < 6) msg = "Ingresá un DNI válido";
     }
+
     setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
     return !msg;
   };
@@ -1464,7 +1475,7 @@ export default function ReservarPage() {
                   </div>
 
                   <div className="max-w-3xl mx-auto">
-                   {/*  {pros.length > 1 && (
+                    {/*  {pros.length > 1 && (
                       <div
                         className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any"
                           ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
@@ -1856,7 +1867,7 @@ export default function ReservarPage() {
                     )}
                   </div>
 
-                  <div className="mt-2">
+                  {/* <div className="mt-2">
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Teléfono
                     </label>
@@ -1873,6 +1884,37 @@ export default function ReservarPage() {
                       onBlur={(e) => validateField("phone", e.target.value)}
                       aria-invalid={!!errors.phone}
                     />
+                    {errors.phone && (
+                      <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                    )}
+                  </div> */}
+
+                  <div className="mt-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Teléfono
+                    </label>
+
+                    <div className="w-full">
+                      <PhoneInput
+                        // sugerencia: poné tu país por defecto (cambiá "AR" si hace falta)
+                        defaultCountry="AR"
+                        international
+                        placeholder="Ej: +54 9 11 1234-5678"
+                        value={phone}
+                        onChange={(val) => {
+                          const v = (val as string) || "";
+                          setPhone(v);
+                          // revalida al escribir si ya había error
+                          if (errors.phone) validateField("phone", v);
+                        }}
+                        onBlur={() => validateField("phone", phone)}
+                        className={cn(
+                          // para que el conjunto botón-bandera + input conserve altura
+                          "h-8"
+                        )}
+                      />
+                    </div>
+
                     {errors.phone && (
                       <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
                     )}
@@ -1916,7 +1958,7 @@ export default function ReservarPage() {
               </CardContent>
             </Card>
 
-            <FloatingNav
+            {/*  <FloatingNav
               onBack={() => setStep(4)}
               onNext={createBooking}
               backDisabled={submitting}
@@ -1927,6 +1969,25 @@ export default function ReservarPage() {
                 !email.trim() ||
                 !phone.trim() ||
                 !dni.trim()
+              }
+              nextLabel={submitting ? "Creando…" : "Confirmar Reserva"}
+            /> */}
+
+            <FloatingNav
+              onBack={() => setStep(4)}
+              onNext={createBooking}
+              backDisabled={submitting}
+              nextDisabled={
+                submitting ||
+                !allTimesChosen ||
+                !fullName.trim() ||
+                !email.trim() ||
+                !phone.trim() ||
+                !dni.trim() ||
+                !!errors.fullName ||
+                !!errors.email ||
+                !!errors.phone ||
+                !!errors.dni
               }
               nextLabel={submitting ? "Creando…" : "Confirmar Reserva"}
             />
