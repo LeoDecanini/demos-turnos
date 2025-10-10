@@ -1230,6 +1230,26 @@ export default function ReservarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, currentServiceId, selection[currentServiceId]?.professionalId]);
 
+  useEffect(() => {
+    if (step !== 3) return;
+
+    const sid = selectedServices[profIdx];
+    if (!sid) return;
+
+    const pros = professionalsByService[sid] || [];
+    if (pros.length !== 1) return;
+
+    setSelection((prev: any) => {
+      const current = prev[sid] || { serviceId: sid, branchId: prev[sid]?.branchId };
+      const onlyId = String(pros[0]._id);
+      if (current.professionalId === onlyId) return prev; // ya seleccionado
+
+      return {
+        ...prev,
+        [sid]: { ...current, professionalId: onlyId },
+      };
+    });
+  }, [step, profIdx, selectedServices, professionalsByService, setSelection]);
 
   if (gateLoading)
     return (
