@@ -115,7 +115,12 @@ export function SiteFooter() {
                 </div>
                 <div className="ml-3">
                   <p className="text-white font-medium">Horarios</p>
-                  <p className="text-gray-300 text-sm">{`lunes a Viernes: 9:00 - 20:00\nSábados: 9:00 - 14:00`}</p>
+                  <p className="text-gray-300 text-sm">
+                    Martes y Jueves: 10:00 - 19:30<br />
+                    Miércoles y Viernes: 14:00 - 19:30<br />
+                    Sábados: 10:00 - 14:00<br />
+                    Lunes y Domingos: Cerrado
+                  </p>
                 </div>
               </li>
             </ul>
