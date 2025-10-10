@@ -542,28 +542,29 @@ export default function ReservarPage() {
 
         // --- branding público desde config (robusto a distintos esquemas)
         const cfg = getPayload(cfgRaw);
-        const pub =
-          cfg?.branding?.public ||
-          cfg?.publicBrand ||
-          cfg?.brand?.public ||
-          {};
 
-        const bn =
-          pub?.name ||
-          cfg?.tenant?.publicBrand?.name ||
-          cfg?.tenant?.name ||
-          SUBDOMAIN ||
+        // ojo: publicBranding.brandName es un STRING
+        const branding = cfg?.publicBranding ?? {};
+        const bn: string =
+          branding.brandName ??
+          cfg?.tenant?.publicBrand?.name ??
+          cfg?.tenant?.name ??
+          SUBDOMAIN ??
           "Reserva";
 
         setBrandName(String(bn));
 
+        // ubicación opcional desde publicBranding (toma location.* o campos planos)
         const locParts = [
-          pub?.location?.addressLine ?? pub?.addressLine ?? pub?.address,
-          pub?.location?.city ?? pub?.city,
-          pub?.location?.state ?? pub?.state,
-          pub?.location?.country ?? pub?.country,
-        ].filter(Boolean);
-        setBrandLocation(locParts.join(", ") || undefined);
+          branding.location?.addressLine ?? branding.addressLine ?? branding.address,
+          branding.location?.city ?? branding.city,
+          branding.location?.state ?? branding.state,
+          branding.location?.country ?? branding.country,
+        ]
+          .filter(Boolean)
+          .map(String);
+
+        setBrandLocation(locParts.length ? locParts.join(", ") : undefined);
 
         // --- servicios (igual que antes, con política de depósito)
         const depositCfg: DepositCfg | undefined = servicesRaw?.config?.deposit;
@@ -1328,48 +1329,40 @@ export default function ReservarPage() {
     });
   }, [step, profIdx, selectedServices, professionalsByService, setSelection]);
 
-  function calendarTitle(serviceName?: string, professionalName?: string) {
-    return `${serviceName || "Reserva"}${professionalName ? ` — ${professionalName}` : ""
-      }${brandName ? ` — ${brandName}` : ""}`;
-  }
+  const calendarTitle = (serviceName?: string) => {
+    const s = serviceName?.trim() || "Reserva";
+    const b = brandName?.trim() || "Reserva";
+    return `${s} — ${b}`;
+  };
 
-  function calendarDetails(startISO: string, serviceName?: string, professionalName?: string) {
+  const calendarDetails = (
+    startISO: string,
+    serviceName?: string,
+    professionalName?: string
+  ) => {
     const d = new Date(startISO);
     const dia = format(d, "PPP", { locale: es });
-    const hora = format(d, "HH:mm");
+    const hora = format(d, "HH:mm", { locale: es });
     return [
       `Servicio: ${serviceName || "—"}`,
-      `Profesional: ${professionalName || "Indistinto"}`,
+      `Profesional: ${professionalName || "—"}`,
       `Día: ${dia}`,
       `Hora: ${hora}`,
+      "Reserva confirmada",
     ].join("\n");
-  }
+  };
 
-  // Ubicación: primero sucursal elegida (si corresponde), si no, branding público
-  function calendarLocationFor(serviceId?: string, serviceName?: string) {
-    const sid =
-      serviceId ||
-      selectedServices.find((id) => {
-        const s = services.find((x) => x._id === id);
-        return s?.name === serviceName;
-      });
+  const calendarLocationFor = (
+    branch?: { location?: { addressLine?: string; city?: string; state?: string; country?: string } }
+  ) => {
+    const parts = branch?.location
+      ? [branch.location.addressLine, branch.location.city, branch.location.state, branch.location.country]
+        .filter(Boolean)
+      : [];
+    if (parts.length) return parts.join(", ");
+    return brandLocation || ""; // <- usa la ubicación del branding si existe
+  };
 
-    const branchId = sid ? selection[sid]?.branchId : undefined;
-    const branch = sid ? (branchesByService[sid] || []).find((b) => b._id === branchId) : undefined;
-
-    const loc = branch?.location;
-    const branchStr = [
-      branch?.name,
-      loc?.addressLine,
-      loc?.city,
-      loc?.state,
-      loc?.country,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
-    return branchStr || brandLocation || undefined;
-  }
 
   if (gateLoading)
     return (
@@ -2399,10 +2392,14 @@ export default function ReservarPage() {
                                       >
                                         <a
                                           href={buildGoogleCalendarUrl({
-                                            title: calendarTitle(singleBooking.service?.name, singleBooking.professional?.name),
+                                            title: calendarTitle(singleBooking.service?.name), // <- sin profesional
                                             startISO: singleBooking.start,
                                             endISO: singleBooking.end,
-                                            details: calendarDetails(singleBooking.start, singleBooking.service?.name, singleBooking.professional?.name),
+                                            details: calendarDetails(
+                                              singleBooking.start,
+                                              singleBooking.service?.name,
+                                              singleBooking.professional?.name
+                                            ),
                                             location: calendarLocationFor(undefined, singleBooking.service?.name),
                                           })}
                                           target="_blank"
@@ -2444,10 +2441,14 @@ export default function ReservarPage() {
                                           >
                                             <a
                                               href={buildGoogleCalendarUrl({
-                                                title: calendarTitle(singleBooking.service?.name, singleBooking.professional?.name),
+                                                title: calendarTitle(singleBooking.service?.name), // ← sin profesional
                                                 startISO: singleBooking.start,
                                                 endISO: singleBooking.end,
-                                                details: calendarDetails(singleBooking.start, singleBooking.service?.name, singleBooking.professional?.name),
+                                                details: calendarDetails(
+                                                  singleBooking.start,
+                                                  singleBooking.service?.name,
+                                                  singleBooking.professional?.name
+                                                ),
                                                 location: calendarLocationFor(undefined, singleBooking.service?.name),
                                               })}
                                               target="_blank"
@@ -2513,7 +2514,7 @@ export default function ReservarPage() {
                                       >
                                         <a
                                           href={buildGoogleCalendarUrl({
-                                            title: calendarTitle(b.service?.name, b.professional?.name),
+                                            title: calendarTitle(b.service?.name), // <- sin profesional
                                             startISO: b.start,
                                             endISO: b.end,
                                             details: calendarDetails(b.start, b.service?.name, b.professional?.name),
@@ -2561,7 +2562,7 @@ export default function ReservarPage() {
                                             >
                                               <a
                                                 href={buildGoogleCalendarUrl({
-                                                  title: calendarTitle(b.service?.name, b.professional?.name),
+                                                  title: calendarTitle(b.service?.name),
                                                   startISO: b.start,
                                                   endISO: b.end,
                                                   details: calendarDetails(b.start, b.service?.name, b.professional?.name),
