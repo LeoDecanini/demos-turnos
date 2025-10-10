@@ -151,7 +151,8 @@ const Contacto = () => {
                 {
                   icon: Clock,
                   title: "Horarios",
-                  content: "Lunes a Viernes: 9:00 - 20:00\nSábados: 9:00 - 14:00",
+                  content:
+                      "Martes y Jueves: 10:00 - 19:30\nMiércoles y Viernes: 14:00 - 19:30\nSábados: 10:00 - 14:00\nLunes y Domingos: Cerrado",
                   color: "from-amber-500 to-yellow-600",
                 },
               ].map((item, i) => (
