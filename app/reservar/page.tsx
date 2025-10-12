@@ -12,6 +12,13 @@ import {
   Lock,
   CreditCard,
   Copy,
+  Calendar1Icon,
+  Layers,
+  CircleDot,
+  CheckCircle2,
+  Hash,
+  UserIcon,
+  Shield,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -28,6 +35,216 @@ import { FcGoogle } from "react-icons/fc";
 import { isValidPhoneNumber, isPossiblePhoneNumber } from "react-phone-number-input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { cn } from "@/lib/utils";
+import axios from "axios";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+
+
+type SessionGroup = {
+  service?: { id?: string; name?: string; totalSessions?: number }
+  bookings?: Array<{
+    _id: string
+    sessionNumber?: number
+    status?: "pending" | "confirmed" | "canceled"
+    start?: string
+    end?: string
+    professional?: { _id: string; name: string }
+  }>
+  summary?: {
+    totalSessions: number
+    bookedSessions: number
+    completedSessions: number
+    pendingSessions: number
+  }
+  nextSession?: {
+    number: number
+    price: number
+    currency: string
+    deposit: { required: boolean; amount: number; type: "fixed" | "percent" | null; source: "session" | "service" | "account" }
+  }
+}
+
+const D = {
+  text: "text-[13px] leading-5",
+  h2: "text-[13px] font-semibold text-slate-900",
+  subtle: "text-[12px] text-slate-500",
+  badge: "text-[11px] px-2 py-0.5 rounded",
+  row: "flex items-center gap-2",
+  icon: "w-3.5 h-3.5",
+  panel: "p-3 rounded-md border",
+  gap: "gap-2",
+}
+
+function fmtShort(dt?: string) {
+  if (!dt) return "—"
+  try {
+    const d = new Date(dt)
+    return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(d)
+  } catch { return "—" }
+}
+
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+  return (
+    <div className={`rounded-md border p-2 ${D.text}`}>
+      <div className={`${D.row} ${D.subtle}`}>
+        {icon} <span>{label}</span>
+      </div>
+      <div className="mt-1 font-semibold">{value}</div>
+    </div>
+  )
+}
+
+// --- reemplazo de SessionGroupSummary (compacto y consistente) ---
+function SessionGroupSummary({ data }: { data: any }) {
+  const serviceName = data?.service?.name ?? data?.bookings?.[0]?.service?.name ?? "—"
+  const total = data?.summary?.totalSessions ?? data?.service?.totalSessions ?? 0
+  const booked = data?.summary?.bookedSessions ?? (data?.bookings?.length ?? 0)
+  const completed = data?.summary?.completedSessions ?? 0
+  const pending = data?.summary?.pendingSessions ?? Math.max(total - booked, 0)
+
+  const bookingsSorted = [...(data.bookings ?? [])].sort((a, b) => (a.sessionNumber ?? 0) - (b.sessionNumber ?? 0))
+  const lastBooked = bookingsSorted.at(-1)
+  const next = data?.nextSession
+
+  const H = {
+    tiny: "text-[12px] text-slate-500",
+    h6: "text-[13px] font-semibold text-slate-900",
+    chip: "text-[11px] px-2 py-0.5 rounded",
+    icon: "w-3.5 h-3.5",
+    row: "flex items-center gap-2",
+    panel: "p-3 rounded-xl border",
+  } as const
+
+  return (
+    <Card className="w-full border-amber-200/60">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-slate-100 grid place-items-center">
+              <CalendarIcon className={H.icon} />
+            </div>
+            <div>
+              <div className={H.h6}>Grupo de sesiones</div>
+              <div className={H.tiny}>{serviceName}</div>
+            </div>
+          </div>
+          {total > 0 && (
+            <Badge className={`${H.chip} bg-amber-50 text-amber-700 border border-amber-200`}>
+              <Layers className={`${H.icon} mr-1`} /> {total} sesiones
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-4">
+        {/* stats */}
+        <div className="grid sm:grid-cols-4 gap-2">
+          <div className={H.panel}>
+            <div className={`${H.row} ${H.tiny}`}><Layers className={H.icon} /> Total</div>
+            <div className="mt-1 font-semibold text-[13px]">{total}</div>
+          </div>
+          <div className={H.panel}>
+            <div className={`${H.row} ${H.tiny}`}><CircleDot className={H.icon} /> Reservadas</div>
+            <div className="mt-1 font-semibold text-[13px]">{booked}</div>
+          </div>
+          <div className={H.panel}>
+            <div className={`${H.row} ${H.tiny}`}><CheckCircle2 className={H.icon} /> Completadas</div>
+            <div className="mt-1 font-semibold text-[13px]">{completed}</div>
+          </div>
+          <div className={H.panel}>
+            <div className={`${H.row} ${H.tiny}`}><CalendarIcon className={H.icon} /> Pendientes</div>
+            <div className="mt-1 font-semibold text-[13px]">{pending}</div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* sesión actual */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-md bg-slate-100 grid place-items-center">
+                <Hash className={H.icon} />
+              </div>
+              <div>
+                <div className={H.h6}>Sesión actual</div>
+                <div className={H.tiny}>
+                  {lastBooked?.sessionNumber ? `Sesión ${lastBooked.sessionNumber} de ${total}` : "Aún sin sesiones"}
+                </div>
+              </div>
+            </div>
+            {lastBooked?.status && (
+              <Badge
+                className={`${H.chip} ${lastBooked.status === "confirmed"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-slate-50 text-slate-700 border"
+                  }`}
+              >
+                {lastBooked.status === "confirmed" ? "Confirmada" : lastBooked.status}
+              </Badge>
+            )}
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-2">
+            <div className={H.panel}>
+              <div className={`${H.row} ${H.tiny}`}><UserIcon className={H.icon} /> Profesional</div>
+              <div className="mt-1 text-[13px] font-medium">{lastBooked?.professional?.name ?? "—"}</div>
+            </div>
+            <div className={H.panel}>
+              <div className={`${H.row} ${H.tiny}`}><CalendarIcon className={H.icon} /> Inicio</div>
+              <div className="mt-1 text-[13px] font-medium">{fmtShort(lastBooked?.start)}</div>
+            </div>
+            <div className={H.panel}>
+              <div className={`${H.row} ${H.tiny}`}><CalendarIcon className={H.icon} /> Fin</div>
+              <div className="mt-1 text-[13px] font-medium">{fmtShort(lastBooked?.end)}</div>
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* próxima sesión */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-slate-100 grid place-items-center">
+              <CalendarIcon className={H.icon} />
+            </div>
+            <div>
+              <div className={H.h6}>Próxima sesión</div>
+              <div className={H.tiny}>{next?.number ? `Sesión ${next.number} de ${total}` : "—"}</div>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-2">
+            <div className={H.panel}>
+              <div className={`${H.row} ${H.tiny}`}><CreditCard className={H.icon} /> Precio</div>
+              <div className="mt-1 text-[13px] font-medium">
+                {next ? `${next.currency} ${Number(next.price ?? 0).toLocaleString("es-AR")}` : "—"}
+              </div>
+            </div>
+
+            <div className={`${H.panel} sm:col-span-2`}>
+              <div className={`${H.row} ${H.tiny}`}><Shield className={H.icon} /> Seña / Depósito</div>
+              {next?.deposit?.required ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <Badge className={`${H.chip} bg-emerald-50 text-emerald-700 border border-emerald-200`}>Requerido</Badge>
+                  <div className="text-[13px]">
+                    {next.deposit.type === "percent"
+                      ? `${next.deposit.amount}%`
+                      : `${next?.currency ?? "ARS"} ${Number(next.deposit.amount).toLocaleString("es-AR")}`}
+                    <span className={`ml-2 ${H.tiny}`}>origen: {next.deposit.source}</span>
+                  </div>
+                </div>
+              ) : (
+                <Badge className={`${H.chip} bg-slate-50 text-slate-700 border`}>No requiere</Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 const toGCalDateUTC = (d: Date) =>
   d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
@@ -1363,6 +1580,289 @@ export default function ReservarPage() {
     return brandLocation || ""; // <- usa la ubicación del branding si existe
   };
 
+  const rawSearch = typeof window !== "undefined" ? window.location.search : "";
+
+  const sp = useMemo(() => new URLSearchParams(rawSearch), [rawSearch]);
+
+  const sessionGroupId = useMemo(() => sp.get("sessionGroupId"), [sp]);
+
+  console.log(sessionGroupId)
+
+  const [groupData, setGroupData] = useState<any>(null)
+  const [groupLoading, setGroupLoading] = useState(false)
+  const [groupError, setGroupError] = useState<string | null>(null)
+  const [sgVisibleMonth, setSgVisibleMonth] = useState<Date>(new Date())
+  const [sgAvailableDays, setSgAvailableDays] = useState<string[]>([])
+  const [sgLoadingDays, setSgLoadingDays] = useState(false)
+  const [sgSelectedDate, setSgSelectedDate] = useState<Date | undefined>(undefined)
+
+  const [sgTimeSlots, setSgTimeSlots] = useState<string[]>([])
+  const [sgLoadingSlots, setSgLoadingSlots] = useState(false)
+  const [sgSelectedTime, setSgSelectedTime] = useState<string | null>(null)
+  const [sgSubmitting, setSgSubmitting] = useState(false)
+  const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string) => {
+    setSgLoadingDays(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("month", monthStr ?? fmtMonth(sgVisibleMonth))
+      const url = `${API_BASE}/${slug}/session-group/${groupId}/available-days?${params.toString()}`
+      const res = await axios.get(url)
+      const payload = res.data?.data ?? res.data
+      let dates: any[] = Array.isArray(payload) ? payload : (payload?.items ?? payload?.days ?? [])
+      if (dates.length && typeof dates[0] !== "string") dates = dates.map((d: any) => d?.date).filter(Boolean)
+      setSgAvailableDays(dates as string[])
+    } catch {
+      setSgAvailableDays([])
+    } finally {
+      setSgLoadingDays(false)
+    }
+  }
+
+  const loadSgTimeSlots = async (slug: string, groupId: string, date: Date) => {
+    const dateStr = fmtDay(date)
+    if (!sgAvailableDays.includes(dateStr)) {
+      setSgTimeSlots([])
+      return
+    }
+    setSgLoadingSlots(true)
+    try {
+      const url = `${API_BASE}/${slug}/session-group/${groupId}/day-slots?date=${dateStr}`
+      const res = await axios.get(url)
+      const payload = res.data?.data ?? res.data
+      const slots: string[] = Array.isArray(payload) ? payload : (payload?.slots ?? payload?.items ?? [])
+      setSgTimeSlots(slots)
+    } catch {
+      setSgTimeSlots([])
+    } finally {
+      setSgLoadingSlots(false)
+    }
+  }
+
+  const createBookingForSessionGroup = async () => {
+    if (!sessionGroupId || !sgSelectedDate || !sgSelectedTime) return
+    const slug =
+      SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "")
+
+    const day = fmtDay(sgSelectedDate)
+    const hour = sgSelectedTime
+    const sessionNumber = groupData?.nextSession?.number // la próxima sesión a tomar
+
+    setSgSubmitting(true)
+    try {
+      await axios.post(
+        `${API_BASE}/${slug}/session-group/${sessionGroupId}/book-next`,
+        { sessionGroupId, sessionNumber, day, hour }
+      )
+
+      toast.success("Turno reservado")
+
+      // refrescá el grupo y los días disponibles
+      try {
+        const res = await axios.get(`${API_BASE}/${slug}/session-group/${sessionGroupId}`)
+        setGroupData(res.data?.data ?? res.data)
+      } catch { }
+      await loadSgAvailableDays(slug, sessionGroupId)
+
+      // limpiar selección
+      setSgSelectedDate(undefined)
+      setSgSelectedTime(null)
+      setSgTimeSlots([])
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message ?? err?.message ?? "No se pudo crear la reserva")
+      console.log(err)
+    } finally {
+      setSgSubmitting(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!sessionGroupId) return
+
+    let ignore = false
+    const ctrl = new AbortController()
+
+    const slug =
+      SUBDOMAIN ??
+      (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "")
+
+    const fetchGroup = async () => {
+      setGroupLoading(true)
+      setGroupError(null)
+      try {
+        // GET principal (grupo)
+        const res = await axios.get(
+          `${API_BASE}/${slug}/session-group/${sessionGroupId}`,
+          { signal: ctrl.signal }
+        )
+        if (!ignore) setGroupData(res.data?.data ?? res.data)
+
+        // --- DISPARO EN PARALELO (no esperamos) ---
+        // No depende del resultado anterior.
+        // Si falla, el catch interno de loadSgAvailableDays ya lo maneja.
+        void loadSgAvailableDays(slug, sessionGroupId)
+
+        console.log(res)
+      } catch (err: any) {
+        if (axios.isCancel?.(err)) return
+        if (!ignore) setGroupError(err?.response?.data?.message ?? err.message ?? "Error al cargar el grupo")
+      } finally {
+        if (!ignore) setGroupLoading(false)
+      }
+    }
+
+    fetchGroup()
+    return () => {
+      ignore = true
+      ctrl.abort()
+    }
+  }, [sessionGroupId])
+
+
+  if (sessionGroupId) {
+    return (
+      <div className="min-h-screen pt-[80px] bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
+          {groupLoading && (
+            <div className="max-w-4xl mx-auto">
+              <Skeleton className="h-6 w-40 mb-3" />
+              <Skeleton className="h-[180px] w-full mb-4" />
+              <Skeleton className="h-[200px] w-full" />
+            </div>
+          )}
+          {groupError && (
+            <Card className="max-w-4xl mx-auto border-rose-200 bg-rose-50/60">
+              <CardContent className="p-4 text-rose-700 text-sm">{groupError}</CardContent>
+            </Card>
+          )}
+          {groupData && <SessionGroupSummary data={groupData as SessionGroup} />}
+
+          {groupData && (
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-12">
+              {/* Calendario */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                    <CalendarIcon className="h-5 w-5 mr-2 text-amber-500" />
+                    Seleccionar Fecha
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {!sgLoadingDays ? (
+                    <CalendarComponent
+                      mode="single"
+                      selected={sgSelectedDate}
+                      month={sgVisibleMonth}
+                      onMonthChange={async (m) => {
+                        setSgVisibleMonth(m)
+                        // recargamos días para el mes visible
+                        const slug =
+                          SUBDOMAIN ??
+                          (typeof window !== "undefined"
+                            ? window.location.hostname.split(".")[0]
+                            : "")
+                        await loadSgAvailableDays(slug, sessionGroupId, fmtMonth(m))
+                      }}
+                      onSelect={async (date) => {
+                        setSgSelectedDate(date || undefined)
+                        setSgSelectedTime(null)            // <- limpiar selección de hora
+                        if (!date) { setSgTimeSlots([]); return }
+                        const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "")
+                        await loadSgTimeSlots(slug, sessionGroupId, date)
+                      }}
+                      disabled={(date) => {
+                        // mismos criterios que step 4
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        const d = new Date(date)
+                        d.setHours(0, 0, 0, 0)
+                        if (d < today) return true
+                        if (!sgLoadingDays && sgAvailableDays.length === 0) return true
+                        return !sgAvailableDays.includes(fmtDay(date))
+                      }}
+                      locale={es}
+                      className="rounded-lg border-2 border-amber-200 w-full p-3"
+                      classNames={{
+                        months: "w-full",
+                        month: "w-full",
+                        table: "w-full border-collapse",
+                        head_row: "grid grid-cols-7",
+                        row: "grid grid-cols-7 mt-2",
+                        head_cell: "text-center text-muted-foreground text-[0.8rem] py-1",
+                        cell: "p-0 relative w-full",
+                        day:
+                          "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors " +
+                          "hover:bg-amber-100 hover:text-amber-900 " +
+                          "focus:outline-none focus:ring-2 focus:ring-amber-300",
+                        day_selected:
+                          "bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 rounded-lg",
+                        day_today: "bg-amber-50 text-amber-700 font-semibold rounded-lg",
+                        day_outside: "text-muted-foreground opacity-60",
+                        day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
+                        day_range_start: "rounded-l-lg",
+                        day_range_end: "rounded-r-lg",
+                        day_range_middle: "rounded-none",
+                      }}
+                    />
+                  ) : (
+                    <Skeleton className="h-[248px] w-full" />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Horarios */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-amber-500" />
+                    Horarios Disponibles
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {sgLoadingSlots ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {Array.from({ length: 18 }).map((_, i) => (<Skeleton key={i} className="h-9 w-full" />))}
+                    </div>
+                  ) : !sgSelectedDate ? (
+                    <p className="text-gray-600">Elegí una fecha para ver los horarios.</p>
+                  ) : !sgAvailableDays.includes(fmtDay(sgSelectedDate)) ? (
+                    <p className="text-gray-600">Esta fecha no está disponible.</p>
+                  ) : sgTimeSlots.length === 0 ? (
+                    <p className="text-gray-600">No hay horarios disponibles para esta fecha.</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3">
+                      {sgTimeSlots.map((time) => {
+                        const picked = sgSelectedTime === time
+                        return (
+                          <Button
+                            key={time}
+                            variant={picked ? "default" : "outline"}
+                            className={`h-12 transition-all ${picked
+                              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                              : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                              }`}
+                            onClick={() => setSgSelectedTime(time)}
+                          >
+                            {time}
+                          </Button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <FloatingNav
+                backDisabled
+                nextDisabled={!sgSelectedDate || !sgSelectedTime || sgSubmitting}
+                nextLabel={sgSubmitting ? "Creando…" : "Continuar"}
+                onNext={createBookingForSessionGroup}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   if (gateLoading)
     return (
