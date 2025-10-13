@@ -1600,6 +1600,9 @@ export default function ReservarPage() {
   const [sgLoadingSlots, setSgLoadingSlots] = useState(false)
   const [sgSelectedTime, setSgSelectedTime] = useState<string | null>(null)
   const [sgSubmitting, setSgSubmitting] = useState(false)
+  const [sgSubmittingData, setSgSubmittingData] = useState<any>(null)
+  const [sgBookingResult, setSgBookingResult] = useState<BookingCreated | null>(null)
+
   const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string) => {
     setSgLoadingDays(true)
     try {
@@ -1640,33 +1643,29 @@ export default function ReservarPage() {
 
   const createBookingForSessionGroup = async () => {
     if (!sessionGroupId || !sgSelectedDate || !sgSelectedTime) return
-    const slug =
-      SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "")
 
+    const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "")
     const day = fmtDay(sgSelectedDate)
     const hour = sgSelectedTime
-    const sessionNumber = groupData?.nextSession?.number // la próxima sesión a tomar
+    const sessionNumber = groupData?.nextSession?.number
 
     setSgSubmitting(true)
     try {
-      await axios.post(
+      const res = await axios.post(
         `${API_BASE}/${slug}/session-group/${sessionGroupId}/book-next`,
         { sessionGroupId, sessionNumber, day, hour }
       )
 
-      toast.success("Turno reservado")
+      // payload robusto
+      const payload = res.data?.data ?? res.data
+      const created = payload?.booking || payload?.data?.booking || payload?.booking || null
 
-      // refrescá el grupo y los días disponibles
-      try {
-        const res = await axios.get(`${API_BASE}/${slug}/session-group/${sessionGroupId}`)
-        setGroupData(res.data?.data ?? res.data)
-      } catch { }
-      await loadSgAvailableDays(slug, sessionGroupId)
+      // guardamos TAL CUAL
+      setSgSubmittingData(res)     // para mensajes y/o payment
+      setSgBookingResult(created)  // reserva creada
 
-      // limpiar selección
-      setSgSelectedDate(undefined)
-      setSgSelectedTime(null)
-      setSgTimeSlots([])
+      toast.success(payload?.message || "¡Reserva creada!")
+      // OJO: NO refrescamos nada y NO reseteamos selección
     } catch (err: any) {
       toast.error(err?.response?.data?.message ?? err?.message ?? "No se pudo crear la reserva")
       console.log(err)
@@ -1717,6 +1716,18 @@ export default function ReservarPage() {
     }
   }, [sessionGroupId])
 
+  const sgStep6Result = useMemo(() => {
+    if (!sgBookingResult) return null;
+    const payload = (sgSubmittingData?.data?.data ?? sgSubmittingData?.data) || {};
+    return {
+      ...payload,
+      booking: sgBookingResult,             // asegura shape { booking }
+      bookings: payload.bookings,           // si el backend mandó array, lo conservamos
+      message:
+        payload.message ??
+        (sgSubmittingData?.data?.message ?? sgSubmittingData?.data?.data?.message),
+    };
+  }, [sgBookingResult, sgSubmittingData]);
 
   if (sessionGroupId) {
     return (
@@ -1734,9 +1745,9 @@ export default function ReservarPage() {
               <CardContent className="p-4 text-rose-700 text-sm">{groupError}</CardContent>
             </Card>
           )}
-          {groupData && <SessionGroupSummary data={groupData as SessionGroup} />}
+          {groupData && !sgStep6Result && <SessionGroupSummary data={groupData as SessionGroup} />}
 
-          {groupData && (
+          {groupData && !sgStep6Result && (
             <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Calendario */}
               <Card>
@@ -1859,6 +1870,548 @@ export default function ReservarPage() {
               />
             </div>
           )}
+
+          {sgStep6Result  && (
+            <div className={submitting ? "pointer-events-none opacity-60" : ""}>
+              {(() => {
+                // ====== derivaciones mínimas que usa tu step 6 ======
+                const bookingsList = Array.isArray((sgStep6Result as any).bookings)
+                  ? (sgStep6Result as any).bookings
+                  : [(sgStep6Result as any).booking].filter(Boolean)
+
+                const resultHasMany = bookingsList.length > 1
+                const singleBooking = resultHasMany ? null : (bookingsList[0] ?? null)
+
+                const bookingsWithDeposit = bookingsList.filter((b: any) => requiresDeposit(b))
+
+                const normalizedPayment = (sgStep6Result as any)?.payment
+                  ? {
+                    required: (sgStep6Result as any).payment.required === true,
+                    amount: (sgStep6Result as any).payment.amount ?? null,
+                    currency: (sgStep6Result as any).payment.currency,
+                    link: (sgStep6Result as any).payment.initPoint || (sgStep6Result as any).payment.sandboxInitPoint || "",
+                    status: (sgStep6Result as any).payment.status ?? "pending",
+                  }
+                  : null
+
+                const paymentAmount = normalizedPayment?.amount ?? null
+                const paymentPending = !!normalizedPayment?.required
+                const hasPendingDeposit = paymentPending || bookingsWithDeposit.length > 0
+
+                const groupDeadline: Date | null = (() => {
+                  const ds = bookingsWithDeposit
+                    .map((b: any) => b.depositDeadlineAt ? new Date(b.depositDeadlineAt) : null)
+                    .filter((d: any): d is Date => !!d && !Number.isNaN(d.getTime()))
+                    .sort((a: any, b: any) => a.getTime() - b.getTime());
+                  return ds[0] ?? null;
+                })();
+                const groupDeadlineText = groupDeadline ? format(groupDeadline, "PPPp", { locale: es }) : null;
+
+                // ====== PEGÁ ACÁ TU BLOQUE "step === 6" SIN CAMBIOS DE ESTILO ======
+                //     Sólo asegurate de que las variables referenciadas existan (arriba).
+                //     NO uses 'step === 6', porque ya estamos condicionando con bookingResult.
+                return (
+                  <div className="text-center space-y-8">
+                    {/* --- INICIO: copia literal del step 6 que nos diste --- */}
+                    <div className="text-center space-y-8">
+                      <div className="max-w-2xl mx-auto">
+                        <div className={`rounded-3xl p-4 sm:p-10 border backdrop-blur-sm ${hasPendingDeposit ? "bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200" : "bg-gradient-to-br from-emerald-50/60 to-green-50/40 border-green-200"}`}>
+                          <div className="flex items-center justify-center">
+                            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-lg ${hasPendingDeposit ? "bg-gradient-to-r from-amber-500 to-amber-600" : "bg-gradient-to-r from-green-500 to-emerald-600"}`}>
+                              <CheckCircle className="h-10 w-10 text-white" />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold tracking-wide ring-1 ring-inset ${hasPendingDeposit ? "bg-amber-100 text-amber-900 ring-amber-200" : "bg-emerald-100 text-emerald-900 ring-emerald-200"}`}>
+                              {hasPendingDeposit ? "Pendiente" : "Listo"}
+                            </div>
+                            <h2 className="text-3xl font-extrabold text-gray-900">
+                              {hasPendingDeposit
+                                ? `Reserva${resultHasMany ? "s" : ""} pendiente${resultHasMany ? "s" : ""} de seña`
+                                : `¡Reserva${resultHasMany ? "s" : ""} confirmada${resultHasMany ? "s" : ""}!`}
+                            </h2>
+                            {hasPendingDeposit ? (
+                              <>
+                                <p className="text-black text-xl">
+                                  {resultHasMany
+                                    ? "Tus reservas quedan pendientes hasta que registremos el pago de la seña requerida."
+                                    : "Tu reserva queda pendiente hasta que registremos el pago de la seña requerida."}
+                                </p>
+                                {groupDeadlineText ? (
+                                  <p className="text-amber-800 text-sm">Podés pagar hasta el <span className="font-semibold">{groupDeadlineText}</span></p>
+                                ) : null}
+                              </>
+                            ) : (
+                              !(!resultHasMany && (bookingResult as any)?.message) && (
+                                <p className="text-black text-xl">
+                                  {(bookingResult as any)?.message || "Se creó la reserva"}
+                                </p>
+                              )
+                            )}
+                          </div>
+
+                          {(normalizedPayment && paymentAmount !== null) || bookingsWithDeposit.length > 0 ? (
+                            <div className="mt-8 space-y-4 rounded-3xl border border-amber-200 bg-amber-50/60 p-5 text-left">
+                              <div className="flex items-start gap-3">
+                                <div className="mt-1 rounded-full bg-amber-500/10 p-2 text-amber-600">
+                                  <CreditCard className="h-5 w-5" />
+                                </div>
+                                <div className="space-y-1">
+                                  <h3 className="text-lg font-semibold text-amber-900">Seña requerida</h3>
+                                  <p className="text-sm text-amber-800">
+                                    {normalizedPayment ? "Aboná la seña total para confirmar todas tus reservas." : "Aboná la seña para confirmar tu reserva. También te enviamos el link por mail."}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {normalizedPayment && paymentAmount !== null ? (
+                                <div className="space-y-4">
+                                  <div className="rounded-2xl border border-amber-200 bg-white/80 p-4 space-y-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                      <div className="space-y-1">
+                                        <div className="text-sm font-semibold text-gray-900">
+                                          {bookingsList.filter((b: any) => requiresDeposit(b)).length <= 1
+                                            ? "Seña requerida"
+                                            : "Seña total requerida"}
+                                        </div>
+                                        {/* <div className="text-xs text-gray-600">
+                                      Estado:{" "}
+                                      <span className={paymentPending ? "text-amber-700 font-semibold" : "text-emerald-600 font-semibold"}>
+                                        {formatDepositStatus(normalizedPayment.status)}
+                                      </span>
+                                      {normalizedPayment.deferred ? (
+                                        <span className="ml-2 text-[11px] uppercase tracking-wide text-amber-500">Pago diferido</span>
+                                      ) : null}
+                                    </div> */}
+                                      </div>
+                                      <div className="text-xl font-bold text-amber-700">
+                                        {money(paymentAmount, normalizedPayment.currency || bookingsList[0]?.service?.currency || "ARS")}
+                                      </div>
+                                    </div>
+
+                                    <div className="mt-3 space-y-1 text-xs text-gray-600">
+                                      {(() => {
+                                        const depositBookings = bookingsList.filter((b: any) => requiresDeposit(b));
+                                        const count = depositBookings.length;
+                                        if (count === 0) return null;
+                                        return (
+                                          <>
+                                            <div>Incluye {count} reserva{count === 1 ? "" : "s"}:</div>
+                                            <ul className="space-y-1">
+                                              {depositBookings.map((booking: any) => {
+                                                const depositInfo = getDepositDisplay(booking);
+                                                return (
+                                                  <li key={booking._id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                                                    <span className="font-medium text-gray-800">{booking.service?.name}</span>
+                                                    {depositInfo.label && (
+                                                      <span className="text-amber-700 font-semibold">Seña: {depositInfo.label}</span>
+                                                    )}
+                                                  </li>
+                                                );
+                                              })}
+                                            </ul>
+                                          </>
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
+
+                                  {paymentPending ? (
+                                    <div className="flex flex-col sm:flex-row gap-2">
+                                      <Button
+                                        disabled={!normalizedPayment.link}
+                                        className="w-full sm:w-auto h-11 bg-[#00a6ff] hover:bg-[#0096e6] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm"
+                                        onClick={() => {
+                                          if (!normalizedPayment.link) return;
+                                          if (typeof window !== "undefined")
+                                            window.open(normalizedPayment.link, "_blank", "noopener,noreferrer");
+                                        }}
+                                      >
+                                        <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto mr-2" />
+                                        Pagar con Mercado Pago
+                                      </Button>
+                                      {normalizedPayment.link ? (
+                                        <Button
+                                          variant="outline"
+                                          className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50"
+                                          onClick={() => handleCopyDepositLink(normalizedPayment.link ?? "")}
+                                        >
+                                          <Copy className="mr-2 h-5 w-5" /> Copiar link
+                                        </Button>
+                                      ) : null}
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm font-medium text-emerald-700">Seña registrada para todo el grupo. ¡Gracias!</p>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="space-y-4">
+                                  {bookingsWithDeposit.map((booking: any) => {
+                                    const depositInfo = getDepositDisplay(booking);
+                                    const depositLink = booking.depositInitPoint || booking.depositSandboxInitPoint || "";
+                                    const normalizedStatus = (booking.depositStatus || "").toLowerCase();
+                                    const isDepositPaid = ["paid", "approved", "completed", "done", "fulfilled"].includes(normalizedStatus);
+                                    const statusLabel = formatDepositStatus(booking.depositStatus);
+                                    const deadlineDate = booking.depositDeadlineAt ? new Date(booking.depositDeadlineAt) : null;
+                                    const hasValidDeadline = !!(deadlineDate && !Number.isNaN(deadlineDate.getTime()));
+                                    const deadlineText = hasValidDeadline ? format(deadlineDate as Date, "PPPp", { locale: es }) : null;
+
+                                    return (
+                                      <div key={booking._id} className="rounded-2xl border border-amber-200 bg-white/80 p-4 space-y-3">
+                                        <div className="flex flex-wrap items-center justify-between gap-3">
+                                          <div>
+                                            <div className="font-semibold text-gray-900">{booking.service?.name}</div>
+                                            <div className="text-xs text-gray-600">
+                                              Estado de seña:{" "}
+                                              <span className={isDepositPaid ? "text-emerald-600 font-semibold" : "text-amber-700 font-semibold"}>
+                                                {statusLabel}
+                                              </span>
+                                            </div>
+                                          </div>
+                                          {depositInfo.label && (
+                                            <div className="text-base font-bold text-amber-700">Seña: {depositInfo.label}</div>
+                                          )}
+                                        </div>
+                                        {deadlineText ? <p className="text-xs text-gray-500">Pagá antes de {deadlineText}</p> : null}
+                                        {isDepositPaid ? (
+                                          <p className="text-sm font-medium text-emerald-700">Seña registrada. ¡Gracias!</p>
+                                        ) : depositLink ? (
+                                          <div className="flex flex-col sm:flex-row gap-2">
+                                            <Button asChild className="w-full sm:w-auto h-11 bg-[#00a6ff] hover:bg-[#0096e6] text-white font-medium rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm">
+                                              <a href={depositLink} target="_blank" rel="noopener noreferrer">
+                                                <img src="/mercadopago.png" alt="Mercado Pago" className="h-5 w-auto mr-2" />
+                                                Pagar con Mercado Pago
+                                              </a>
+                                            </Button>
+                                            <Button
+                                              variant="outline"
+                                              className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50"
+                                              onClick={() => handleCopyDepositLink(depositLink)}
+                                            >
+                                              <Copy className="mr-2 h-5 w-5" /> Copiar link
+                                            </Button>
+                                          </div>
+                                        ) : (
+                                          <p className="text-xs text-gray-500">No encontramos el link de pago. Contactanos para completar la seña.</p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
+
+                          {singleBooking ? (
+                            <div className="mt-8">
+                              {(() => {
+                                const confirmedNoDeposit = !requiresDeposit(singleBooking);
+
+                                if (confirmedNoDeposit) {
+                                  return (
+                                    <div className="rounded-2xl border p-4 bg-white w-full">
+                                      <div className="flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="font-semibold text-base">
+                                            {singleBooking.service?.name}
+                                          </div>
+                                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200">
+                                            Confirmado
+                                          </span>
+                                        </div>
+
+                                        <div className="text-sm w-full text-left text-gray-700 space-y-1">
+                                          <div>
+                                            <strong>Profesional:</strong> {singleBooking.professional?.name || "—"}
+                                          </div>
+                                          <div>
+                                            <strong>Inicio:</strong>{" "}
+                                            {format(new Date(singleBooking.start), "PPPp", { locale: es })}
+                                          </div>
+                                          {typeof (singleBooking as any).sessionDuration === "number" && (
+                                            <div>
+                                              <strong>Duración:</strong>{" "}
+                                              {(singleBooking as any).sessionDuration} minutos
+                                            </div>
+                                          )}
+                                          {typeof (singleBooking as any).price === "number" && (
+                                            <div>
+                                              <strong>Precio:</strong>{" "}
+                                              {(singleBooking as any).price.toLocaleString("es-AR", {
+                                                style: "currency",
+                                                currency:
+                                                  (singleBooking as any).currency ||
+                                                  singleBooking.service?.currency ||
+                                                  "ARS",
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        <div className="flex justify-end">
+                                          <Button
+                                            asChild
+                                            variant="outline"
+                                            className="h-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                            aria-label="Google Calendar"
+                                          >
+                                            <a
+                                              href={buildGoogleCalendarUrl({
+                                                title: calendarTitle(singleBooking.service?.name), // <- sin profesional
+                                                startISO: singleBooking.start,
+                                                endISO: singleBooking.end,
+                                                details: calendarDetails(
+                                                  singleBooking.start,
+                                                  singleBooking.service?.name,
+                                                  singleBooking.professional?.name
+                                                ),
+                                                location: calendarLocationFor(),
+                                              })}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                            >
+                                              <FcGoogle className="h-4 w-4 mx-auto" />
+                                              <span>Agregar al calendario</span>
+                                            </a>
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                // Caso no confirmado (requiere seña) -> mantené tu tarjeta compacta + botón de Calendar si aplica
+                                return (
+                                  <div>
+                                    <div className="rounded-2xl border p-4 bg-white w-full flex items-center justify-between gap-3">
+                                      <div className="flex items-center gap-5">
+                                        <div className="font-semibold">{singleBooking.service?.name}</div>
+                                      </div>
+                                      <div className="text-sm">
+                                        {format(new Date(singleBooking.start), "PPP", { locale: es })} •{" "}
+                                        {format(new Date(singleBooking.start), "HH:mm")}
+                                      </div>
+                                    </div>
+
+                                    {isBookingConfirmed(singleBooking) && (
+                                      <div className="mt-3 flex justify-end">
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <Button
+                                                asChild
+                                                variant="outline"
+                                                className="h-10 w-10 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                                aria-label="Google Calendar"
+                                              >
+                                                <a
+                                                  href={buildGoogleCalendarUrl({
+                                                    title: calendarTitle(singleBooking.service?.name), // ← sin profesional
+                                                    startISO: singleBooking.start,
+                                                    endISO: singleBooking.end,
+                                                    details: calendarDetails(
+                                                      singleBooking.start,
+                                                      singleBooking.service?.name,
+                                                      singleBooking.professional?.name
+                                                    ),
+                                                    location: calendarLocationFor(),
+                                                  })}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                >
+                                                  <FcGoogle className="h-5 w-5 mx-auto" />
+                                                </a>
+                                              </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="left" className="text-xs">
+                                              Google Calendar
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          ) : Array.isArray((bookingResult as any).bookings) ? (
+                            <div className="mt-8 grid gap-3">
+                              {(bookingResult as any).bookings.map((b: any) => {
+                                const confirmedNoDeposit = !requiresDeposit(b)
+
+                                if (confirmedNoDeposit) {
+                                  return (
+                                    <div key={b._id} className="rounded-2xl border p-4 bg-white w-full">
+                                      <div className="flex flex-col gap-4">
+                                        <div className="flex items-center justify-between">
+                                          <div className="font-semibold text-base">{b.service?.name}</div>
+                                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200">
+                                            Confirmado
+                                          </span>
+                                        </div>
+
+                                        <div className="text-sm w-full text-left text-gray-700 space-y-1">
+                                          <div>
+                                            <strong>Profesional:</strong> {b.professional?.name}
+                                          </div>
+                                          <div>
+                                            <strong>Inicio:</strong>{" "}
+                                            {format(new Date(b.start), "PPPp", { locale: es })}
+                                          </div>
+                                          <div>
+                                            <strong>Duración:</strong> {b.sessionDuration} minutos
+                                          </div>
+                                          <div>
+                                            <strong>Precio:</strong>{" "}
+                                            {b.price.toLocaleString("es-AR", {
+                                              style: "currency",
+                                              currency: b.currency || "ARS",
+                                            })}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex justify-end">
+                                          <Button
+                                            asChild
+                                            variant="outline"
+                                            className="h-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                            aria-label="Google Calendar"
+                                          >
+                                            <a
+                                              href={buildGoogleCalendarUrl({
+                                                title: calendarTitle(b.service?.name), // <- sin profesional
+                                                startISO: b.start,
+                                                endISO: b.end,
+                                                details: calendarDetails(b.start, b.service?.name, b.professional?.name),
+                                                location: calendarLocationFor(),
+                                              })}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                            >
+                                              <FcGoogle className="h-4 w-4 mx-auto" />
+                                              <span>Agregar al calendario</span>
+                                            </a>
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )
+                                }
+
+                                // si confirmedNoDeposit es false -> deja todo igual
+                                return (
+                                  <div key={b._id} className="rounded-2xl border p-4 bg-white w-full">
+                                    <div className="flex items-center justify-between gap-3">
+                                      <div className="flex items-center gap-2">
+                                        <div className="font-semibold">{b.service?.name}</div>
+                                        {confirmedNoDeposit && (
+                                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200">
+                                            Confirmado
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <div className="text-sm">
+                                          {format(new Date(b.start), "PPP", { locale: es })} •{" "}
+                                          {format(new Date(b.start), "HH:mm")}
+                                        </div>
+                                        {isBookingConfirmed(b) && (
+                                          <TooltipProvider>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <Button
+                                                  asChild
+                                                  variant="outline"
+                                                  className="h-9 w-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                                  aria-label="Google Calendar"
+                                                >
+                                                  <a
+                                                    href={buildGoogleCalendarUrl({
+                                                      title: calendarTitle(b.service?.name),
+                                                      startISO: b.start,
+                                                      endISO: b.end,
+                                                      details: calendarDetails(b.start, b.service?.name, b.professional?.name),
+                                                      location: calendarLocationFor(),
+                                                    })}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                  >
+                                                    <FcGoogle className="h-4 w-4 mx-auto" />
+                                                  </a>
+                                                </Button>
+                                              </TooltipTrigger>
+                                              <TooltipContent side="left" className="text-xs">
+                                                Google Calendar
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          ) : null}
+
+
+                          {!user && (
+                            <div className="mt-8 grid gap-6">
+                              {(() => {
+                                const first = singleBooking
+                                  ? singleBooking
+                                  : Array.isArray((bookingResult as any).bookings)
+                                    ? (bookingResult as any).bookings[0]
+                                    : (bookingResult as any).booking;
+                                return first?.client?.email ? (
+                                  <div className="pt-2">
+                                    <>
+                                      <Button
+                                        size="lg"
+                                        disabled={submitting}
+                                        className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                                        asChild
+                                      >
+                                        <Link href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}><span>Crear cuenta</span></Link>
+                                      </Button>
+                                      <p className="mt-2 text-xs text-gray-500">Creá tu cuenta para ver y gestionar tus reservas más rápido.</p>
+                                    </>
+                                  </div>
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-center gap-3 mt-6">
+                        <Button
+                          size="lg"
+                          variant="outline"
+                          disabled={submitting}
+                          className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-white"
+                          onClick={goToServices}
+                        >
+                          Nueva reserva
+                        </Button>
+                        <Button
+                          size="lg"
+                          disabled={submitting}
+                          className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                          asChild
+                        >
+                          <Link href="/">Volver al inicio</Link>
+                        </Button>
+                      </div>
+                    </div>
+                    {/* --------------- FIN COPIADO DEL STEP 6 --------------- */}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+
         </div>
       </div>
     )
