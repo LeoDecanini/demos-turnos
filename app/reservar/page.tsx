@@ -19,6 +19,7 @@ import {
   Hash,
   UserIcon,
   Shield,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -38,6 +39,786 @@ import { cn } from "@/lib/utils";
 import axios from "axios";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+
+// =======================================================
+// ===============  MODO ENFOCADO (NF)  ==================
+// Activa con ?action=cancel|reschedule&id=<bookingId>
+// Para reprogramar, idealmente pasá también serviceId
+// =======================================================
+
+function getSlugFromEnvOrHost() {
+  const SUBDOMAIN = process.env.NEXT_PUBLIC_TENANT as string | undefined;
+  if (SUBDOMAIN) return SUBDOMAIN;
+  if (typeof window !== "undefined") {
+    const [sub] = window.location.hostname.split(".");
+    return sub || "";
+  }
+  return "";
+}
+
+function moneyAR(n?: number, currency = "ARS") {
+  return typeof n === "number"
+    ? n.toLocaleString("es-AR", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).replace(/\s/g, "")
+    : "";
+}
+
+function ActionInlineRouterNF({
+  action,
+  bookingId,
+  serviceId,
+  groupMode,              // <-- NUEVO
+}: {
+  action: "cancel" | "reschedule";
+  bookingId: string;
+  serviceId?: string | null;
+  groupMode?: boolean;     // <-- NUEVO
+}) {
+  if (action === "cancel") {
+    return <CancelInlineNF bookingId={bookingId} />;
+  }
+  return (
+    <RescheduleInlineNF
+      bookingId={bookingId}
+      serviceId={serviceId || undefined}
+      groupMode={groupMode}   // <-- NUEVO
+    />
+  );
+}
+
+/** ==== Cancelar (NF) ==== */
+function CancelInlineNF({ bookingId }: { bookingId: string }) {
+  const { token } = useAuth();
+  const [reason, setReason] = React.useState("");
+  const [submitting, setSubmitting] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const [done, setDone] = React.useState(false);
+
+  const [loadingInfo, setLoadingInfo] = React.useState(true);
+  const [bookingInfo, setBookingInfo] = React.useState<{
+    serviceName?: string;
+    professionalName?: string | null;
+    startISO?: string;
+    endISO?: string;
+    status?: string;
+  } | null>(null);
+
+  const slug = getSlugFromEnvOrHost();
+  const canSubmit = !!slug && !!bookingId && !submitting;
+
+  // Cargar datos del booking para mostrar en la card y saber si ya está cancelado
+  React.useEffect(() => {
+    let ignore = false;
+    (async () => {
+      try {
+        setLoadingInfo(true);
+        const url = `${API_BASE}/${slug}/booking/${bookingId}`;
+        const res = await fetch(url, { cache: "no-store" });
+        const raw = await res.json().catch(() => ({}));
+        const payload = getPayload(raw);
+
+        const svcName =
+          payload?.service?.name ||
+          payload?.data?.service?.name ||
+          payload?.booking?.service?.name ||
+          payload?.groupItem?.service?.name ||
+          payload?.group?.service?.name;
+
+        const profName =
+          payload?.professional?.name ||
+          payload?.data?.professional?.name ||
+          payload?.booking?.professional?.name ||
+          payload?.groupItem?.professional?.name;
+
+        const start =
+          payload?.start ||
+          payload?.data?.start ||
+          payload?.booking?.start ||
+          payload?.groupItem?.start;
+
+        const end =
+          payload?.end ||
+          payload?.data?.end ||
+          payload?.booking?.end ||
+          payload?.groupItem?.end;
+
+        const status =
+          payload?.status ||
+          payload?.data?.status ||
+          payload?.booking?.status ||
+          payload?.groupItem?.status ||
+          "";
+
+        if (!ignore) {
+          setBookingInfo({
+            serviceName: svcName,
+            professionalName: profName,
+            startISO: start,
+            endISO: end,
+            status: String(status || "").toLowerCase(),
+          });
+        }
+      } catch {
+        if (!ignore) setBookingInfo(null);
+      } finally {
+        if (!ignore) setLoadingInfo(false);
+      }
+    })();
+    return () => { ignore = true; };
+  }, [slug, bookingId]);
+
+  const onSubmit = async () => {
+    if (!canSubmit) return;
+    try {
+      setSubmitting(true);
+      setErr(null);
+      const url = `${API_BASE}/${slug}/cancel/${bookingId}`;
+      const cfg = token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+      await axios.post(url, reason ? { reason } : {}, cfg);
+      setDone(true);
+    } catch (e: any) {
+      setErr(e?.response?.data?.message || e.message || "No se pudo cancelar");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Si ya está cancelado, no mostramos el formulario
+  const alreadyCanceled = (bookingInfo?.status || "").toLowerCase() === "canceled";
+
+  // Mensaje final (éxito) o “ya estaba cancelado”
+  if (done || alreadyCanceled) {
+    return (
+      <div className="min-h-screen pt-[120px] bg-white">
+        <div className="max-w-lg mx-auto p-4 space-y-4">
+          {bookingInfo && (
+            <BookingContextCard
+              serviceName={bookingInfo.serviceName}
+              professionalName={bookingInfo.professionalName || undefined}
+              startISO={bookingInfo.startISO}
+              endISO={bookingInfo.endISO}
+            />
+          )}
+
+          <Card className={alreadyCanceled ? "border-amber-200 bg-amber-50/60" : "border-emerald-200 bg-emerald-50/60"}>
+            <CardContent className="p-6 text-center space-y-2">
+              <div className={`mx-auto w-14 h-14 rounded-2xl grid place-items-center ${alreadyCanceled ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"}`}>
+                <CheckCircle className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {alreadyCanceled ? "Este turno ya estaba cancelado" : "Turno cancelado"}
+              </h2>
+              <p className="text-sm text-gray-700">
+                {alreadyCanceled ? "No es necesario volver a cancelarlo." : "Tu cancelación se registró correctamente."}
+              </p>
+              <div className="pt-2">
+                <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-600">
+                  <Link href="/">Volver al inicio</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Formulario (solo si NO está cancelado)
+  return (
+    <div className="min-h-screen pt-[120px] bg-white">
+      <div className="max-w-lg mx-auto p-4 space-y-4">
+        {/* Card compacta con contexto del turno */}
+        {!loadingInfo && bookingInfo && (
+          <BookingContextCard
+            serviceName={bookingInfo.serviceName}
+            professionalName={bookingInfo.professionalName || undefined}
+            startISO={bookingInfo.startISO}
+            endISO={bookingInfo.endISO}
+          />
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CircleDot className="w-5 h-5 text-rose-600" />
+              Cancelar reservación
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Podés agregar una nota para explicar el motivo (opcional).
+            </p>
+            <Textarea
+              rows={4}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Motivo de la cancelación (opcional)"
+            />
+            {err && <div className="text-sm text-rose-600">{err}</div>}
+            <div className="flex justify-end gap-2">
+              <Button asChild variant="outline" className="border-2">
+                <Link href="/">Cerrar</Link>
+              </Button>
+              <Button
+                onClick={onSubmit}
+                disabled={!canSubmit}
+                className="bg-rose-600 hover:bg-rose-700"
+              >
+                {submitting ? "Cancelando…" : "Cancelar turno"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// --- NUEVO: utils locales ---
+const fmtFull = (iso?: string) => {
+  if (!iso) return "—";
+  try {
+    return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
+  } catch {
+    return "—";
+  }
+};
+
+
+// --- NUEVO: tarjeta compacta para mostrar en qué booking estoy trabajando ---
+function BookingContextCard({
+  serviceName,
+  professionalName,
+  startISO,
+  endISO,
+}: {
+  serviceName?: string;
+  professionalName?: string | null;
+  startISO?: string;
+  endISO?: string;
+}) {
+  return (
+    <Card className="border-amber-200/60 bg-amber-50/40">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-white grid place-items-center border">
+              <CalendarIcon className="h-4 w-4 text-amber-600" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-slate-900">
+                {serviceName || "Reserva"}
+              </div>
+              <div className="text-xs text-slate-600">
+                {professionalName ? `Profesional: ${professionalName}` : "Profesional: —"}
+              </div>
+            </div>
+          </div>
+          <div className="text-right text-xs text-slate-700">
+            <div>Inicio: <span className="font-medium">{fmtFull(startISO)}</span></div>
+            {endISO ? <div>Fin: <span className="font-medium">{fmtFull(endISO)}</span></div> : null}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/** ==== Reprogramar (NF) ==== */
+function RescheduleInlineNF({
+  bookingId,
+  serviceId: serviceIdProp,
+  groupMode, // NUEVO
+}: {
+  bookingId: string;
+  serviceId?: string;
+  groupMode?: boolean;
+}) {
+  const slug = getSlugFromEnvOrHost();
+
+  // Por ahora NO se puede cambiar de profesional → arrancamos en Step 3
+  const [step, setStep] = React.useState<2 | 3 | 4>(3);
+
+  const [serviceId, setServiceId] = React.useState<string | null>(serviceIdProp ?? null);
+  const [needService, setNeedService] = React.useState<boolean>(!serviceIdProp);
+
+  const [professionals, setProfessionals] = React.useState<Professional[]>([]);
+  const [loadingProfessionals, setLoadingProfessionals] = React.useState(false);
+
+  // Profesional FIJO proveniente del booking
+  const [selectedProfessional, setSelectedProfessional] = React.useState<string>("any");
+
+  const [availableDays, setAvailableDays] = React.useState<string[]>([]);
+  const [loadingDays, setLoadingDays] = React.useState(false);
+  const [visibleMonth, setVisibleMonth] = React.useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
+
+  const [timeSlots, setTimeSlots] = React.useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = React.useState(false);
+  const [selectedTime, setSelectedTime] = React.useState<string>("");
+
+  const [submitting, setSubmitting] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const [done, setDone] = React.useState(false);
+
+  const isDateAvailable = React.useCallback(
+    (date: Date) => availableDays.includes(fmtDay(date)),
+    [availableDays]
+  );
+
+  const [bookingInfo, setBookingInfo] = React.useState<{
+    serviceName?: string;
+    professionalName?: string | null;
+    professionalId?: string | null;
+    startISO?: string;
+    endISO?: string;
+    status?: string;
+  } | null>(null);
+
+  // Si no pasó serviceId, buscamos el booking y fijamos profesional + status
+  React.useEffect(() => {
+    if (serviceId || !slug || !needService) return;
+    let ignore = false;
+
+    (async () => {
+      try {
+        const url = `${API_BASE}/${slug}/booking/${bookingId}${groupMode ? "?groupMode=true" : ""}`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) {
+          if (!ignore) setNeedService(true);
+          return;
+        }
+        const raw = await res.json().catch(() => ({}));
+        const payload = getPayload(raw);
+
+        const sid =
+          payload?.service?._id ||
+          payload?.data?.service?._id ||
+          payload?.booking?.service?._id ||
+          null;
+
+        const svcName =
+          payload?.service?.name ||
+          payload?.data?.service?.name ||
+          payload?.booking?.service?.name ||
+          payload?.groupItem?.service?.name ||
+          payload?.group?.service?.name;
+
+        const profName =
+          payload?.professional?.name ||
+          payload?.data?.professional?.name ||
+          payload?.booking?.professional?.name ||
+          payload?.groupItem?.professional?.name;
+
+        const profId =
+          payload?.professional?._id ||
+          payload?.data?.professional?._id ||
+          payload?.booking?.professional?._id ||
+          payload?.groupItem?.professional?._id ||
+          null;
+
+        const start =
+          payload?.start ||
+          payload?.data?.start ||
+          payload?.booking?.start ||
+          payload?.groupItem?.start;
+
+        const end =
+          payload?.end ||
+          payload?.data?.end ||
+          payload?.booking?.end ||
+          payload?.groupItem?.end;
+
+        const status =
+          payload?.status ||
+          payload?.data?.status ||
+          payload?.booking?.status ||
+          payload?.groupItem?.status ||
+          "";
+
+        setBookingInfo({
+          serviceName: svcName,
+          professionalName: profName,
+          professionalId: profId,
+          startISO: start,
+          endISO: end,
+          status: String(status || "").toLowerCase(),
+        });
+
+        if (profId) setSelectedProfessional(String(profId));
+
+        if (!ignore) {
+          if (sid) {
+            setServiceId(String(sid));
+            setNeedService(false);
+          } else {
+            setNeedService(true);
+          }
+        }
+      } catch {
+        if (!ignore) setNeedService(true);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [slug, bookingId, serviceId, needService, groupMode]);
+
+  // Profesionales (solo para nombres; no hay picker)
+  const loadProfessionals = React.useCallback(async (sid: string) => {
+    if (!sid || !slug) return;
+    setLoadingProfessionals(true);
+    try {
+      const res = await fetch(`${API_BASE}/${slug}/services/${sid}/professionals`, { cache: "no-store" });
+      const raw = await res.json().catch(() => ({}));
+      const payload = getPayload(raw);
+      const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
+      setProfessionals(list);
+    } finally {
+      setLoadingProfessionals(false);
+    }
+  }, [slug]);
+
+  // Días
+  const loadAvailableDays = React.useCallback(
+    async (sid: string, pid?: string | "any", monthStr?: string) => {
+      if (!sid || !slug) return;
+      setLoadingDays(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("service", sid);
+        params.set("month", monthStr ?? fmtMonth(visibleMonth));
+        const effectivePid =
+          (bookingInfo?.professionalId && bookingInfo.professionalId) ||
+          (pid && pid !== "any" ? pid : undefined);
+        if (effectivePid) params.set("professional", String(effectivePid));
+        const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
+        const raw = await res.json().catch(() => ({}));
+        const payload = getPayload(raw);
+        let dates: any[] = [];
+        if (Array.isArray(payload)) dates = payload;
+        else if (Array.isArray(payload?.days)) dates = payload.days;
+        else if (Array.isArray(payload?.items)) dates = payload.items;
+        if (dates.length && typeof dates[0] !== "string") {
+          dates = dates.map((d: any) => d?.date).filter(Boolean);
+        }
+        setAvailableDays(dates as string[]);
+      } finally {
+        setLoadingDays(false);
+      }
+    },
+    [slug, visibleMonth, bookingInfo?.professionalId]
+  );
+
+  // Horarios
+  const loadTimeSlots = React.useCallback(
+    async (sid: string, _pid: string | "any" | undefined, date: Date) => {
+      const dateStr = fmtDay(date);
+      if (!sid || !slug || !availableDays.includes(dateStr)) return;
+      setLoadingSlots(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("service", sid);
+        params.set("date", dateStr);
+        const effectivePid = bookingInfo?.professionalId || (_pid && _pid !== "any" ? _pid : undefined);
+        if (effectivePid) params.set("professional", String(effectivePid));
+        const res = await fetch(`${API_BASE}/${slug}/day-slots?${params.toString()}`, { cache: "no-store" });
+        const raw = await res.json().catch(() => ({}));
+        const payload = getPayload(raw);
+        const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? [];
+        setTimeSlots(slots);
+        setSelectedTime("");
+      } finally {
+        setLoadingSlots(false);
+      }
+    },
+    [slug, availableDays, bookingInfo?.professionalId]
+  );
+
+  // Bootstrap cuando ya tengo serviceId
+  React.useEffect(() => {
+    if (!serviceId) return;
+    void loadProfessionals(serviceId);
+    void loadAvailableDays(serviceId, bookingInfo?.professionalId || selectedProfessional, fmtMonth(visibleMonth));
+  }, [serviceId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const reschedulingId = bookingId;
+
+  const submit = async () => {
+    if (!serviceId || !selectedDate || !selectedTime || !slug) return;
+    // Guard extra: si se canceló en caliente, no permitir
+    const status = (bookingInfo?.status || "").toLowerCase();
+    const isCanceled = ["canceled", "cancelled", "canceled_by_user", "cancelled_by_user"].includes(status);
+    if (isCanceled) return;
+
+    try {
+      setSubmitting(true);
+      setErr(null);
+      const day = fmtDay(selectedDate);
+      const hour = selectedTime;
+      const professional = bookingInfo?.professionalId ? String(bookingInfo.professionalId) : null;
+      const url = `${API_BASE}/${slug}/reschedule/${reschedulingId}`;
+      await axios.post(url, { day, hour, professional });
+      setDone(true);
+    } catch (e: any) {
+      setErr(e?.response?.data?.message || e.message || "No se pudo reprogramar");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // bloqueo si está cancelado
+  const alreadyCanceled = React.useMemo(() => {
+    const s = (bookingInfo?.status || "").toLowerCase();
+    return ["canceled", "cancelled", "canceled_by_user", "cancelled_by_user"].includes(s);
+  }, [bookingInfo?.status]);
+
+  if (needService) {
+    return (
+      <div className="min-h-screen pt-[120px] bg-white">
+        <div className="max-w-lg mx-auto p-4">
+          <Card className="border-amber-200 bg-amber-50/60">
+            <CardContent className="p-6 space-y-2">
+              <h2 className="text-lg font-bold text-gray-900">Cargando la reserva…</h2>
+              <p className="text-sm text-gray-700">Estamos buscando los datos del turno para continuar con la reprogramación.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (alreadyCanceled) {
+    return (
+      <div className="min-h-screen pt-[120px] bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-6">
+          {bookingInfo && (
+            <BookingContextCard
+              serviceName={bookingInfo.serviceName}
+              professionalName={bookingInfo.professionalName || undefined}
+              startISO={bookingInfo.startISO}
+              endISO={bookingInfo.endISO}
+            />
+          )}
+          <Card className="border-amber-200 bg-amber-50/60">
+            <CardContent className="p-6 text-center space-y-2">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-amber-500 text-white grid place-items-center">
+                <AlertTriangle className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Este turno está cancelado</h2>
+              <p className="text-sm text-gray-700">No es posible reprogramar una reserva cancelada.</p>
+              <div className="pt-2">
+                <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-600">
+                  <Link href="/">Volver al inicio</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (done) {
+    return (
+      <div className="min-h-screen pt-[120px] bg-white">
+        <div className="max-w-lg mx-auto p-4">
+          <Card className="border-emerald-200 bg-emerald-50/60">
+            <CardContent className="p-6 text-center space-y-2">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-500 text-white grid place-items-center">
+                <CheckCircle className="w-7 h-7" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Turno reprogramado</h2>
+              <p className="text-sm text-gray-700">Se guardaron tus cambios.</p>
+              <div className="pt-2">
+                <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-600">
+                  <Link href="/">Volver al inicio</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Flujo normal (sin Step 2)
+  return (
+    <div className="min-h-screen pt-[120px] bg-white">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        {bookingInfo && (
+          <div className="max-w-3xl mx-auto mb-6">
+            <BookingContextCard
+              serviceName={bookingInfo.serviceName}
+              professionalName={bookingInfo.professionalName || undefined}
+              startISO={bookingInfo.startISO}
+              endISO={bookingInfo.endISO}
+            />
+          </div>
+        )}
+
+        {/* STEP 3: Fecha y horario */}
+        {step === 3 && (
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">Elegí fecha y horario</h2>
+              {bookingInfo?.professionalName && (
+                <p className="text-gray-600">
+                  Profesional asignado: <b>{bookingInfo.professionalName}</b>
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                    <CalendarIcon className="h-5 w-5 mr-2 text-amber-500" />
+                    Seleccionar Fecha
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {!loadingDays ? (
+                    <CalendarComponent
+                      mode="single"
+                      month={visibleMonth}
+                      selected={selectedDate}
+                      onMonthChange={(m) => {
+                        setVisibleMonth(m);
+                        setAvailableDays([]); setSelectedDate(undefined); setTimeSlots([]); setSelectedTime("");
+                        void loadAvailableDays(serviceId!, bookingInfo?.professionalId || selectedProfessional, fmtMonth(m));
+                      }}
+                      onSelect={async (date) => {
+                        setSelectedDate(date || undefined);
+                        if (date && isDateAvailable(date)) {
+                          setTimeSlots([]); setSelectedTime("");
+                          await loadTimeSlots(serviceId!, bookingInfo?.professionalId || selectedProfessional, date);
+                        } else {
+                          setTimeSlots([]); setSelectedTime("");
+                        }
+                      }}
+                      disabled={(date) => {
+                        const today = new Date(); today.setHours(0, 0, 0, 0);
+                        const d = new Date(date); d.setHours(0, 0, 0, 0);
+                        if (d < today) return true;
+                        if (availableDays.length > 0) return !isDateAvailable(date);
+                        return false;
+                      }}
+                      locale={es}
+                      className="rounded-lg border-2 border-amber-200 w-full p-3"
+                      classNames={{
+                        months: "w-full",
+                        month: "w-full",
+                        table: "w-full border-collapse",
+                        head_row: "grid grid-cols-7",
+                        row: "grid grid-cols-7 mt-2",
+                        head_cell: "text-center text-muted-foreground text-[0.8rem] py-1",
+                        cell: "p-0 relative w-full",
+                        day:
+                          "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors " +
+                          "hover:bg-amber-100 hover:text-amber-900 " +
+                          "focus:outline-none focus:ring-2 focus:ring-amber-300",
+                        day_selected:
+                          "bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 rounded-lg",
+                        day_today: "bg-amber-50 text-amber-700 font-semibold rounded-lg",
+                        day_outside: "text-muted-foreground opacity-60",
+                        day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
+                        day_range_start: "rounded-l-lg",
+                        day_range_end: "rounded-r-lg",
+                        day_range_middle: "rounded-none",
+                      }}
+                    />
+                  ) : (
+                    <Skeleton className="h-[248px] w-full" />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-amber-500" />
+                    Horarios Disponibles
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingSlots ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {Array.from({ length: 18 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
+                    </div>
+                  ) : !selectedDate ? (
+                    <p className="text-gray-600">Elegí una fecha para ver los horarios.</p>
+                  ) : !isDateAvailable(selectedDate) ? (
+                    <p className="text-gray-600">Esta fecha no está disponible.</p>
+                  ) : timeSlots.length === 0 ? (
+                    <p className="text-gray-600">No hay horarios disponibles para esta fecha.</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-3">
+                      {timeSlots.map((t) => (
+                        <Button
+                          key={t}
+                          variant={selectedTime === t ? "default" : "outline"}
+                          className={`h-12 transition-all ${selectedTime === t
+                              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                              : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                            }`}
+                          onClick={() => setSelectedTime(t)}
+                        >
+                          {t}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="flex justify-between">
+              <Button asChild variant="outline" className="border-2">
+                <Link href="/">Cerrar</Link>
+              </Button>
+              <Button
+                disabled={!selectedDate || !selectedTime || !isDateAvailable(selectedDate) || submitting}
+                onClick={submit}
+                className="bg-gradient-to-r from-amber-500 to-yellow-600"
+              >
+                {submitting ? "Reprogramando…" : "Continuar"}
+                <UserPlus className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Confirmar */}
+        {step === 4 && (
+          <div className="space-y-6 max-w-lg mx-auto">
+            <h3 className="text-xl font-semibold text-slate-900">Confirmar reprogramación</h3>
+            <div className="text-sm text-slate-700 space-y-1">
+              <div><span className="text-slate-500">Fecha:</span> {selectedDate ? format(selectedDate, "dd/MM/yyyy") : "—"}</div>
+              <div><span className="text-slate-500">Hora:</span> {selectedTime || "—"}</div>
+              <div><span className="text-slate-500">Profesional:</span> {bookingInfo?.professionalName || "—"}</div>
+            </div>
+            {err && <div className="text-sm text-rose-600">{err}</div>}
+            <div className="flex justify-between">
+              <Button variant="outline" className="border-2" onClick={() => setStep(3)} disabled={submitting}>
+                Volver
+              </Button>
+              <Button onClick={submit} disabled={submitting || !selectedDate || !selectedTime}>
+                {submitting ? "Reprogramando…" : "Confirmar"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 
 type SessionGroup = {
@@ -1569,6 +2350,7 @@ export default function ReservarPage() {
     ].join("\n");
   };
 
+
   const calendarLocationFor = (
     branch?: { location?: { addressLine?: string; city?: string; state?: string; country?: string } }
   ) => {
@@ -1584,6 +2366,28 @@ export default function ReservarPage() {
 
   const sp = useMemo(() => new URLSearchParams(rawSearch), [rawSearch]);
 
+  // --- Query params para modo NF (enfocado) ---
+  const actionFromQS = useMemo(() => (sp.get("action") || sp.get("do") || "").toLowerCase(), [sp]) as
+    | "cancel"
+    | "reschedule"
+    | "";
+  const bookingIdFromQS = useMemo(() => sp.get("id") || sp.get("bookingId") || "", [sp]);
+  const rescheduleServiceIdQS = useMemo(() => sp.get("serviceId"), [sp]);
+
+  // 👇 NUEVO: parsear groupMode de la URL (?groupMode=true)
+  const groupModeQS = useMemo(() => (sp.get("groupMode") || "").toLowerCase() === "true", [sp]);
+
+
+  if (bookingIdFromQS && (actionFromQS === "cancel" || actionFromQS === "reschedule")) {
+    return (
+      <ActionInlineRouterNF
+        action={actionFromQS as "cancel" | "reschedule"}
+        bookingId={bookingIdFromQS}
+        serviceId={rescheduleServiceIdQS}
+        groupMode={groupModeQS}             // <-- NUEVO
+      />
+    );
+  }
   const serviceIdFromQS = useMemo(() => sp.get("serviceId"), [sp]);
 
   const sessionGroupId = useMemo(() => sp.get("sessionGroupId"), [sp]);
