@@ -1584,6 +1584,8 @@ export default function ReservarPage() {
 
   const sp = useMemo(() => new URLSearchParams(rawSearch), [rawSearch]);
 
+  const serviceIdFromQS = useMemo(() => sp.get("serviceId"), [sp]);
+
   const sessionGroupId = useMemo(() => sp.get("sessionGroupId"), [sp]);
 
   console.log(sessionGroupId)
@@ -1602,6 +1604,30 @@ export default function ReservarPage() {
   const [sgSubmitting, setSgSubmitting] = useState(false)
   const [sgSubmittingData, setSgSubmittingData] = useState<any>(null)
   const [sgBookingResult, setSgBookingResult] = useState<BookingCreated | null>(null)
+
+  useEffect(() => {
+    // si es flujo de grupo de sesiones, no autoseleccionamos servicios
+    if (sessionGroupId) return;
+
+    // esperamos a que termine la carga de servicios
+    if (loadingServices) return;
+    if (!services?.length) return;
+
+    // nada en la query -> nada que hacer
+    if (!serviceIdFromQS) return;
+
+    // admite varios separados por coma, y recorta al máximo permitido (3)
+    const ids = serviceIdFromQS
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const valid = ids.filter(id => services.some(s => s._id === id));
+    if (!valid.length) return;
+
+    // si el usuario ya eligió algo, no pisamos su selección
+    setSelectedServices(prev => (prev.length ? prev : valid.slice(0, 3)));
+  }, [serviceIdFromQS, services, loadingServices, sessionGroupId, setSelectedServices]);
 
   const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string) => {
     setSgLoadingDays(true)
@@ -1871,7 +1897,7 @@ export default function ReservarPage() {
             </div>
           )}
 
-          {sgStep6Result  && (
+          {sgStep6Result && (
             <div className={submitting ? "pointer-events-none opacity-60" : ""}>
               {(() => {
                 // ====== derivaciones mínimas que usa tu step 6 ======
