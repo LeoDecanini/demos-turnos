@@ -25,6 +25,7 @@ import Link from "next/link";
 import OpinionesPage from "@/components/testimonials-section"
 import Contacto from "@/components/Contacto"
 import Servicios from "@/components/Servicios"
+import React from "react"
 
 export default function Home() {
     const router = useRouter()
@@ -108,7 +109,7 @@ export default function Home() {
                     </div>
                 </section>
 
-                <section id="servicios"
+                {/* <section id="servicios"
                     className="py-24 relative overflow-hidden">
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-8">
@@ -302,7 +303,144 @@ export default function Home() {
                             </Link>
                         </div>
                     </div>
+                </section> */}
+
+                <section id="servicios" className="py-24 relative overflow-hidden">
+                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center mb-8">
+                            <ReusableBadge className="mb-2">Nuestros Servicios</ReusableBadge>
+                            <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-700 bg-clip-text text-transparent mb-4 leading-tight">
+                                Nuestros tratamientos
+                            </h2>
+                            <div className="w-24 h-1 bg-gradient-to-r from-amber-500 to-yellow-600 mx-auto mb-4 rounded-full"></div>
+                            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed-moveup">
+                                Realizamos tratamientos o procedimientos estéticos tanto faciales como corporales no invasivos. Nuestro objetivo es resaltar tu belleza y mejorar ciertos rasgos de la forma más natural posible.
+                            </p>
+                        </div>
+
+                        <div className="space-y-14">
+                            {[
+                                {
+                                    title: "Tratamientos Faciales",
+                                    popular: true,
+                                    media: [
+                                        { type: "image", src: "/servicios/serv1-img1.jpg" },
+                                        { type: "image", src: "/servicios/serv1-img2.jpg" },
+                                        { type: "image", src: "/servicios/serv1-img3.jpg" },
+                                        { type: "image", src: "/servicios/serv1-img4.jpg" },
+                                        { type: "video", src: "/servicios/serv2-vid1.mp4", poster: "/servicios/serv2-vid1.jpg" },
+                                        { type: "video", src: "/servicios/serv2-vid2.mp4", poster: "/servicios/serv2-vid2.jpg" },
+                                        { type: "image", src: "/servicios/serv2-img1.jpg" },
+                                        { type: "image", src: "/servicios/serv3-img1.jpg" },
+                                        { type: "image", src: "/servicios/serv3-img2.jpg" },
+                                        { type: "image", src: "/servicios/serv3-img3.jpg" },
+                                        { type: "image", src: "/servicios/serv3-img4.jpg" },
+                                        { type: "image", src: "/servicios/serv3-img6.jpg" },
+                                    ],
+                                    groups: [
+                                        {
+                                            label: "Inyectables",
+                                            items: [
+                                                "💉 Toxina Botulínica (BOTOX – arrugas, bruxismo, hiperhidrosis)",
+                                                "💉 Ácido Hialurónico (Juvederm Allergan)",
+                                                "💉 Bioestimuladores (Radiesse, Sculptra, Harmonyca, Profhilo…)",
+                                            ],
+                                        },
+                                        {
+                                            label: "Hidratación & Luminosidad",
+                                            items: ["✨ Hidratación Profunda / Skinbooster", "✨ Mesoterapia Francesa NCTF", "✨ Viscoderm", "✨ Profhilo / Profhilo Structura"],
+                                        },
+                                        {
+                                            label: "Regenerativos",
+                                            items: ["🌱 PRP Facial", "🌱 Exosomas", "🌱 Dermapen con Mesoterapia", "🌱 Mesoterapia Facial"],
+                                        },
+                                    ],
+                                },
+                                /* {
+                                    title: "Tratamientos Corporales",
+                                    popular: false,
+                                    media: [
+                                        { type: "video", src: "/servicios/serv2-vid1.mp4", poster: "/servicios/serv2-vid1.jpg" },
+                                        { type: "video", src: "/servicios/serv2-vid2.mp4", poster: "/servicios/serv2-vid2.jpg" },
+                                        { type: "image", src: "/servicios/serv2-img1.jpg" },
+                                    ],
+                                    groups: [
+                                        { label: "Modelado & Reducción", items: ["🏷️ Fosfatidilcolina (adiposidad localizada)"] },
+                                        { label: "Anticelulítico", items: ["🏷️ Alidya"] },
+                                        { label: "Reafirmación & Calidad de piel", items: ["🏷️ Mesoterapia Corporal (celulitis, flacidez, calidad de piel)"] },
+                                    ],
+                                },
+                                {
+                                    title: "Tratamientos Capilares",
+                                    popular: false,
+                                    media: [
+                                        { type: "image", src: "https://images.unsplash.com/photo-1598970434795-0c54fe7c0648?q=80&w=2070&auto=format&fit=crop" },
+                                        { type: "video", src: "/videos/capilares-1.mp4", poster: "/videos/capilares-1.jpg" },
+                                    ],
+                                    groups: [
+                                        { label: "Regenerativos", items: ["🌱 PRP Capilar"] },
+                                        { label: "Fármacos", items: ["🌱 Mesoterapia Capilar (minoxidil, finasteride, biotina, etc.)"] },
+                                    ],
+                                }, */
+                            ].map((service, i) => {
+                                return (
+                                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
+                                        <Card className="order-1 md:order-none border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+                                            <div className="p-6">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h3 className="text-2xl font-bold text-gray-900">{service.title}</h3>
+                                                    {service.popular && (
+                                                        <Badge className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-0 px-3 py-1 font-semibold">
+                                                            Popular
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <div className="space-y-5">
+                                                    {service.groups.map((g, k) => (
+                                                        <div key={k} className="rounded-2xl ring-1 ring-amber-100/60 bg-amber-50/40 px-4 py-3">
+                                                            <div className="text-sm font-semibold tracking-wide text-amber-700 mb-2">{g.label}</div>
+                                                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+                                                                {g.items.map((it, idx) => (
+                                                                    <li key={idx} className="text-gray-700 leading-relaxed-moveup font-medium">
+                                                                        {it}
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                {/* <div className="mt-6">
+                                                    <Link href={"/reservar"}>
+                                                        <Button variant="outline" className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold w-full">
+                                                            Reservar turno
+                                                        </Button>
+                                                    </Link>
+                                                </div> */}
+                                            </div>
+                                        </Card>
+
+                                        <div className="flex items-center justify-center">
+                                            <div className="relative w-full max-w-[560px] md:max-w-[680px] aspect-square rounded-2xl overflow-hidden">
+                                                {/* @ts-ignore */}
+                                                <MediaSlider items={service.media} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        <div className="mt-16 text-center">
+                            <Link href={"/reservar"}>
+                                <Button variant="outline" className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold py-3">
+                                    Ver todos los servicios
+                                    <ChevronRight className="h-6 w-6" />
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
                 </section>
+
 
                 {/* <Servicios /> */}
 
@@ -336,21 +474,21 @@ export default function Home() {
                                         title: "Seguridad",
                                         desc: "Protocolos médicos y equipos certificados",
                                         image:
-                                            "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1974&auto=format&fit=crop", // médico con guantes y mascarilla
+                                            "/servicios/seguridad.jpg", // médico con guantes y mascarilla
                                     },
                                     {
                                         icon: HeartHandshake,
                                         title: "Acompañamiento",
                                         desc: "Plan personalizado y seguimiento post tratamiento",
                                         image:
-                                            "https://images.unsplash.com/photo-1526256262350-7da7584cf5eb?q=80&w=1974&auto=format&fit=crop", // doctora acompañando paciente
+                                            "/servicios/acompañamiento.jpg", // doctora acompañando paciente
                                     },
                                     {
                                         icon: Leaf,
                                         title: "Resultados Naturales",
                                         desc: "Enfoque estético que respeta tu esencia",
                                         image:
-                                            "https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=1974&auto=format&fit=crop", // mujer en la naturaleza, luz suave
+                                            "/servicios/resultados.jpg", // mujer en la naturaleza, luz suave
                                     },
                                 ]
                                     .map((item, i) => (
@@ -388,7 +526,7 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/*<section className="relative py-20 overflow-hidden">
+                {/* <section className="relative py-20 overflow-hidden">
                     <div className="absolute inset-0">
                         <img
                             src="https://images.unsplash.com/photo-1596178060810-72f53ce9a65c?q=80&w=2069&auto=format&fit=crop"
@@ -426,10 +564,10 @@ export default function Home() {
                             </Button>
                         </div>
                     </div>
-                </section>*/}
+                </section> */}
 
                 {/* Banner de promoción */}
-                {/*<section className="relative py-16">
+                {/* <section className="relative py-16">
                     <div className="absolute inset-0">
                         <img
                             src="https://images.unsplash.com/photo-1596178060810-72f53ce9a65c?q=80&w=2069&auto=format&fit=crop"
@@ -447,7 +585,7 @@ export default function Home() {
                             Reservar Ahora
                         </Button>
                     </div>
-                </section>*/}
+                </section> */}
 
                 {/* Sobre Nosotros */}
                 <section className="py-20 bg-white">
@@ -500,14 +638,14 @@ export default function Home() {
                             <div className="relative">
                                 <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
                                     <img
-                                        src="https://images.unsplash.com/photo-1560750588-73207b1ef5b8?q=80&w=2070&auto=format&fit=crop"
+                                        src="/servicios/local.jpg"
                                         alt="Nuestro centro"
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
                                 <div
                                     className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
-                                    <img src="/instalanciones-1.jpg" alt="Tratamiento"
+                                    <img src="/servicios/local2.jpg" alt="Tratamiento"
                                         className="w-full h-full object-cover" />
                                 </div>
                             </div>
@@ -530,12 +668,12 @@ export default function Home() {
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {[
-                                "/instalanciones-1.jpg",
-                                "/instalanciones-2.jpg",
-                                "/instalanciones-3.jpg",
-                                "/instalanciones-6.avif",
-                                "/instalanciones-4.jpg",
-                                "/instalanciones-5.png",
+                                "/servicios/gal-img10.jpg",
+                                "/servicios/gal-img3.jpg",
+                                "/servicios/gal-img6.jpg",
+                                "/servicios/gal-img7.jpg",
+                                "/servicios/gal-img9.jpg",
+                                "/servicios/gal-img2.jpg",
                             ].map((img, i) => (
                                 <div
                                     key={i}
@@ -615,7 +753,7 @@ export default function Home() {
                                     name: "Dr. Franco Gaston Adonis",
                                     position: "(cambiar) Dermatólogo",
                                     image:
-                                        "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=1964&auto=format&fit=crop",
+                                        "/servicios/gal-img5.jpg",
                                     specialty: "(cambiar) Dermatología Estética",
                                     experience: "(cambiar) 12 años",
                                 },
@@ -646,28 +784,27 @@ export default function Home() {
                                                             </div>
                                                             <span className="text-sm font-medium text-gray-700">Especialista Certificado</span>
                                                         </div>
-                                                        {/*<Badge
+                                                       {/*  <Badge
                                                             className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-0 px-3 py-1 text-xs">
                                                             Activo
-                                                        </Badge>*/}
+                                                        </Badge> */}
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <CardHeader className="pb-4 pt-4">
+                                        <CardHeader className=" pt-4">
                                             <CardTitle
                                                 className="text-2xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
                                                 {member.name}
                                             </CardTitle>
-                                            {member.position && (
+                                           {/*  {member.position && (
                                                 <CardDescription className="text-amber-600 font-medium text-lg">
                                                     {member.position}
                                                 </CardDescription>
-                                            )}
-
+                                            )} */}
 
                                         </CardHeader>
-                                        <CardContent className="">
+                                        {/* <CardContent className="">
                                             <div className="space-y-4">
                                                 <div className="flex items-center group/item">
                                                     <div
@@ -692,7 +829,7 @@ export default function Home() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </CardContent>
+                                        </CardContent> */}
                                         {/*<CardFooter>
                                             <Button
                                                 className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white font-semibold shadow-lg border-0 transition-all duration-300 hover:scale-105 py-3"
@@ -713,5 +850,95 @@ export default function Home() {
                 <Contacto />
             </div>
         </>
+    )
+}
+
+
+type MediaItem = { type?: "image" | "video"; src: string; poster?: string }
+
+function MediaSlider({ items }: { items: MediaItem[] }) {
+    const [idx, setIdx] = React.useState(0)
+    const goPrev = () => setIdx((v) => (v - 1 + items.length) % items.length)
+    const goNext = () => setIdx((v) => (v + 1) % items.length)
+
+    const isVideo = (m: MediaItem) =>
+        m.type === "video" || /\.(mp4|webm|ogv|ogg)(\?.*)?$/i.test(m.src)
+
+    const videoRefs = React.useRef<(HTMLVideoElement | null)[]>([])
+
+    React.useEffect(() => {
+        videoRefs.current.forEach((v, i) => {
+            if (!v) return
+            if (i === idx) {
+                v.currentTime = 0
+                v.play().catch(() => { })
+            } else {
+                v.pause()
+            }
+        })
+    }, [idx])
+
+    return (
+        <div className="w-full h-full relative">
+            <div className="absolute inset-0">
+                {items.map((m, i) => {
+                    const active = i === idx
+                    return (
+                        <div
+                            key={i}
+                            className={`absolute inset-0 transition-opacity duration-500 ${active ? "opacity-100" : "opacity-0 pointer-events-none"
+                                }`}
+                        >
+                            {isVideo(m) ? (
+                                <video
+                                /* @ts-ignore */
+                                    ref={(el) => (videoRefs.current[i] = el)}
+                                    src={m.src}
+                                    poster={m.poster}
+                                    className="w-full h-full object-cover object-center"
+                                    controls
+                                    playsInline
+                                    muted
+                                    loop
+                                    preload="metadata"
+                                />
+                            ) : (
+                                <img
+                                    src={m.src}
+                                    alt=""
+                                    className="w-full h-full object-cover object-center"
+                                    loading="lazy"
+                                />
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
+
+            <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2">
+                {items.map((_, i) => (
+                    <button
+                        key={i}
+                        aria-label={`Ir a slide ${i + 1}`}
+                        onClick={() => setIdx(i)}
+                        className={`h-2.5 w-2.5 rounded-full ${i === idx ? "bg-amber-500" : "bg-white/80 hover:bg-white"
+                            }`}
+                    />
+                ))}
+            </div>
+
+            <button
+                onClick={goPrev}
+                className="absolute left-3 top-1/2 -translate-y-1/2 grid place-items-center h-10 w-10 rounded-full bg-white/80 backdrop-blur border border-white/40 hover:bg-white"
+            >
+                <ChevronRight className="h-5 w-5 rotate-180" />
+            </button>
+            <button
+                onClick={goNext}
+                className="absolute right-3 top-1/2 -translate-y-1/2 grid place-items-center h-10 w-10 rounded-full bg-white/80 backdrop-blur border border-white/40 hover:bg-white"
+            >
+                <ChevronRight className="h-5 w-5" />
+            </button>
+        </div>
     )
 }
