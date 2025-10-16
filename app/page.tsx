@@ -660,9 +660,9 @@ export default function Home() {
                             <ReusableBadge>
                                 Galería
                             </ReusableBadge>
-                            <h2 className="text-3xl font-bold text-gray-900">Nuestras Instalaciones</h2>
+                            <h2 className="text-3xl font-bold text-gray-900">Práctica clínica y resultados</h2>
                             <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-                                Conoce nuestro centro y los espacios donde realizamos los tratamientos
+                                Un recorrido visual por nuestras instalaciones, el trabajo del equipo de salud y casos reales que reflejan nuestro enfoque.
                             </p>
                         </div>
 
