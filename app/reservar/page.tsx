@@ -765,8 +765,8 @@ function RescheduleInlineNF({
                           key={t}
                           variant={selectedTime === t ? "default" : "outline"}
                           className={`h-12 transition-all ${selectedTime === t
-                              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                              : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                            : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
                             }`}
                           onClick={() => setSelectedTime(t)}
                         >
@@ -2017,6 +2017,8 @@ export default function ReservarPage() {
         index: Number(e.index ?? 0),
         message: String(e.message ?? "Error"),
       }));
+    const getBookingCount = (r: any) =>
+      Array.isArray(r?.bookings) ? r.bookings.length : r?.booking ? 1 : 0;
 
     const tz = "America/Argentina/Buenos_Aires";
 
@@ -2072,16 +2074,14 @@ export default function ReservarPage() {
         const errs = getErrors(payload);
         if (!hasAnyBooking(payload)) {
           setBulkErrors(errs);
-          toast.error(
-            payload?.message ||
-            "No se pudo crear ninguna reserva. Revisá los errores."
-          );
+          toast.error(payload?.message || "No se pudo crear ninguna reserva. Revisá los errores.");
           setStep(5);
           return;
         }
         if (errs.length) setBulkWarns(errs);
         setBookingResult(payload);
-        toast.success("¡Reserva(s) creada(s)!");
+        const count = getBookingCount(payload);
+        toast.success(count > 1 ? `¡${count} reservas creadas!` : "¡Reserva creada!");
         setStep(6);
         scrollToTop();
         return;
@@ -2106,15 +2106,11 @@ export default function ReservarPage() {
 
         if (!r.ok) {
           const e = await r.json().catch(() => ({}));
-          const msg =
-            getPayload(e)?.message || e?.message || "No se pudo crear la reserva";
+          const msg = getPayload(e)?.message || e?.message || "No se pudo crear la reserva";
           throw new Error(msg);
         }
 
-        const single = (await r.json()) as {
-          booking: BookingCreated;
-          message: string;
-        };
+        const single = (await r.json()) as { booking: BookingCreated; message: string };
         created.push(single.booking);
       }
 
@@ -2125,19 +2121,20 @@ export default function ReservarPage() {
         bookings: created,
         message: "Reservas creadas",
       } as BookingResponse);
-      toast.success("¡Reserva(s) creada(s)!");
+
+      const count = created.length;
+      toast.success(count > 1 ? `¡${count} reservas creadas!` : "¡Reserva creada!");
       setStep(6);
       scrollToTop();
     } catch (e) {
-      const msg =
-        (e as Error)?.message ||
-        "No se pudo crear la reserva. Probá nuevamente.";
+      const msg = (e as Error)?.message || "No se pudo crear la reserva. Probá nuevamente.";
       toast.error(msg);
       setStep(5);
     } finally {
       setSubmitting(false);
     }
   };
+
 
   const isSingleService = selectedServices.length === 1;
 
@@ -3833,189 +3830,157 @@ export default function ReservarPage() {
               </div>
             )}
 
-            <Card className="relative">
-              {submitting && (
-                <div className="bg-white/70 flex items-center justify-center rounded-xl absolute w-full h-full top-0 left-0 z-10">
-                  Creando su reserva...
-                </div>
-              )}
-              <CardContent className="space-y-6">
-                <fieldset
-                  disabled={!!user || submitting}
-                  className={submitting ? "opacity-60 pointer-events-none select-none" : ""}
-                >
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Nombre completo
-                    </label>
-                    <input
-                      type="text"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.fullName ? "border-red-500" : "border-gray-200"
-                        }`}
-                      placeholder="Tu nombre y apellido"
-                      value={fullName}
-                      onChange={(e) => {
-                        setFullName(e.target.value);
-                        if (errors.fullName) validateField("fullName", e.target.value);
-                      }}
-                      onBlur={(e) => validateField("fullName", e.target.value)}
-                      aria-invalid={!!errors.fullName}
-                    />
-                    {errors.fullName && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.fullName}
-                      </p>
-                    )}
-                  </div>
+            {/*
+      pluralización
+    */}
+            {(() => {
+              const isBulk = Array.isArray(selectedServices) && selectedServices.length > 1
+              const nounTitle = isBulk ? "Reservas" : "Reserva"
+              const nounProgress = isBulk ? "reservas" : "reserva"
 
-                  <div className="mt-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.email ? "border-red-500" : "border-gray-200"
-                        }`}
-                      placeholder="tu@email.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        if (errors.email) validateField("email", e.target.value);
-                      }}
-                      onBlur={(e) => validateField("email", e.target.value)}
-                      aria-invalid={!!errors.email}
-                    />
-                    {errors.email && (
-                      <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-                    )}
-                  </div>
-
-                  {/* <div className="mt-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Teléfono
-                    </label>
-                    <input
-                      type="tel"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.phone ? "border-red-500" : "border-gray-200"
-                        }`}
-                      placeholder="+54 11 1234-5678"
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value);
-                        if (errors.phone) validateField("phone", e.target.value);
-                      }}
-                      onBlur={(e) => validateField("phone", e.target.value)}
-                      aria-invalid={!!errors.phone}
-                    />
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                    )}
-                  </div> */}
-
-                  <div className="mt-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Teléfono
-                    </label>
-
-                    <div className="w-full">
-                      <PhoneInput
-                        // sugerencia: poné tu país por defecto (cambiá "AR" si hace falta)
-                        defaultCountry="AR"
-                        international
-                        placeholder="Ej: +54 9 11 1234-5678"
-                        value={phone}
-                        onChange={(val) => {
-                          const v = (val as string) || "";
-                          setPhone(v);
-                          // revalida al escribir si ya había error
-                          if (errors.phone) validateField("phone", v);
-                        }}
-                        onBlur={() => validateField("phone", phone)}
-                        className={cn(
-                          // para que el conjunto botón-bandera + input conserve altura
-                          "h-8"
-                        )}
-                      />
+              return (
+                <Card className="relative">
+                  {submitting && (
+                    <div className="bg-white/70 flex items-center justify-center rounded-xl absolute w-full h-full top-0 left-0 z-10">
+                      Creando tus {nounProgress}...
                     </div>
+                  )}
+                  <CardContent className="space-y-6">
+                    <fieldset
+                      disabled={!!user || submitting}
+                      className={submitting ? "opacity-60 pointer-events-none select-none" : ""}
+                    >
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Nombre completo
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.fullName ? "border-red-500" : "border-gray-200"
+                            }`}
+                          placeholder="Tu nombre y apellido"
+                          value={fullName}
+                          onChange={(e) => {
+                            setFullName(e.target.value)
+                            if (errors.fullName) validateField("fullName", e.target.value)
+                          }}
+                          onBlur={(e) => validateField("fullName", e.target.value)}
+                          aria-invalid={!!errors.fullName}
+                        />
+                        {errors.fullName && (
+                          <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+                        )}
+                      </div>
 
-                    {errors.phone && (
-                      <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
-                    )}
-                  </div>
+                      <div className="mt-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.email ? "border-red-500" : "border-gray-200"
+                            }`}
+                          placeholder="tu@email.com"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value)
+                            if (errors.email) validateField("email", e.target.value)
+                          }}
+                          onBlur={(e) => validateField("email", e.target.value)}
+                          aria-invalid={!!errors.email}
+                        />
+                        {errors.email && (
+                          <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                        )}
+                      </div>
 
-                  <div className="mt-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      DNI
-                    </label>
-                    <input
-                      type="text"
-                      className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.dni ? "border-red-500" : "border-gray-200"
-                        }`}
-                      placeholder="Tu DNI"
-                      value={dni}
-                      onChange={(e) => {
-                        setDni(e.target.value);
-                        if (errors.dni) validateField("dni", e.target.value);
-                      }}
-                      onBlur={(e) => validateField("dni", e.target.value)}
-                      aria-invalid={!!errors.dni}
-                    />
-                    {errors.dni && (
-                      <p className="mt-1 text-sm text-red-600">{errors.dni}</p>
-                    )}
-                  </div>
+                      <div className="mt-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Teléfono
+                        </label>
 
-                  <div className="mt-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Comentarios (opcional)
-                    </label>
-                    <textarea
-                      rows={4}
-                      className="w-full px-4 py-1.5 !outline-none border-2 border-gray-200 rounded-xl"
-                      placeholder="¿Alguna consulta o requerimiento especial?"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                    />
-                  </div>
-                </fieldset>
-              </CardContent>
-            </Card>
+                        <div className="w-full">
+                          <PhoneInput
+                            defaultCountry="AR"
+                            international
+                            placeholder="Ej: +54 9 11 1234-5678"
+                            value={phone}
+                            onChange={(val) => {
+                              const v = (val as string) || ""
+                              setPhone(v)
+                              if (errors.phone) validateField("phone", v)
+                            }}
+                            onBlur={() => validateField("phone", phone)}
+                            className={cn("h-8")}
+                          />
+                        </div>
 
-            {/*  <FloatingNav
-              onBack={() => setStep(4)}
-              onNext={createBooking}
-              backDisabled={submitting}
-              nextDisabled={
-                submitting ||
-                !allTimesChosen ||
-                !fullName.trim() ||
-                !email.trim() ||
-                !phone.trim() ||
-                !dni.trim()
-              }
-              nextLabel={submitting ? "Creando…" : "Confirmar Reserva"}
-            /> */}
+                        {errors.phone && (
+                          <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                        )}
+                      </div>
 
-            <FloatingNav
-              onBack={() => setStep(4)}
-              onNext={createBooking}
-              backDisabled={submitting}
-              nextDisabled={
-                submitting ||
-                !allTimesChosen ||
-                !fullName.trim() ||
-                !email.trim() ||
-                !phone.trim() ||
-                !dni.trim() ||
-                !!errors.fullName ||
-                !!errors.email ||
-                !!errors.phone ||
-                !!errors.dni
-              }
-              nextLabel={submitting ? "Creando…" : "Confirmar Reserva"}
-            />
+                      <div className="mt-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          DNI
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.dni ? "border-red-500" : "border-gray-200"
+                            }`}
+                          placeholder="Tu DNI"
+                          value={dni}
+                          onChange={(e) => {
+                            setDni(e.target.value)
+                            if (errors.dni) validateField("dni", e.target.value)
+                          }}
+                          onBlur={(e) => validateField("dni", e.target.value)}
+                          aria-invalid={!!errors.dni}
+                        />
+                        {errors.dni && (
+                          <p className="mt-1 text-sm text-red-600">{errors.dni}</p>
+                        )}
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Comentarios (opcional)
+                        </label>
+                        <textarea
+                          rows={4}
+                          className="w-full px-4 py-1.5 !outline-none border-2 border-gray-200 rounded-xl"
+                          placeholder="¿Alguna consulta o requerimiento especial?"
+                          value={notes}
+                          onChange={(e) => setNotes(e.target.value)}
+                        />
+                      </div>
+                    </fieldset>
+                  </CardContent>
+
+                  <FloatingNav
+                    onBack={() => setStep(4)}
+                    onNext={createBooking}
+                    backDisabled={submitting}
+                    nextDisabled={
+                      submitting ||
+                      !allTimesChosen ||
+                      !fullName.trim() ||
+                      !email.trim() ||
+                      !phone.trim() ||
+                      !dni.trim() ||
+                      !!errors.fullName ||
+                      !!errors.email ||
+                      !!errors.phone ||
+                      !!errors.dni
+                    }
+                    nextLabel={submitting ? "Creando…" : `Confirmar ${nounTitle}`}
+                  />
+                </Card>
+              )
+            })()}
           </>
         )}
+
 
         {step === 6 && bookingResult && (
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>
