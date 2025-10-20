@@ -47,6 +47,468 @@ export default function Home() {
         }
     }
 
+    type MediaItem = { type?: "image" | "video"; src: string; poster?: string }
+
+    function MediaSlider({ items }: { items: MediaItem[] }) {
+        const [idx, setIdx] = React.useState(0)
+        const goPrev = () => setIdx((v) => (v - 1 + items.length) % items.length)
+        const goNext = () => setIdx((v) => (v + 1) % items.length)
+
+        const isVideo = (m: MediaItem) => m.type === "video" || /\.(mp4|webm|ogv|ogg)(\?.*)?$/i.test(m.src)
+        const videoRefs = React.useRef<(HTMLVideoElement | null)[]>([])
+
+        // drag
+        const containerRef = React.useRef<HTMLDivElement | null>(null)
+        const startX = React.useRef<number | null>(null)
+        const deltaX = React.useRef(0)
+        const containerW = React.useRef(1)
+        const [dragging, setDragging] = React.useState(false)
+        const THRESHOLD_PX = 60
+
+        React.useEffect(() => {
+            videoRefs.current.forEach((v, i) => {
+                if (!v) return
+                if (i === idx) { v.currentTime = 0; v.play().catch(() => { }) } else { v.pause() }
+            })
+        }, [idx])
+
+        const onDown = (e: React.PointerEvent) => {
+            setDragging(true)
+            startX.current = e.clientX
+            deltaX.current = 0
+            containerW.current = containerRef.current?.clientWidth || 1
+                ; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+        }
+        const onMove = (e: React.PointerEvent) => {
+            if (!dragging || startX.current == null) return
+            deltaX.current = e.clientX - startX.current
+            setFake((v) => v + 1) // re-render para ver arrastre
+        }
+        const onUp = (e: React.PointerEvent) => {
+            if (!dragging) return
+            setDragging(false)
+                ; (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+            const dx = deltaX.current
+            deltaX.current = 0
+            startX.current = null
+            if (Math.abs(dx) > THRESHOLD_PX) {
+                dx < 0 ? goNext() : goPrev()
+            } else {
+                setFake((v) => v + 1) // snap back
+            }
+        }
+
+        const [, setFake] = React.useState(0)
+
+        const offsetPctWhileDrag = dragging
+            ? (-idx * 100) + (deltaX.current / containerW.current) * 100
+            : (-idx * 100)
+
+        return (
+            <div
+                ref={containerRef}
+                className="relative w-full h-full overflow-hidden group rounded-lg select-none touch-pan-y"
+                onPointerDown={onDown}
+                onPointerMove={onMove}
+                onPointerUp={onUp}
+                onPointerCancel={onUp}
+                onPointerLeave={(e) => dragging && onUp(e as any)}
+            >
+                {/* Track horizontal */}
+                <div
+                    className="absolute inset-0 flex"
+                    style={{
+                        transform: `translateX(${offsetPctWhileDrag}%)`,
+                        transition: dragging ? "none" : "transform 400ms cubic-bezier(.22,.61,.36,1)",
+                        willChange: "transform",
+                    }}
+                >
+                    {items.map((m, i) => (
+                        <div key={i} className="shrink-0 grow-0 basis-full h-full relative">
+                            {isVideo(m) ? (
+                                <video
+                                    /* @ts-ignore */
+                                    ref={(el) => (videoRefs.current[i] = el)}
+                                    src={m.src}
+                                    poster={m.poster}
+                                    className="w-full h-full object-cover object-center"
+                                    controls
+                                    playsInline
+                                    muted
+                                    loop
+                                    preload="metadata"
+                                />
+                            ) : (
+                                <img src={m.src} alt="" className="w-full h-full object-cover object-center" loading="lazy" />
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Dots */}
+                <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2 z-20">
+                    {items.map((_, i) => (
+                        <button
+                            key={i}
+                            aria-label={`Ir a slide ${i + 1}`}
+                            onClick={() => setIdx(i)}
+                            className={`h-2.5 w-2.5 rounded-full ${i === idx ? "bg-amber-500" : "bg-white/80 hover:bg-white"}`}
+                        />
+                    ))}
+                </div>
+
+                {/* Flechas (md+) - sin sombra, con stopPropagation */}
+                <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); goPrev(); }}
+                    className="flex absolute left-4 top-1/2 -translate-y-1/2 items-center justify-center h-10 w-10 rounded-full
+                   bg-white/85 backdrop-blur border border-black/10 hover:bg-white focus:outline-none z-20"
+                    aria-label="Anterior"
+                >
+                    <ChevronRight className="h-5 w-5 rotate-180" />
+                </button>
+                <button
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => { e.stopPropagation(); goNext(); }}
+                    className="flex absolute right-4 top-1/2 -translate-y-1/2 items-center justify-center h-10 w-10 rounded-full
+                   bg-white/85 backdrop-blur border border-black/10 hover:bg-white focus:outline-none z-20"
+                    aria-label="Siguiente"
+                >
+                    <ChevronRight className="h-5 w-5" />
+                </button>
+            </div>
+        )
+    }
+
+    type Service = {
+        title: string
+        description?: string
+        media: MediaItem[]
+        groups?: { label: string; items: string[] }[]
+        popular?: boolean
+    }
+
+    // ServiceCard: sin card en mobile; en md+ borde sutil, sin sombras y más padding
+    function ServiceCard({ s }: { s: Service }) {
+        return (
+            <Card
+                className="
+        bg-transparent border shadow-none
+        md:bg-white md:border-gray-200/70 p-4 md:shadow-none md:rounded-2xl
+      "
+            >
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 p-0 md:p-8">
+                    <div className="flex flex-col gap-3 md:gap-5">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-2xl font-bold text-gray-900">{s.title}</h3>
+                            {s.popular && (
+                                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-0 px-3 py-1 font-semibold">
+                                    Popular
+                                </Badge>
+                            )}
+                        </div>
+                        {s.description && <p className="text-gray-700 leading-relaxed-moveup">{s.description}</p>}
+                        {s.groups && (
+                            <div className="space-y-3 md:space-y-4">
+                                {s.groups.map((g, i) => (
+                                    <div key={i} className="rounded-2xl ring-1 ring-amber-100/60 bg-amber-50/40 px-4 py-3 md:px-4 md:py-3">
+                                        <div className="text-sm font-semibold tracking-wide text-amber-700 mb-2">{g.label}</div>
+                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+                                            {g.items.map((it, idx) => (
+                                                <li key={idx} className="text-gray-700 leading-relaxed-moveup font-medium">
+                                                    {it}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="relative w-full rounded-lg h-[260px] sm:h-[320px] md:h-[380px] lg:h-[420px]">
+                        <MediaSlider items={s.media} />
+                    </div>
+                </div>
+            </Card>
+        )
+    }
+
+
+    const services: Service[] = [
+        {
+            title: "Ácido hialurónico",
+            popular: true,
+            description:
+                "El ácido hialurónico es un componente natural de la piel que utilizamos como relleno dérmico para restaurar volumen, proyectar e hidratar áreas específicas del rostro. Con la edad su producción disminuye, apareciendo arrugas y pérdida de volumen. Beneficios: restaurar volumen, hidratación profunda, suavizar arrugas y mejorar zonas con déficit de volumen como ojeras. Utilizamos Juvederm de Allergan. El efecto es inmediato y bien tolerado.",
+            media: [
+                { type: "image", src: "/servicios/serv1-img1.jpg" },
+                { type: "image", src: "/servicios/serv1-img2.jpg" },
+                { type: "image", src: "/servicios/serv1-img3.jpg" },
+                { type: "image", src: "/servicios/serv1-img4.jpg" }
+            ],
+            groups: [{ label: "Inyectables", items: ["💉 Hidratación y perfilado de labios", "💉 Rinomodelación"] }]
+        },
+        {
+            title: "Mesoterapia francesa NCTF",
+            description:
+                "La mesoterapia francesa es un tratamiento que se administra mediante microinyecciones en la capa media de la piel. Su fórmula combina 60 ingredientes (vitaminas, minerales, aminoácidos y ácido hialurónico, entre otros) para hidratar, estimular colágeno, aportar luminosidad y suavizar líneas finas. Zonas de aplicación: rostro completo, cuello y escote. Especialmente pensada para contorno ocular y peribucal. Tratamiento bien tolerado. Se aplica cada 21 días a 1 mes. Protocolo completo: 3 a 5 sesiones.",
+            media: [
+                { type: "video", src: "/servicios/serv2-vid1.mp4", poster: "/servicios/serv2-vid1.jpg" },
+                { type: "video", src: "/servicios/serv2-vid2.mp4", poster: "/servicios/serv2-vid2.jpg" },
+                { type: "image", src: "/servicios/serv2-img1.jpg" }
+            ],
+            groups: [{ label: "Beneficios", items: ["💉 Periocular", "💉 Peribucal"] }]
+        },
+        {
+            title: "Bioestimuladores",
+            description:
+                "Los bioestimuladores son sustancias inyectables que estimulan la producción de colágeno y elastina, mejorando la firmeza y la elasticidad de la piel. Resultados naturales que comienzan a verse al mes. La duración total del tratamiento varía entre 12 y 15 meses.",
+            media: [
+                { type: "image", src: "/servicios/serv3-img1.jpg" },
+                { type: "image", src: "/servicios/serv3-img2.jpg" },
+                { type: "image", src: "/servicios/serv3-img3.jpg" },
+                { type: "image", src: "/servicios/serv3-img4.jpg" },
+                { type: "image", src: "/servicios/serv3-img6.jpg" }
+            ],
+            groups: [
+                {
+                    label: "Marcas disponibles",
+                    items: [
+                        "🔬 radiesse (hidroxiapatita de calcio) – importado",
+                        "🔬 sculptra (ácido poliláctico) – importado",
+                        "🔬 harmonyca (hidroxiapatita de calcio + ácido hialurónico) – importado",
+                        "🔬 cientific (hidroxiapatita de calcio) – nacional",
+                        "🔬 profhilo (ácido hialurónico ultrapuro) – importado",
+                        "🔬 profhilo structura (ácido hialurónico) – importado"
+                    ]
+                }
+            ]
+        },
+        {
+            title: "Alidya",
+            description:
+                "Es un tratamiento innovador anticelulítico compuesto por aminoácidos y antioxidantes. Actúa a tres niveles diferentes: linfático, celular y vascular. Sus beneficios incluyen disolver la adiposidad localizada, eliminar líquidos y toxinas, y aportar micronutrientes para lograr una piel más suave y firme.",
+            media: [
+                { type: "image", src: "/servicios/serv4-img1.jpg" },
+                { type: "image", src: "/servicios/serv4-img2.jpg" }
+            ],
+            groups: [
+                {
+                    label: "Beneficios",
+                    items: ["✨ disuelve adiposidad localizada", "✨ elimina líquidos y toxinas", "✨ mejora la suavidad y firmeza de la piel"]
+                },
+                { label: "Acción", items: ["💧 nivel linfático", "💧 nivel celular", "💧 nivel vascular"] }
+            ]
+        },
+        {
+            title: "Viscoderm",
+            description:
+                "Tratamiento compuesto por ácido hialurónico, utilizado para mejorar la calidad de la piel, hidratar y tratar arrugas estáticas (aquellas marcadas en capas profundas). Los resultados son naturales, duraderos y el tratamiento es bien tolerado.",
+            media: [{ type: "image", src: "/servicios/serv5-img1.jpg" }],
+            groups: [
+                { label: "Beneficios", items: ["💧 mejora calidad de piel", "💧 hidrata en profundidad", "💧 trata arrugas estáticas"] },
+                { label: "Características", items: ["🌿 resultados naturales y duraderos", "🌿 tratamiento bien tolerado"] }
+            ]
+        },
+        {
+            title: "Toxina botulínica / Botox",
+            description:
+                "La toxina botulínica, en nuestro caso marca BOTOX de Allergan, es un tratamiento no invasivo que relaja los músculos faciales para reducir arrugas y líneas de expresión. Se aplica mediante microinyecciones en músculos específicos.",
+            media: [
+                { type: "image", src: "/servicios/serv6-img1.jpg" },
+                { type: "image", src: "/servicios/serv6-img2.jpg" },
+                { type: "image", src: "/servicios/serv6-img3.jpg" },
+                { type: "image", src: "/servicios/serv6-img4.jpg" }
+            ],
+            groups: [
+                { label: "Beneficios", items: ["✨ suaviza arrugas y líneas de expresión", "✨ relaja músculos faciales", "✨ efecto rejuvenecedor natural"] },
+                { label: "Marca utilizada", items: ["💉 Botox – Allergan"] }
+            ]
+        },
+        {
+            title: "Exosomas",
+            description:
+                "Son nanovesículas que contienen factores de crecimiento, PDRN (derivado del ADN del esperma de salmón), vitamina C, sustancias calmantes e hidratantes. La aplicación se realiza en dos etapas: 1️⃣ aplicación intradérmica con dermapen, 2️⃣ mascarilla facial. Beneficios: mejora la firmeza, textura, luminosidad e hidratación de la piel, atenúa arrugas y brinda efecto antioxidante.",
+            media: [{ type: "image", src: "/servicios/serv7-img1.jpg" }],
+            groups: [
+                { label: "Beneficios", items: ["✨ mejora firmeza y textura", "✨ aporta luminosidad", "✨ atenúa arrugas", "✨ hidratación profunda", "✨ efecto antioxidante"] },
+                { label: "Etapas del tratamiento", items: ["1️⃣ aplicación intradérmica con dermapen", "2️⃣ mascarilla facial"] }
+            ]
+        },
+        {
+            title: "Profhilo",
+            description:
+                "Compuesto por ácido hialurónico ultrapuro de alto y bajo peso molecular. Mejora integralmente la calidad de la piel mediante hidratación profunda, elasticidad y tono cutáneo. Aplicación sencilla, bien tolerada y sin tiempo de recuperación.",
+            media: [
+                { type: "video", src: "/servicios/serv8-vid1.mp4", poster: "/servicios/serv2-vid1.jpg" },
+                { type: "image", src: "/servicios/serv8-img1.jpg" }
+            ],
+            groups: [
+                { label: "Beneficios", items: ["💧 mejora elasticidad y tono", "💧 hidrata profundamente", "💧 rejuvenece sin alterar rasgos"] },
+                { label: "Características", items: ["🌿 ácido hialurónico ultrapuro", "🌿 aplicación sencilla y bien tolerada", "🌿 sin tiempo de recuperación"] }
+            ]
+        },
+        {
+            title: "PRP capilar",
+            description:
+                "Tratamiento que utiliza el plasma rico en plaquetas del propio paciente para estimular el crecimiento capilar, disminuir la caída y fortalecer el cabello. Se extrae sangre, se procesa y se aplica con microinyecciones. Frecuencia mensual. Resultados variables según el paciente, pero la constancia mejora los resultados. El objetivo inicial es detener la caída y fortalecer el cabello.",
+            media: [
+                { type: "video", src: "/servicios/serv9-vid1.mp4", poster: "/servicios/serv2-vid1.jpg" },
+                { type: "image", src: "/servicios/serv9-img1.jpg" },
+                { type: "image", src: "/servicios/serv9-img2.jpg" }
+            ],
+            groups: [
+                { label: "Beneficios", items: ["✨ estimula crecimiento capilar", "✨ disminuye caída", "✨ fortalece el cabello"] },
+                { label: "Frecuencia", items: ["📅 sesiones mensuales", "📅 resultados progresivos", "📅 constancia es clave"] }
+            ]
+        }
+    ]
+
+
+    // === En ServiciosSection: carrusel grande con deslizamiento horizontal + drag ===
+    // === Carrusel grande con deslizamiento horizontal + drag ===
+    function ServiciosSection() {
+        const pages = services.map((s) => [s]) // 1 por página
+        const [page, setPage] = React.useState(0)
+        const goPrev = () => setPage((p) => (p - 1 + pages.length) % pages.length)
+        const goNext = () => setPage((p) => (p + 1) % pages.length)
+
+        // refs y drag
+        const trackRef = React.useRef<HTMLDivElement | null>(null)
+        const viewportRef = React.useRef<HTMLDivElement | null>(null)
+        const startX = React.useRef<number | null>(null)
+        const deltaX = React.useRef(0)
+        const [dragging, setDragging] = React.useState(false)
+        const viewportW = React.useRef(1)
+        const THRESHOLD_PX = 80
+        const [, setBump] = React.useState(0)
+
+        const onOuterDown = (e: React.PointerEvent) => {
+            setDragging(true)
+            startX.current = e.clientX
+            deltaX.current = 0
+            viewportW.current = viewportRef.current?.clientWidth || 1
+                ; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+        }
+        const onOuterMove = (e: React.PointerEvent) => {
+            if (!dragging || startX.current == null) return
+            deltaX.current = e.clientX - startX.current
+            setBump((v) => v + 1)
+        }
+        const onOuterUp = (e: React.PointerEvent) => {
+            if (!dragging) return
+            setDragging(false)
+                ; (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+            const dx = deltaX.current
+            deltaX.current = 0
+            startX.current = null
+            if (Math.abs(dx) > THRESHOLD_PX) dx < 0 ? goNext() : goPrev()
+            else setBump((v) => v + 1)
+        }
+
+        React.useEffect(() => {
+            const h = (ev: KeyboardEvent) => {
+                if (ev.key === "ArrowLeft") goPrev()
+                if (ev.key === "ArrowRight") goNext()
+            }
+            window.addEventListener("keydown", h)
+            return () => window.removeEventListener("keydown", h)
+        }, [])
+
+        const offsetPctWhileDrag = dragging
+            ? (-page * 100) + (deltaX.current / (viewportW.current || 1)) * 100
+            : (-page * 100)
+
+        return (
+            <section id="servicios" className="py-24 relative overflow-hidden">
+                <div className="relative max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    <div className="text-center mb-8">
+                        <ReusableBadge className="mb-2">Nuestros Servicios</ReusableBadge>
+                        <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-700 bg-clip-text text-transparent mb-4 leading-tight">
+                            Nuestros tratamientos
+                        </h2>
+                        <div className="w-24 h-1 bg-gradient-to-r from-amber-500 to-yellow-600 mx-auto mb-4 rounded-full" />
+                        <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed-moveup">
+                            Realizamos tratamientos estéticos faciales y corporales no invasivos para realzar tu belleza de la forma más natural posible.
+                        </p>
+                    </div>
+
+                    {/* Viewport: overflow-hidden, separación lateral de cada página */}
+                    <div
+                        ref={viewportRef}
+                        className="relative overflow-hidden select-none touch-pan-y"
+                        onPointerDown={onOuterDown}
+                        onPointerMove={onOuterMove}
+                        onPointerUp={onOuterUp}
+                        onPointerCancel={onOuterUp}
+                        onPointerLeave={(e) => dragging && onOuterUp(e as any)}
+                    >
+                        {/* Track horizontal */}
+                        <div
+                            ref={trackRef}
+                            className="flex w-full"
+                            style={{
+                                transform: `translateX(${offsetPctWhileDrag}%)`,
+                                transition: dragging ? "none" : "transform 450ms cubic-bezier(.22,.61,.36,1)",
+                                willChange: "transform",
+                            }}
+                        >
+                            {pages.map((group, i) => (
+                                <div key={i} className="basis-full shrink-0 grow-0 px-4 md:px-6">
+                                    {group.map((s, idx) => (
+                                        <div key={`${i}-${idx}-${s.title}`} className="mb-8">
+                                            <ServiceCard s={s} />
+                                        </div>
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Dots */}
+                        <div className="flex items-center justify-center gap-2 mt-2">
+                            {pages.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setPage(i)}
+                                    className={`h-2.5 w-2.5 rounded-full ${i === page ? "bg-amber-500" : "bg-amber-200 hover:bg-amber-300"}`}
+                                    aria-label={`Ir a servicio ${i + 1}`}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Flechas externas (md+) sin sombra */}
+                        <button
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+                            className="absolute -left-12 top-1/2 -translate-y-1/2 hidden md:grid place-items-center h-11 w-11 rounded-full bg-white/90 backdrop-blur border border-black/10 hover:bg-white"
+                        >
+                            <ChevronRight className="h-5 w-5 rotate-180" />
+                        </button>
+                        <button
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); goNext(); }}
+                            className="absolute -right-12 top-1/2 -translate-y-1/2 hidden md:grid place-items-center h-11 w-11 rounded-full bg-white/90 backdrop-blur border border-black/10 hover:bg-white"
+                        >
+                            <ChevronRight className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    {/* CTA igual */}
+                    <div className="mt-16 text-center">
+                        <Link href={"/reservar"}>
+                            <Button variant="outline" className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold py-3">
+                                Ver todos los servicios
+                                <ChevronRight className="h-6 w-6" />
+                            </Button>
+                        </Link>
+                    </div>
+                </div>
+            </section>
+        )
+    }
+
+
     return (
         <>
             <div className="min-h-svh">
@@ -305,7 +767,9 @@ export default function Home() {
                     </div>
                 </section> */}
 
-                <section id="servicios" className="py-24 relative overflow-hidden">
+                {ServiciosSection()}
+
+                {/*  <section id="servicios" className="py-24 relative overflow-hidden">
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-8">
                             <ReusableBadge className="mb-2">Nuestros Servicios</ReusableBadge>
@@ -356,7 +820,7 @@ export default function Home() {
                                         },
                                     ],
                                 },
-                                /* {
+                                {
                                     title: "Tratamientos Corporales",
                                     popular: false,
                                     media: [
@@ -381,7 +845,7 @@ export default function Home() {
                                         { label: "Regenerativos", items: ["🌱 PRP Capilar"] },
                                         { label: "Fármacos", items: ["🌱 Mesoterapia Capilar (minoxidil, finasteride, biotina, etc.)"] },
                                     ],
-                                }, */
+                                },
                             ].map((service, i) => {
                                 return (
                                     <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch">
@@ -409,19 +873,19 @@ export default function Home() {
                                                         </div>
                                                     ))}
                                                 </div>
-                                                {/* <div className="mt-6">
+                                                <div className="mt-6">
                                                     <Link href={"/reservar"}>
                                                         <Button variant="outline" className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 hover:from-amber-500 hover:to-yellow-600 hover:text-white transition-all duration-300 font-semibold w-full">
                                                             Reservar turno
                                                         </Button>
                                                     </Link>
-                                                </div> */}
+                                                </div> 
                                             </div>
                                         </Card>
 
                                         <div className="flex items-center justify-center">
                                             <div className="relative w-full max-w-[560px] md:max-w-[680px] aspect-square rounded-2xl overflow-hidden">
-                                                {/* @ts-ignore */}
+                                              
                                                 <MediaSlider items={service.media} />
                                             </div>
                                         </div>
@@ -439,7 +903,7 @@ export default function Home() {
                             </Link>
                         </div>
                     </div>
-                </section>
+                </section> */}
 
 
                 {/* <Servicios /> */}
@@ -784,7 +1248,7 @@ export default function Home() {
                                                             </div>
                                                             <span className="text-sm font-medium text-gray-700">Especialista Certificado</span>
                                                         </div>
-                                                       {/*  <Badge
+                                                        {/*  <Badge
                                                             className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-0 px-3 py-1 text-xs">
                                                             Activo
                                                         </Badge> */}
@@ -797,7 +1261,7 @@ export default function Home() {
                                                 className="text-2xl font-bold text-gray-900 group-hover:text-amber-700 transition-colors duration-300">
                                                 {member.name}
                                             </CardTitle>
-                                           {/*  {member.position && (
+                                            {/*  {member.position && (
                                                 <CardDescription className="text-amber-600 font-medium text-lg">
                                                     {member.position}
                                                 </CardDescription>
@@ -853,92 +1317,3 @@ export default function Home() {
     )
 }
 
-
-type MediaItem = { type?: "image" | "video"; src: string; poster?: string }
-
-function MediaSlider({ items }: { items: MediaItem[] }) {
-    const [idx, setIdx] = React.useState(0)
-    const goPrev = () => setIdx((v) => (v - 1 + items.length) % items.length)
-    const goNext = () => setIdx((v) => (v + 1) % items.length)
-
-    const isVideo = (m: MediaItem) =>
-        m.type === "video" || /\.(mp4|webm|ogv|ogg)(\?.*)?$/i.test(m.src)
-
-    const videoRefs = React.useRef<(HTMLVideoElement | null)[]>([])
-
-    React.useEffect(() => {
-        videoRefs.current.forEach((v, i) => {
-            if (!v) return
-            if (i === idx) {
-                v.currentTime = 0
-                v.play().catch(() => { })
-            } else {
-                v.pause()
-            }
-        })
-    }, [idx])
-
-    return (
-        <div className="w-full h-full relative">
-            <div className="absolute inset-0">
-                {items.map((m, i) => {
-                    const active = i === idx
-                    return (
-                        <div
-                            key={i}
-                            className={`absolute inset-0 transition-opacity duration-500 ${active ? "opacity-100" : "opacity-0 pointer-events-none"
-                                }`}
-                        >
-                            {isVideo(m) ? (
-                                <video
-                                /* @ts-ignore */
-                                    ref={(el) => (videoRefs.current[i] = el)}
-                                    src={m.src}
-                                    poster={m.poster}
-                                    className="w-full h-full object-cover object-center"
-                                    controls
-                                    playsInline
-                                    muted
-                                    loop
-                                    preload="metadata"
-                                />
-                            ) : (
-                                <img
-                                    src={m.src}
-                                    alt=""
-                                    className="w-full h-full object-cover object-center"
-                                    loading="lazy"
-                                />
-                            )}
-                        </div>
-                    )
-                })}
-            </div>
-
-            <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-2">
-                {items.map((_, i) => (
-                    <button
-                        key={i}
-                        aria-label={`Ir a slide ${i + 1}`}
-                        onClick={() => setIdx(i)}
-                        className={`h-2.5 w-2.5 rounded-full ${i === idx ? "bg-amber-500" : "bg-white/80 hover:bg-white"
-                            }`}
-                    />
-                ))}
-            </div>
-
-            <button
-                onClick={goPrev}
-                className="absolute left-3 top-1/2 -translate-y-1/2 grid place-items-center h-10 w-10 rounded-full bg-white/80 backdrop-blur border border-white/40 hover:bg-white"
-            >
-                <ChevronRight className="h-5 w-5 rotate-180" />
-            </button>
-            <button
-                onClick={goNext}
-                className="absolute right-3 top-1/2 -translate-y-1/2 grid place-items-center h-10 w-10 rounded-full bg-white/80 backdrop-blur border border-white/40 hover:bg-white"
-            >
-                <ChevronRight className="h-5 w-5" />
-            </button>
-        </div>
-    )
-}
