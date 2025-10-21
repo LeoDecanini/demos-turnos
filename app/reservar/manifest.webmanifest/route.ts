@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 export function GET() {
   return NextResponse.json(
     {
-      name: "Reservas",
-      short_name: "Reservas",
+      name: "MG Estética 22",
+      short_name: "MG Estética 22",
       id: "/reservar/v2", // <— NUEVO ID (importante)
       start_url: "/reservar/?source=pwa", // <— explícito
       scope: "/reservar/",
