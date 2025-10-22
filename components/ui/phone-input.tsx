@@ -59,7 +59,7 @@ const PhoneInput: React.ForwardRefExoticComponent<PhoneInputProps> =
       // 🚀 Si el padre manda un value sin +, normalizalo a E.164 y “devolvéselo”
       React.useEffect(() => {
         if (typeof value === "string" && value && !value.startsWith("+")) {
-          const e164 = toE164IfLocal(value, country);
+          const e164: any = toE164IfLocal(value, country);
           if (e164 !== value) onChange?.(e164);
         }
       }, [value, country]); // eslint-disable-line react-hooks/exhaustive-deps
