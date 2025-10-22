@@ -1218,7 +1218,7 @@ export default function Home() {
                                 {
                                     name: "Dr. Franco Gaston Adonis",
                                     position: "(cambiar) Dermatólogo",
-                                    image: "/foto-1.jpg",
+                                    image: "/foto-2.jpg",
                                     specialty: "(cambiar) Dermatología Estética",
                                     experience: "(cambiar) 12 años",
                                 },
