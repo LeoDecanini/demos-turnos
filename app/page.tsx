@@ -355,7 +355,6 @@ export default function Home() {
                 "Tratamiento que utiliza el plasma rico en plaquetas del propio paciente para estimular el crecimiento capilar, disminuir la caída y fortalecer el cabello. Se extrae sangre, se procesa y se aplica con microinyecciones. Frecuencia mensual. Resultados variables según el paciente, pero la constancia mejora los resultados. El objetivo inicial es detener la caída y fortalecer el cabello.",
             media: [
                 { type: "video", src: "/servicios/serv9-vid1.mp4", poster: "/servicios/serv2-vid1.jpg" },
-                { type: "image", src: "/servicios/serv9-img1.jpg" },
                 { type: "image", src: "/servicios/serv9-img2.jpg" }
             ],
             groups: [
