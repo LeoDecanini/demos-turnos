@@ -302,10 +302,10 @@ export default function Home() {
             ]
         },
         {
-            title: "Viscoderm",
+            title: "skin booster",
             description:
                 "Tratamiento compuesto por ácido hialurónico, utilizado para mejorar la calidad de la piel, hidratar y tratar arrugas estáticas (aquellas marcadas en capas profundas). Los resultados son naturales, duraderos y el tratamiento es bien tolerado.",
-            media: [{ type: "image", src: "/servicios/serv5-img1.jpg" }],
+            media: [{ type: "image", src: "/servicios/gal-img1.jpg" }, { type: "image", src: "/servicios/gal-img2.jpg" }, { type: "image", src: "/servicios/serv5-img1.jpg" }],
             groups: [
                 { label: "Beneficios", items: ["💧 mejora calidad de piel", "💧 hidrata en profundidad", "💧 trata arrugas estáticas"] },
                 { label: "Características", items: ["🌿 resultados naturales y duraderos", "🌿 tratamiento bien tolerado"] }
@@ -1121,7 +1121,7 @@ export default function Home() {
                 </section>
 
                 {/* Galería de imágenes */}
-                <section className="py-16 bg-gray-50">
+{/*                 <section className="py-16 bg-gray-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-12">
                             <ReusableBadge>
@@ -1156,7 +1156,7 @@ export default function Home() {
                             ))}
                         </div>
                     </div>
-                </section>
+                </section> */}
 
                 {/* Testimonios */}
                 <section
@@ -1212,15 +1212,14 @@ export default function Home() {
                                 {
                                     name: "Dra. Melanye Guirland",
                                     position: "(cambiar) Directora Médica",
-                                    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=2070&auto=format&fit=crop",
+                                    image: "/foto-1.jpg",
                                     specialty: "(cambiar) Medicina Estética",
                                     experience: "(cambiar) 8 años",
                                 },
                                 {
                                     name: "Dr. Franco Gaston Adonis",
                                     position: "(cambiar) Dermatólogo",
-                                    image:
-                                        "/servicios/gal-img5.jpg",
+                                    image: "/foto-1.jpg",
                                     specialty: "(cambiar) Dermatología Estética",
                                     experience: "(cambiar) 12 años",
                                 },

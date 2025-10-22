@@ -3745,13 +3745,11 @@ export default function ReservarPage() {
               </div>
             )}
 
-            {/*
-      pluralización
-    */}
             {(() => {
-              const isBulk = Array.isArray(selectedServices) && selectedServices.length > 1
-              const nounTitle = isBulk ? "Reservas" : "Reserva"
-              const nounProgress = isBulk ? "reservas" : "reserva"
+              const isBulk =
+                Array.isArray(selectedServices) && selectedServices.length > 1;
+              const nounTitle = isBulk ? "Reservas" : "Reserva";
+              const nounProgress = isBulk ? "reservas" : "reserva";
 
               return (
                 <Card className="relative">
@@ -3761,8 +3759,9 @@ export default function ReservarPage() {
                     </div>
                   )}
                   <CardContent className="space-y-6">
+                    {/* 🔥 ya NO se deshabilita por tener user */}
                     <fieldset
-                      disabled={!!user || submitting}
+                      disabled={submitting}
                       className={submitting ? "opacity-60 pointer-events-none select-none" : ""}
                     >
                       <div>
@@ -3776,8 +3775,8 @@ export default function ReservarPage() {
                           placeholder="Tu nombre y apellido"
                           value={fullName}
                           onChange={(e) => {
-                            setFullName(e.target.value)
-                            if (errors.fullName) validateField("fullName", e.target.value)
+                            setFullName(e.target.value);
+                            if (errors.fullName) validateField("fullName", e.target.value);
                           }}
                           onBlur={(e) => validateField("fullName", e.target.value)}
                           aria-invalid={!!errors.fullName}
@@ -3798,8 +3797,8 @@ export default function ReservarPage() {
                           placeholder="tu@email.com"
                           value={email}
                           onChange={(e) => {
-                            setEmail(e.target.value)
-                            if (errors.email) validateField("email", e.target.value)
+                            setEmail(e.target.value);
+                            if (errors.email) validateField("email", e.target.value);
                           }}
                           onBlur={(e) => validateField("email", e.target.value)}
                           aria-invalid={!!errors.email}
@@ -3815,15 +3814,16 @@ export default function ReservarPage() {
                         </label>
 
                         <div className="w-full">
+                          {/* 👇 Autodetecta país si el número empieza con +; si no, usa AR */}
                           <PhoneInput
                             defaultCountry="AR"
                             international
                             placeholder="Ej: +54 9 11 1234-5678"
                             value={phone}
                             onChange={(val) => {
-                              const v = (val as string) || ""
-                              setPhone(v)
-                              if (errors.phone) validateField("phone", v)
+                              const v = (val as string) || "";
+                              setPhone(v);
+                              if (errors.phone) validateField("phone", v);
                             }}
                             onBlur={() => validateField("phone", phone)}
                             className={cn("h-8")}
@@ -3846,8 +3846,8 @@ export default function ReservarPage() {
                           placeholder="Tu DNI"
                           value={dni}
                           onChange={(e) => {
-                            setDni(e.target.value)
-                            if (errors.dni) validateField("dni", e.target.value)
+                            setDni(e.target.value);
+                            if (errors.dni) validateField("dni", e.target.value);
                           }}
                           onBlur={(e) => validateField("dni", e.target.value)}
                           aria-invalid={!!errors.dni}
@@ -3891,10 +3891,11 @@ export default function ReservarPage() {
                     nextLabel={submitting ? "Creando…" : `Confirmar ${nounTitle}`}
                   />
                 </Card>
-              )
+              );
             })()}
           </>
         )}
+
 
 
         {step === 6 && bookingResult && (
