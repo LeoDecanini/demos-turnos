@@ -3749,13 +3749,13 @@ export default function ReservarPage() {
               const isBulk =
                 Array.isArray(selectedServices) && selectedServices.length > 1;
               const nounTitle = isBulk ? "Reservas" : "Reserva";
-              const nounProgress = isBulk ? "reservas" : "reserva";
+              const nounProgress = isBulk ? "tus reservas" : "tu reserva";
 
               return (
                 <Card className="relative">
                   {submitting && (
                     <div className="bg-white/70 flex items-center justify-center rounded-xl absolute w-full h-full top-0 left-0 z-10">
-                      Creando tus {nounProgress}...
+                      Creando {nounProgress}...
                     </div>
                   )}
                   <CardContent className="space-y-6">
