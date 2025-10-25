@@ -47,7 +47,36 @@ export default function ServicesSlider() {
   React.useEffect(() => {
     async function fetchServicios() {
       try {
-        const url = `${API_BASE}/${SUBDOMAIN}/services`;
+        // Servicios estáticos de nutrición
+        const serviciosNutricion = [
+          {
+            _id: "1",
+            name: "Consulta Nutricional Inicial",
+            description: "Evaluación completa y plan nutricional personalizado",
+            category: { _id: "1", name: "Nutrición" },
+            price: 15000,
+            currency: "ARS"
+          },
+          {
+            _id: "2",
+            name: "Plan de Alimentación Deportiva",
+            description: "Nutrición especializada para deportistas y atletas",
+            category: { _id: "1", name: "Nutrición" },
+            price: 18000,
+            currency: "ARS"
+          },
+          {
+            _id: "3",
+            name: "Control y Seguimiento",
+            description: "Seguimiento mensual de objetivos y ajuste de plan",
+            category: { _id: "1", name: "Nutrición" },
+            price: 12000,
+            currency: "ARS"
+          }
+        ];
+        setItems(serviciosNutricion);
+        setLoading(false);
+        return;
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error("Error al cargar servicios");
 
@@ -143,7 +172,7 @@ export default function ServicesSlider() {
 
                       <div className="space-y-2">
                         {srv.category?.name ? (
-                          <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-900 bg-amber-100 px-2 py-1 rounded">
+                          <span className="inline-block text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-900 bg-emerald-100 px-2 py-1 rounded">
                             {srv.category.name}
                           </span>
                         ) : (

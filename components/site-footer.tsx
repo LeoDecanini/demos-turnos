@@ -5,7 +5,7 @@ import { Instagram, Mail, Phone, MapPin, Clock } from "lucide-react"
 export function SiteFooter() {
   return (
     <footer className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-500/5 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-green-500/5 via-transparent to-transparent" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Grid responsiva:
@@ -31,7 +31,7 @@ export function SiteFooter() {
             <Link href="https://www.instagram.com/mgestetica22" target="_blank">
               <Button
                 variant="outline"
-                className="w-full md:w-auto bg-black border-yellow-500 text-yellow-400 hover:bg-yellow-500 hover:text-black transition-all"
+                className="w-full md:w-auto bg-black border-green-500 text-green-400 hover:bg-green-500 hover:text-black transition-all"
               >
                 <Instagram className="h-4 w-4 mr-2" />
                 Seguinos en Instagram

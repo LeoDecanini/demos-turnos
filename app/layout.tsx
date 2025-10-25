@@ -13,9 +13,9 @@ import StandalonePwaGuard from "./StandalonePwaGuard";
 import Script from "next/script";
 
 export const metadata: Metadata = {
-    title: "MG Estética 22 - Centro de Medicina Estética",
+    title: "NutriVida - Centro de Nutrición",
     description:
-        "Centro especializado en medicina estética con tecnología de vanguardia. Tratamientos faciales, corporales y rejuvenecimiento. Sistema de turnos moveup.",
+        "Centro especializado en nutrición personalizada. Planes de alimentación, asesoramiento nutricional y seguimiento personalizado. Sistema de turnos moveup.",
     keywords:
         "medicina estética, tratamientos faciales, rejuvenecimiento, botox, rellenos, depilación láser, MG Estética 22",
     authors: [{ name: "MG Estética 22" }],

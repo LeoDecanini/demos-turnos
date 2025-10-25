@@ -122,7 +122,7 @@ const Contacto = () => {
             <h2 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4 leading-tight">
               ¿Tenés alguna pregunta?
             </h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-amber-500 to-yellow-600 mb-4 rounded-full"></div>
+            <div                             className="w-24 h-1 bg-gradient-to-r from-green-500 to-emerald-600 mb-4 rounded-full"></div>
             <p className="text-gray-600 mb-4 leading-relaxed-moveup">
               Estamos acá para ayudarte. Contáctanos para más información sobre nuestros servicios o para programar
               una consulta personalizada.

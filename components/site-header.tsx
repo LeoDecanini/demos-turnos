@@ -63,10 +63,10 @@ export function SiteHeader() {
                             key={item.name}
                             href={item.href}
                             className={cn(
-                                "text-sm font-medium transition-colors hover:text-yellow-600",
+                                "text-sm font-medium transition-colors hover:text-green-600",
                                 pathname === item.href ||
                                     (item.href !== "/" && pathname.startsWith(item.href))
-                                    ? "text-yellow-600"
+                                    ? "text-green-600"
                                     : "text-gray-700"
                             )}
                         >
@@ -80,7 +80,7 @@ export function SiteHeader() {
                     {user ? (
                         <Link
                             href="/perfil"
-                            className="inline-flex items-center gap-2 rounded-xl border border-yellow-400 bg-yellow-50 px-3 py-1.5 text-sm font-medium text-slate-900 shadow-sm hover:bg-yellow-100 transition"
+                            className="inline-flex items-center gap-2 rounded-xl border border-green-400 bg-green-50 px-3 py-1.5 text-sm font-medium text-slate-900 shadow-sm hover:bg-green-100 transition"
                         >
                             <User className="h-4 w-4 text-slate-600" />
                             Perfil

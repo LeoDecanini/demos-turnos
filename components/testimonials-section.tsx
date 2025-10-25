@@ -32,7 +32,7 @@ function Stars({ n = 5, size = 16 }: { n?: number; size?: number }) {
   return (
     <div className="flex gap-1">
       {Array.from({ length: n }).map((_, i) => (
-        <Star key={i} style={{ width: size, height: size }} className="text-yellow-400 fill-yellow-400" />
+        <Star key={i} style={{ width: size, height: size }} className="text-green-400 fill-green-400" />
       ))}
     </div>
   )
