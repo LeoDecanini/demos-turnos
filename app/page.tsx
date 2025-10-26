@@ -461,25 +461,26 @@ export default function Home() {
 
                     <div
                         className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
-                        <div
-                            className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 md:p-8 border border-white/10 max-w-2xl">
-                            <Badge
-                                className="mb-3 bg-gradient-to-r from-green-100 to-emerald-100 text-emerald-800 hover:from-green-200 hover:to-emerald-200 border-0 px-4 py-2 text-sm font-medium shadow-lg transition-colors">
+                        <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 md:p-8 border border-white/10 max-w-2xl">
+                            <Badge className="mb-3 bg-gradient-to-r from-green-100 to-emerald-100 text-emerald-800 hover:from-green-200 hover:to-emerald-200 border-0 px-4 py-2 text-sm font-medium shadow-lg transition-colors">
                                 <Sparkles className="w-4 h-4 mr-2" />
                                 Centro de Nutrición
                             </Badge>
+
                             <h1 className="text-2xl md:text-5xl font-bold text-white mb-3 leading-tight">
-                                Belleza y Bienestar{" "}
-                                <span
-                                    className="bg-gradient-to-r from-green-300 to-emerald-400 bg-clip-text text-transparent">
+                                Nutrición y Bienestar{" "}
+                                <span className="bg-gradient-to-r from-green-300 to-emerald-400 bg-clip-text text-transparent">
                                     Profesional
                                 </span>
                             </h1>
+
                             <p className="text-lg md:text-xl text-gray-100 mb-6 leading-relaxed-moveup font-light">
-                                Descubre nuestros tratamientos personalizados para realzar tu belleza natural con los
-                                mejores
-                                profesionales y tecnología de vanguardia.
+                                Planes de alimentación personalizados, asesoramiento nutricional y
+                                acompañamiento para crear hábitos saludables. Te ayudamos a alcanzar
+                                tus objetivos: bajar de peso, mejorar rendimiento, cuidar tu salud
+                                digestiva y mucho más.
                             </p>
+
                             <div className="flex flex-col sm:flex-row gap-6">
                                 <Link href={"/reservar"}>
                                     <Button
@@ -487,21 +488,23 @@ export default function Home() {
                                         className="h-14 px-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
                                     >
                                         <CalendarCheck className="mr-3 h-6 w-6" />
-                                        Reservar Cita
+                                        Reservar Consulta
                                     </Button>
                                 </Link>
+
                                 <Link href={"#servicios"}>
                                     <Button
                                         size="lg"
                                         variant="outline"
                                         className="h-14 px-8 text-white hover:text-green-900 border-2 border-white/30 hover:bg-white/90 bg-white/10 backdrop-blur-sm font-semibold transition-all duration-300 hover:scale-105"
                                     >
-                                        Ver Servicios
+                                        Ver Planes y Servicios
                                         <ChevronRight className="ml-3 h-6 w-6" />
                                     </Button>
                                 </Link>
                             </div>
                         </div>
+
                     </div>
                 </section>
 
