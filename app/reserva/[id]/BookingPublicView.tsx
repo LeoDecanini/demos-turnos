@@ -138,12 +138,12 @@ const BookingPublicView = (props: Props) => {
                     ) : (
                         <div className="space-y-4">
                             <div className="flex justify-center">
-                                <AlertTriangle className="w-16 h-16 text-amber-500" />
+                                <AlertTriangle className="w-16 h-16 text-green-500" />
                             </div>
                             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900">
                                 {esGrupo ? "Reservas pendientes" : "Reserva pendiente"}
                             </h1>
-                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-yellow-100/50 text-black border-yellow-400 border">
+                            <div className="mx-auto w-full max-w-xl p-4 md:p-5 rounded-2xl bg-green-100/50 text-black border-green-400 border">
                                 <p className="text-sm">
                                     Recordá abonar la seña antes del {deadlineHuman || `${dateStr} a las ${startTime}`} 😊
                                     <br />
@@ -162,7 +162,7 @@ const BookingPublicView = (props: Props) => {
                             <Card className="border shadow bg-white md:rounded-2xl">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                        <NotebookText className="w-5 h-5 text-amber-600" />
+                                        <NotebookText className="w-5 h-5 text-green-600" />
                                         Resumen de reservas
                                     </CardTitle>
                                 </CardHeader>
@@ -212,7 +212,7 @@ const BookingPublicView = (props: Props) => {
                                                             <Button
                                                                 asChild
                                                                 variant="outline"
-                                                                className="h-9 px-3 rounded-lg border-2 border-amber-300 hover:bg-amber-50 flex items-center gap-2"
+                                                                className="h-9 px-3 rounded-lg border-2 border-green-300 hover:bg-green-50 flex items-center gap-2"
                                                                 aria-label="Google Calendar"
                                                             >
                                                                 <a href={perUrl} target="_blank" rel="noopener noreferrer">
@@ -262,7 +262,7 @@ const BookingPublicView = (props: Props) => {
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span>Pendiente:</span>
-                                                <span className="font-semibold text-amber-600">{fmtMoney(totalRemaining, groupCurrency)}</span>
+                                                <span className="font-semibold text-green-600">{fmtMoney(totalRemaining, groupCurrency)}</span>
                                             </div>
                                         </div>
                                     )}
@@ -276,7 +276,7 @@ const BookingPublicView = (props: Props) => {
                                     <Card className="border shadow bg-white md:rounded-2xl">
                                         <CardHeader>
                                             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                                                <Wallet className="w-5 h-5 text-amber-600" />
+                                                <Wallet className="w-5 h-5 text-green-600" />
                                                 Seña pendiente
                                             </CardTitle>
                                         </CardHeader>
@@ -297,7 +297,7 @@ const BookingPublicView = (props: Props) => {
                                             </div>
 
                                             {deadlineHuman && (
-                                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 text-sm">
+                                                <div className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-green-900 text-sm">
                                                     Fecha límite: <span className="font-semibold">{deadlineHuman}</span>
                                                 </div>
                                             )}
@@ -333,7 +333,7 @@ const BookingPublicView = (props: Props) => {
                                 <CardHeader className="pb-0">
                                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                                         <CardTitle className="flex items-center gap-2 text-lg sm:text-xl md:text-2xl">
-                                            <NotebookText className="w-6 h-6 text-amber-600" />
+                                            <NotebookText className="w-6 h-6 text-green-600" />
                                             {esGrupo ? "Detalle principal" : "Detalle de la reserva"}
                                         </CardTitle>
                                     </div>
@@ -341,12 +341,12 @@ const BookingPublicView = (props: Props) => {
 
                                 <CardContent className="pt-4">
                                     <div className="divide-y divide-gray-100">
-                                        <InfoRow icon={<CalendarIcon className="w-4 h-4 text-amber-600" />} label="Fecha" value={dateStr} />
-                                        <InfoRow icon={<Clock className="w-4 h-4 text-amber-600" />} label="Horario" value={`${startTime} — ${endTime}`} />
-                                        <InfoRow icon={<NotebookText className="w-4 h-4 text-amber-600" />} label="Servicio" value={service?.name} />
-                                        <InfoRow icon={<User className="w-4 h-4 text-amber-600" />} label="Profesional" value={professional?.name || "Indistinto"} />
+                                        <InfoRow icon={<CalendarIcon className="w-4 h-4 text-green-600" />} label="Fecha" value={dateStr} />
+                                        <InfoRow icon={<Clock className="w-4 h-4 text-green-600" />} label="Horario" value={`${startTime} — ${endTime}`} />
+                                        <InfoRow icon={<NotebookText className="w-4 h-4 text-green-600" />} label="Servicio" value={service?.name} />
+                                        <InfoRow icon={<User className="w-4 h-4 text-green-600" />} label="Profesional" value={professional?.name || "Indistinto"} />
                                         {!!booking.price && (
-                                            <InfoRow icon={<Wallet className="w-4 h-4 text-amber-600" />} label="Precio" value={fmtMoney(booking.price, booking.currency)} />
+                                            <InfoRow icon={<Wallet className="w-4 h-4 text-green-600" />} label="Precio" value={fmtMoney(booking.price, booking.currency)} />
                                         )}
                                     </div>
 
@@ -363,7 +363,7 @@ const BookingPublicView = (props: Props) => {
                         <Card className="border shadow bg-white md:rounded-2xl">
                             <CardHeader className="pb-2">
                                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                    <User className="w-5 h-5 text-amber-600" />
+                                    <User className="w-5 h-5 text-green-600" />
                                     Datos del cliente
                                 </CardTitle>
                             </CardHeader>
@@ -381,7 +381,7 @@ const BookingPublicView = (props: Props) => {
                             <div className="pt-2">
                                 <Button
                                     size="lg"
-                                    className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                                    className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold shadow-xl border-0"
                                     asChild
                                 >
                                     <Link href={`/verify-client?email=${encodeURIComponent(booking.client.email)}`}><span>Crear cuenta</span></Link>

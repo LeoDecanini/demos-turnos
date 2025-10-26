@@ -126,7 +126,7 @@ export default async function BookingPublicPage({
         <Card className="max-w-xl w-full border-0 shadow-xl">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
+              <AlertTriangle className="w-6 h-6 text-green-600" />
               Falta el ID de la reserva
             </CardTitle>
           </CardHeader>
@@ -177,11 +177,11 @@ export default async function BookingPublicPage({
 
   if (!booking) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-amber-50/30 grid place-items-center px-6 py-24">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50/30 grid place-items-center px-6 py-24">
         <Card className="max-w-xl w-full border-0 shadow-xl bg-white">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
+              <AlertTriangle className="w-6 h-6 text-green-600" />
               {esGrupo ? "Grupo de reservas no encontrado" : "Reserva no encontrada"}
             </CardTitle>
           </CardHeader>

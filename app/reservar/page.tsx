@@ -3187,7 +3187,7 @@ export default function ReservarPage() {
             <div className="pt-2">
               <Button
                 asChild
-                className="w-full bg-gradient-to-r from-green-500 to-yellow-600"
+                className="w-full bg-gradient-to-r from-green-500 to-green-600"
               >
                 <Link href="/">Volver al inicio</Link>
               </Button>
