@@ -217,7 +217,7 @@ function CancelInlineNF({ bookingId }: { bookingId: string }) {
                 {alreadyCanceled ? "No es necesario volver a cancelarlo." : "Tu cancelación se registró correctamente."}
               </p>
               <div className="pt-2">
-                <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-600">
+                <Button asChild className="bg-gradient-to-r from-green-500 to-green-600">
                   <Link href="/">Volver al inicio</Link>
                 </Button>
               </div>
@@ -303,12 +303,12 @@ function BookingContextCard({
   endISO?: string;
 }) {
   return (
-    <Card className="border-amber-200/60 bg-amber-50/40">
+    <Card className="border-green-200/60 bg-green-50/40">
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-lg bg-white grid place-items-center border">
-              <CalendarIcon className="h-4 w-4 text-amber-600" />
+              <CalendarIcon className="h-4 w-4 text-green-600" />
             </div>
             <div>
               <div className="text-sm font-semibold text-slate-900">
@@ -583,7 +583,7 @@ function RescheduleInlineNF({
     return (
       <div className="min-h-screen pt-[120px] bg-white">
         <div className="max-w-lg mx-auto p-4">
-          <Card className="border-amber-200 bg-amber-50/60">
+          <Card className="border-green-200 bg-green-50/60">
             <CardContent className="p-6 space-y-2">
               <h2 className="text-lg font-bold text-gray-900">Cargando la reserva…</h2>
               <p className="text-sm text-gray-700">Estamos buscando los datos del turno para continuar con la reprogramación.</p>
@@ -606,15 +606,15 @@ function RescheduleInlineNF({
               endISO={bookingInfo.endISO}
             />
           )}
-          <Card className="border-amber-200 bg-amber-50/60">
+          <Card className="border-green-200 bg-green-50/60">
             <CardContent className="p-6 text-center space-y-2">
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-amber-500 text-white grid place-items-center">
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-green-500 text-white grid place-items-center">
                 <AlertTriangle className="w-7 h-7" />
               </div>
               <h2 className="text-xl font-bold text-gray-900">Este turno está cancelado</h2>
               <p className="text-sm text-gray-700">No es posible reprogramar una reserva cancelada.</p>
               <div className="pt-2">
-                <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-600">
+                <Button asChild className="bg-gradient-to-r from-green-500 to-green-600">
                   <Link href="/">Volver al inicio</Link>
                 </Button>
               </div>
@@ -637,7 +637,7 @@ function RescheduleInlineNF({
               <h2 className="text-xl font-bold text-gray-900">Turno reprogramado</h2>
               <p className="text-sm text-gray-700">Se guardaron tus cambios.</p>
               <div className="pt-2">
-                <Button asChild className="bg-gradient-to-r from-amber-500 to-yellow-600">
+                <Button asChild className="bg-gradient-to-r from-green-500 to-green-600">
                   <Link href="/">Volver al inicio</Link>
                 </Button>
               </div>
@@ -679,7 +679,7 @@ function RescheduleInlineNF({
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                    <CalendarIcon className="h-5 w-5 mr-2 text-amber-500" />
+                    <CalendarIcon className="h-5 w-5 mr-2 text-green-500" />
                     Seleccionar Fecha
                   </CardTitle>
                 </CardHeader>
@@ -711,7 +711,7 @@ function RescheduleInlineNF({
                         return false;
                       }}
                       locale={es}
-                      className="rounded-lg border-2 border-amber-200 w-full p-3"
+                      className="rounded-lg border-2 border-green-200 w-full p-3"
                       classNames={{
                         months: "w-full",
                         month: "w-full",
@@ -722,11 +722,11 @@ function RescheduleInlineNF({
                         cell: "p-0 relative w-full",
                         day:
                           "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors " +
-                          "hover:bg-amber-100 hover:text-amber-900 " +
-                          "focus:outline-none focus:ring-2 focus:ring-amber-300",
+                          "hover:bg-green-100 hover:text-green-900 " +
+                          "focus:outline-none focus:ring-2 focus:ring-green-300",
                         day_selected:
-                          "bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 rounded-lg",
-                        day_today: "bg-amber-50 text-amber-700 font-semibold rounded-lg",
+                          "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
+                        day_today: "bg-green-50 text-green-700 font-semibold rounded-lg",
                         day_outside: "text-muted-foreground opacity-60",
                         day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
                         day_range_start: "rounded-l-lg",
@@ -743,7 +743,7 @@ function RescheduleInlineNF({
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-amber-500" />
+                    <Clock className="h-5 w-5 mr-2 text-green-500" />
                     Horarios Disponibles
                   </CardTitle>
                 </CardHeader>
@@ -765,8 +765,8 @@ function RescheduleInlineNF({
                           key={t}
                           variant={selectedTime === t ? "default" : "outline"}
                           className={`h-12 transition-all ${selectedTime === t
-                            ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                            : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                            ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg border-0"
+                            : "border-2 border-green-200 hover:border-green-400 hover:bg-green-50"
                             }`}
                           onClick={() => setSelectedTime(t)}
                         >
@@ -786,7 +786,7 @@ function RescheduleInlineNF({
               <Button
                 disabled={!selectedDate || !selectedTime || !isDateAvailable(selectedDate) || submitting}
                 onClick={submit}
-                className="bg-gradient-to-r from-amber-500 to-yellow-600"
+                className="bg-gradient-to-r from-green-500 to-green-600"
               >
                 {submitting ? "Reprogramando…" : "Continuar"}
                 <UserPlus className="ml-2 h-4 w-4" />
@@ -897,7 +897,7 @@ function SessionGroupSummary({ data }: { data: any }) {
   } as const
 
   return (
-    <Card className="w-full border-amber-200/60">
+    <Card className="w-full border-green-200/60">
       <CardContent className="space-y-4">
         {/* próxima sesión */}
         <div className="space-y-2">
@@ -1163,7 +1163,7 @@ function FloatingNav({
         <Button
           disabled={nextDisabled}
           onClick={onNext}
-          className="bg-gradient-to-r from-amber-500 to-yellow-600 text-white"
+          className="bg-gradient-to-r from-green-500 to-green-600 text-white"
         >
           {nextLabel}
         </Button>
@@ -2495,7 +2495,7 @@ export default function ReservarPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                    <CalendarIcon className="h-5 w-5 mr-2 text-amber-500" />
+                    <CalendarIcon className="h-5 w-5 mr-2 text-green-500" />
                     Seleccionar Fecha
                   </CardTitle>
                 </CardHeader>
@@ -2533,7 +2533,7 @@ export default function ReservarPage() {
                         return !sgAvailableDays.includes(fmtDay(date))
                       }}
                       locale={es}
-                      className="rounded-lg border-2 border-amber-200 w-full p-3"
+                      className="rounded-lg border-2 border-green-200 w-full p-3"
                       classNames={{
                         months: "w-full",
                         month: "w-full",
@@ -2544,11 +2544,11 @@ export default function ReservarPage() {
                         cell: "p-0 relative w-full",
                         day:
                           "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors " +
-                          "hover:bg-amber-100 hover:text-amber-900 " +
-                          "focus:outline-none focus:ring-2 focus:ring-amber-300",
+                          "hover:bg-green-100 hover:text-green-900 " +
+                          "focus:outline-none focus:ring-2 focus:ring-green-300",
                         day_selected:
-                          "bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 rounded-lg",
-                        day_today: "bg-amber-50 text-amber-700 font-semibold rounded-lg",
+                          "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
+                        day_today: "bg-green-50 text-green-700 font-semibold rounded-lg",
                         day_outside: "text-muted-foreground opacity-60",
                         day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
                         day_range_start: "rounded-l-lg",
@@ -2566,7 +2566,7 @@ export default function ReservarPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-amber-500" />
+                    <Clock className="h-5 w-5 mr-2 text-green-500" />
                     Horarios Disponibles
                   </CardTitle>
                 </CardHeader>
@@ -2590,8 +2590,8 @@ export default function ReservarPage() {
                             key={time}
                             variant={picked ? "default" : "outline"}
                             className={`h-12 transition-all ${picked
-                              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
-                              : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                              ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg border-0"
+                              : "border-2 border-green-200 hover:border-green-400 hover:bg-green-50"
                               }`}
                             onClick={() => setSgSelectedTime(time)}
                           >
@@ -2694,14 +2694,14 @@ export default function ReservarPage() {
                           </div>
 
                           {(normalizedPayment && paymentAmount !== null) || bookingsWithDeposit.length > 0 ? (
-                            <div className="mt-8 space-y-4 rounded-3xl border border-amber-200 bg-amber-50/60 p-5 text-left">
+                            <div className="mt-8 space-y-4 rounded-3xl border border-green-200 bg-green-50/60 p-5 text-left">
                               <div className="flex items-start gap-3">
-                                <div className="mt-1 rounded-full bg-amber-500/10 p-2 text-amber-600">
+                                <div className="mt-1 rounded-full bg-green-500/10 p-2 text-green-600">
                                   <CreditCard className="h-5 w-5" />
                                 </div>
                                 <div className="space-y-1">
-                                  <h3 className="text-lg font-semibold text-amber-900">Seña requerida</h3>
-                                  <p className="text-sm text-amber-800">
+                                  <h3 className="text-lg font-semibold text-green-900">Seña requerida</h3>
+                                  <p className="text-sm text-green-800">
                                     {normalizedPayment ? "Aboná la seña total para confirmar todas tus reservas." : "Aboná la seña para confirmar tu reserva. También te enviamos el link por mail."}
                                   </p>
                                 </div>
@@ -2709,7 +2709,7 @@ export default function ReservarPage() {
 
                               {normalizedPayment && paymentAmount !== null ? (
                                 <div className="space-y-4">
-                                  <div className="rounded-2xl border border-amber-200 bg-white/80 p-4 space-y-2">
+                                  <div className="rounded-2xl border border-green-200 bg-white/80 p-4 space-y-2">
                                     <div className="flex flex-wrap items-center justify-between gap-3">
                                       <div className="space-y-1">
                                         <div className="text-sm font-semibold text-gray-900">
@@ -2727,7 +2727,7 @@ export default function ReservarPage() {
                                       ) : null}
                                     </div> */}
                                       </div>
-                                      <div className="text-xl font-bold text-amber-700">
+                                      <div className="text-xl font-bold text-green-700">
                                         {money(paymentAmount, normalizedPayment.currency || bookingsList[0]?.service?.currency || "ARS")}
                                       </div>
                                     </div>
@@ -2747,7 +2747,7 @@ export default function ReservarPage() {
                                                   <li key={booking._id} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                                                     <span className="font-medium text-gray-800">{booking.service?.name}</span>
                                                     {depositInfo.label && (
-                                                      <span className="text-amber-700 font-semibold">Seña: {depositInfo.label}</span>
+                                                      <span className="text-green-700 font-semibold">Seña: {depositInfo.label}</span>
                                                     )}
                                                   </li>
                                                 );
@@ -2776,7 +2776,7 @@ export default function ReservarPage() {
                                       {normalizedPayment.link ? (
                                         <Button
                                           variant="outline"
-                                          className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50"
+                                          className="w-full sm:w-auto h-11 border-2 border-green-300 hover:bg-green-50"
                                           onClick={() => handleCopyDepositLink(normalizedPayment.link ?? "")}
                                         >
                                           <Copy className="mr-2 h-5 w-5" /> Copiar link
@@ -2800,7 +2800,7 @@ export default function ReservarPage() {
                                     const deadlineText = hasValidDeadline ? format(deadlineDate as Date, "PPPp", { locale: es }) : null;
 
                                     return (
-                                      <div key={booking._id} className="rounded-2xl border border-amber-200 bg-white/80 p-4 space-y-3">
+                                      <div key={booking._id} className="rounded-2xl border border-green-200 bg-white/80 p-4 space-y-3">
                                         <div className="flex flex-wrap items-center justify-between gap-3">
                                           <div>
                                             <div className="font-semibold text-gray-900">{booking.service?.name}</div>
@@ -2812,7 +2812,7 @@ export default function ReservarPage() {
                                             </div>
                                           </div>
                                           {depositInfo.label && (
-                                            <div className="text-base font-bold text-amber-700">Seña: {depositInfo.label}</div>
+                                            <div className="text-base font-bold text-green-700">Seña: {depositInfo.label}</div>
                                           )}
                                         </div>
                                         {deadlineText ? <p className="text-xs text-gray-500">Pagá antes de {deadlineText}</p> : null}
@@ -2828,7 +2828,7 @@ export default function ReservarPage() {
                                             </Button>
                                             <Button
                                               variant="outline"
-                                              className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50"
+                                              className="w-full sm:w-auto h-11 border-2 border-green-300 hover:bg-green-50"
                                               onClick={() => handleCopyDepositLink(depositLink)}
                                             >
                                               <Copy className="mr-2 h-5 w-5" /> Copiar link
@@ -2895,7 +2895,7 @@ export default function ReservarPage() {
                                           <Button
                                             asChild
                                             variant="outline"
-                                            className="h-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                            className="h-9 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                             aria-label="Google Calendar"
                                           >
                                             <a
@@ -2944,7 +2944,7 @@ export default function ReservarPage() {
                                               <Button
                                                 asChild
                                                 variant="outline"
-                                                className="h-10 w-10 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                                className="h-10 w-10 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                                 aria-label="Google Calendar"
                                               >
                                                 <a
@@ -3017,7 +3017,7 @@ export default function ReservarPage() {
                                           <Button
                                             asChild
                                             variant="outline"
-                                            className="h-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                            className="h-9 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                             aria-label="Google Calendar"
                                           >
                                             <a
@@ -3065,7 +3065,7 @@ export default function ReservarPage() {
                                                 <Button
                                                   asChild
                                                   variant="outline"
-                                                  className="h-9 w-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                                  className="h-9 w-9 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                                   aria-label="Google Calendar"
                                                 >
                                                   <a
@@ -3112,7 +3112,7 @@ export default function ReservarPage() {
                                       <Button
                                         size="lg"
                                         disabled={submitting}
-                                        className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                                        className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold shadow-xl border-0"
                                         asChild
                                       >
                                         <Link href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}><span>Crear cuenta</span></Link>
@@ -3132,7 +3132,7 @@ export default function ReservarPage() {
                           size="lg"
                           variant="outline"
                           disabled={submitting}
-                          className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-white"
+                          className="h-14 px-8 border-2 border-green-300 hover:bg-green-50 bg-white"
                           onClick={goToServices}
                         >
                           Nueva reserva
@@ -3140,7 +3140,7 @@ export default function ReservarPage() {
                         <Button
                           size="lg"
                           disabled={submitting}
-                          className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                          className="h-14 px-10 bg-gradient-to-r from-green-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
                           asChild
                         >
                           <Link href="/">Volver al inicio</Link>
@@ -3172,10 +3172,10 @@ export default function ReservarPage() {
 
   if (isBlocked)
     return (
-      <div className="min-h-screen p-3 grid place-items-center bg-gradient-to-br from-gray-50 via-white to-amber-50/30">
-        <Card className="max-w-md w/full border-amber-300/50">
+      <div className="min-h-screen p-3 grid place-items-center bg-gradient-to-br from-gray-50 via-white to-green-50/30">
+        <Card className="max-w-md w/full border-green-300/50">
           <CardContent className="p-8 text-center space-y-4">
-            <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-green-500/10 text-green-700 flex items-center justify-center">
               <Lock className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">
@@ -3187,7 +3187,7 @@ export default function ReservarPage() {
             <div className="pt-2">
               <Button
                 asChild
-                className="w-full bg-gradient-to-r from-amber-500 to-yellow-600"
+                className="w-full bg-gradient-to-r from-green-500 to-yellow-600"
               >
                 <Link href="/">Volver al inicio</Link>
               </Button>
@@ -3302,15 +3302,15 @@ export default function ReservarPage() {
                                   }));
                                 }}
                                 className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected
-                                  ? "border-amber-500 bg-amber-50/60"
-                                  : "border-gray-200 hover:border-amber-300 bg-white"
+                                  ? "border-green-500 bg-green-50/60"
+                                  : "border-gray-200 hover:border-green-300 bg-white"
                                   }`}
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="font-semibold text-gray-900">
                                     {b.name}{" "}
                                     {b.default && (
-                                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">
                                         Default
                                       </span>
                                     )}
@@ -3533,7 +3533,7 @@ export default function ReservarPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                    <CalendarIcon className="h-5 w-5 mr-2 text-amber-500" />
+                    <CalendarIcon className="h-5 w-5 mr-2 text-green-500" />
                     Seleccionar Fecha
                   </CardTitle>
                 </CardHeader>
@@ -3567,7 +3567,7 @@ export default function ReservarPage() {
                           return !availableDays.includes(fmtDay(date));
                         }}
                         locale={es}
-                        className="rounded-lg border-2 border-amber-200 w-full p-3"
+                        className="rounded-lg border-2 border-green-200 w-full p-3"
                         classNames={{
                           // layout ancho completo
                           months: "w-full",
@@ -3582,14 +3582,14 @@ export default function ReservarPage() {
                           // botón del día (hover + rounded)
                           day:
                             "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors " +
-                            "hover:bg-amber-100 hover:text-amber-900 " +
-                            "focus:outline-none focus:ring-2 focus:ring-amber-300",
+                            "hover:bg-green-100 hover:text-green-900 " +
+                            "focus:outline-none focus:ring-2 focus:ring-green-300",
 
                           // estados
                           day_selected:
-                            "bg-amber-500 text-white hover:bg-amber-600 focus:bg-amber-600 rounded-lg",
+                            "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
                           day_today:
-                            "bg-amber-50 text-amber-700 font-semibold rounded-lg",
+                            "bg-green-50 text-green-700 font-semibold rounded-lg",
                           day_outside:
                             "text-muted-foreground opacity-60",
                           day_disabled:
@@ -3613,7 +3613,7 @@ export default function ReservarPage() {
               <Card ref={timeSectionRef}>
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                    <Clock className="h-5 w-5 mr-2 text-amber-500" />
+                    <Clock className="h-5 w-5 mr-2 text-green-500" />
                     Horarios Disponibles
                   </CardTitle>
                 </CardHeader>
@@ -3655,10 +3655,10 @@ export default function ReservarPage() {
                             variant={picked ? "default" : "outline"}
                             disabled={blocked}
                             className={`h-12 transition-all duration-300 ${picked
-                              ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0"
+                              ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg border-0"
                               : blocked
                                 ? "opacity-40 cursor-not-allowed border-2"
-                                : "border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50"
+                                : "border-2 border-green-200 hover:border-green-400 hover:bg-green-50"
                               }`}
                             onClick={() => {
                               if (!selectedDateObj) return;
@@ -4032,7 +4032,7 @@ export default function ReservarPage() {
                                   {normalizedPayment.link ? (
                                     <Button
                                       variant="outline"
-                                      className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50"
+                                      className="w-full sm:w-auto h-11 border-2 border-green-300 hover:bg-green-50"
                                       onClick={() => handleCopyDepositLink(normalizedPayment.link ?? "")}
                                     >
                                       <Copy className="mr-2 h-5 w-5" /> Copiar link
@@ -4084,7 +4084,7 @@ export default function ReservarPage() {
                                         </Button>
                                         <Button
                                           variant="outline"
-                                          className="w-full sm:w-auto h-11 border-2 border-amber-300 hover:bg-amber-50"
+                                          className="w-full sm:w-auto h-11 border-2 border-green-300 hover:bg-green-50"
                                           onClick={() => handleCopyDepositLink(depositLink)}
                                         >
                                           <Copy className="mr-2 h-5 w-5" /> Copiar link
@@ -4151,7 +4151,7 @@ export default function ReservarPage() {
                                       <Button
                                         asChild
                                         variant="outline"
-                                        className="h-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                        className="h-9 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                         aria-label="Google Calendar"
                                       >
                                         <a
@@ -4200,7 +4200,7 @@ export default function ReservarPage() {
                                           <Button
                                             asChild
                                             variant="outline"
-                                            className="h-10 w-10 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                            className="h-10 w-10 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                             aria-label="Google Calendar"
                                           >
                                             <a
@@ -4273,7 +4273,7 @@ export default function ReservarPage() {
                                       <Button
                                         asChild
                                         variant="outline"
-                                        className="h-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                        className="h-9 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                         aria-label="Google Calendar"
                                       >
                                         <a
@@ -4321,7 +4321,7 @@ export default function ReservarPage() {
                                             <Button
                                               asChild
                                               variant="outline"
-                                              className="h-9 w-9 p-0 rounded-lg border-2 border-amber-300 hover:bg-amber-50"
+                                              className="h-9 w-9 p-0 rounded-lg border-2 border-green-300 hover:bg-green-50"
                                               aria-label="Google Calendar"
                                             >
                                               <a
@@ -4368,7 +4368,7 @@ export default function ReservarPage() {
                                   <Button
                                     size="lg"
                                     disabled={submitting}
-                                    className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                                    className="h-14 px-10 hover:opacity-85 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold shadow-xl border-0"
                                     asChild
                                   >
                                     <Link href={`/verify-client?email=${encodeURIComponent(first.client.email)}`}><span>Crear cuenta</span></Link>
@@ -4388,7 +4388,7 @@ export default function ReservarPage() {
                       size="lg"
                       variant="outline"
                       disabled={submitting}
-                      className="h-14 px-8 border-2 border-amber-300 hover:bg-amber-50 bg-white"
+                      className="h-14 px-8 border-2 border-green-300 hover:bg-green-50 bg-white"
                       onClick={goToServices}
                     >
                       Nueva reserva
@@ -4396,7 +4396,7 @@ export default function ReservarPage() {
                     <Button
                       size="lg"
                       disabled={submitting}
-                      className="h-14 px-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white font-semibold shadow-xl border-0"
+                      className="h-14 px-10 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold shadow-xl border-0"
                       asChild
                     >
                       <Link href="/">Volver al inicio</Link>

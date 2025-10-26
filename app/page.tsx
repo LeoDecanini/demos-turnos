@@ -509,24 +509,17 @@ export default function Home() {
 
                 <section
                     id="diferenciales"
-                    className="py-24 bg-gradient-to-br from-white via-green-50/30 to-green-50/50 relative overflow-hidden"
+                    className="py-24 bg-gradient-to-br from-white via-emerald-50/30 to-green-50/50 relative overflow-hidden"
                 >
-                    <div
-                        className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"></div>
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.1),transparent_50%)]"></div>
                     <div className="relative mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <ReusableBadge
-                        >
-                            ¿Por qué elegirnos?
-                        </ReusableBadge>
+                        <ReusableBadge>¿Por qué elegirnos?</ReusableBadge>
                         <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-6">
-                            Tu bienestar, nuestra prioridad
+                            Nutrición basada en evidencia
                         </h2>
-                        <div
-                            className="w-24 h-1 bg-gradient-to-r from-green-500 to-emerald-600 mx-auto mb-8 rounded-full"></div>
+                        <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-green-600 mx-auto mb-8 rounded-full"></div>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed-moveup mb-16">
-                            No solo ofrecemos asesoramiento nutricional, sino un acompañamiento integral para alcanzar
-                            tus objetivos de salud y bienestar
-                            de excelencia.
+                            Te acompañamos con planes realistas, educación alimentaria y seguimiento cercano para que los cambios sean sostenibles.
                         </p>
 
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -534,56 +527,49 @@ export default function Home() {
                                 {[
                                     {
                                         icon: ShieldCheck,
-                                        title: "Seguridad",
-                                        desc: "Protocolos médicos y equipos certificados",
-                                        image:
-                                            "/servicios/seguridad.jpg", // médico con guantes y mascarilla
+                                        title: "Evidencia y claridad",
+                                        desc: "Recomendaciones actualizadas, sin mitos ni modas. Educación simple para tomar mejores decisiones.",
+                                        image: "/nutricion/evidencia.jpg",
                                     },
                                     {
                                         icon: HeartHandshake,
-                                        title: "Acompañamiento",
-                                        desc: "Plan personalizado y seguimiento post tratamiento",
-                                        image:
-                                            "/servicios/acompañamiento.jpg", // doctora acompañando paciente
+                                        title: "Acompañamiento real",
+                                        desc: "Seguimiento periódico, ajustes por progreso y herramientas prácticas para construir hábitos.",
+                                        image: "/nutricion/acompanamiento.jpg",
                                     },
                                     {
                                         icon: Leaf,
-                                        title: "Resultados Naturales",
-                                        desc: "Enfoque estético que respeta tu esencia",
-                                        image:
-                                            "/servicios/resultados.jpg", // mujer en la naturaleza, luz suave
+                                        title: "Plan sostenible",
+                                        desc: "Flexibilidad, gustos y contexto personal. Comer mejor sin dietas extremas ni prohibiciones.",
+                                        image: "/nutricion/sostenible.jpg",
                                     },
-                                ]
-                                    .map((item, i) => (
-                                        <div
-                                            key={i}
-                                            className="group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3"
-                                        >
-                                            <div className="relative h-80 overflow-hidden">
-                                                <img
-                                                    src={item.image || "/placeholder.svg"}
-                                                    alt={item.title}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                                />
-                                                <div
-                                                    className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                                                <div
-                                                    className="absolute inset-0 bg-gradient-to-br from-green-900/20 to-green-900/20 group-hover:from-green-800/30 group-hover:to-green-800/30 transition-all duration-500"></div>
-                                            </div>
-                                            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                                                <div className="flex items-center mb-4">
-                                                    <div
-                                                        className="bg-gradient-to-r from-green-500 to-green-600 p-3 rounded-2xl mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                                        <item.icon className="h-6 w-6 text-white" />
-                                                    </div>
-                                                    <h3 className="font-bold text-2xl group-hover:text-green-300 transition-colors duration-300">
-                                                        {item.title}
-                                                    </h3>
-                                                </div>
-                                                <p className="text-gray-100 text-left text-lg leading-relaxed-moveup font-light">{item.desc}</p>
-                                            </div>
+                                ].map((item, i) => (
+                                    <div
+                                        key={i}
+                                        className="group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3"
+                                    >
+                                        <div className="relative h-80 overflow-hidden">
+                                            <img
+                                                src={item.image || "/placeholder.svg"}
+                                                alt={item.title}
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 to-green-900/20 group-hover:from-emerald-800/30 group-hover:to-green-800/30 transition-all duration-500"></div>
                                         </div>
-                                    ))}
+                                        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                                            <div className="flex items-center mb-4">
+                                                <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-3 rounded-2xl mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                                    <item.icon className="h-6 w-6 text-white" />
+                                                </div>
+                                                <h3 className="font-bold text-2xl group-hover:text-emerald-200 transition-colors duration-300">
+                                                    {item.title}
+                                                </h3>
+                                            </div>
+                                            <p className="text-gray-100 text-left text-lg leading-relaxed-moveup font-light">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -597,41 +583,44 @@ export default function Home() {
                                 <div>
                                     <ReusableBadge>Nuestra Historia</ReusableBadge>
                                     <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                                        Más de 7 años de experiencia en medicina estética
+                                        Más de 7 años acompañando cambios reales
                                     </h2>
                                     <p className="text-lg text-gray-700 mb-6">
-                                        Somos Gastón Adonis Franco y Melanye Guirland, dos médicos con más de 10 años de experiencia en el campo de la medicina. Nuestra historia comenzó en el Sanatorio Güemes, donde nos conocimos durante nuestra formación en Clínica Médica. Fue allí donde descubrimos nuestra pasión por la estética y decidimos especializarnos en este campo.
+                                        Somos la Lic. Sofía Rivas y el Lic. Martín Valdez, un equipo de nutrición que nació en 2016 con una idea simple: comer mejor tiene que ser posible en la vida real. Empezamos atendiendo en consultorios pequeños y, con el tiempo, fuimos sumando experiencia en hospitales y centros deportivos, siempre con enfoque humano y basado en evidencia.
                                     </p>
                                     <p className="text-lg text-gray-700 mb-8">
-                                        En 2018, comenzamos a explorar el mundo de la medicina estética y realizamos nuestros primeros posgrados en SAENI (Asociación Médica Argentina) y SAEME (Universidad de Buenos Aires). Desde entonces, este mundo nos ha apasionado y hemos seguido actualizándonos constantemente para ofrecer los mejores tratamientos y resultados a nuestros pacientes.
+                                        En 2019 abrimos nuestro primer espacio propio y desde entonces trabajamos en planes personalizados, educación alimentaria y seguimiento cercano. Durante 2021 incorporamos atención online y herramientas digitales para que cada persona pueda sostener hábitos sin dietas extremas ni culpas.
                                     </p>
                                     <p className="text-lg text-gray-700 mb-8">
-                                        En 2022, después de años de formación y dedicación, decidimos abrir nuestro primer consultorio gracias a la ayuda de nuestra familia y amigos. Desde entonces, hemos podido crecer y desarrollarnos como profesionales, y estamos comprometidos con brindar la mejor atención posible a nuestros pacientes.
+                                        Hoy acompañamos a adolescentes y adultos con objetivos diversos: recomposición corporal, salud cardiometabólica, digestiva y mejora del rendimiento. Nuestro método combina claridad, flexibilidad y ajustes constantes según tu contexto.
                                     </p>
                                 </div>
 
                                 <Link href={"#equipo"}>
                                     <Button
                                         variant="outline"
-                                        className="bg-gradient-to-r from-green-50 to-green-50 border-2 border-green-200 hover:from-green-500 hover:to-green-600 hover:text-white transition-all duration-300 font-semibold py-3"
+                                        className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 hover:from-emerald-500 hover:to-green-600 hover:text-white transition-all duration-300 font-semibold py-3"
                                     >
                                         Conocé a Nuestro Equipo
                                         <ChevronDown className="h-6 w-6" />
                                     </Button>
                                 </Link>
                             </div>
+
                             <div className="relative">
                                 <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
                                     <img
-                                        src="/servicios/local.jpg"
-                                        alt="Nuestro centro"
+                                        src="/nutricion/espacio-1.jpg"
+                                        alt="Nuestro consultorio de nutrición"
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
-                                <div
-                                    className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
-                                    <img src="/servicios/local2.jpg" alt="Tratamiento"
-                                        className="w-full h-full object-cover" />
+                                <div className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
+                                    <img
+                                        src="/nutricion/espacio-2.jpg"
+                                        alt="Sesión de educación alimentaria"
+                                        className="w-full h-full object-cover"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -642,7 +631,7 @@ export default function Home() {
                 <section
                     className="py-24 bg-gradient-to-br from-gray-50 via-white to-green-50/30 relative overflow-hidden">
                     <div
-                        className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(251,191,36,0.1),transparent_50%)]"></div>
+                        className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(77, 169, 48, 0.1),transparent_50%)]"></div>
                     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-20">
                             <ReusableBadge>
@@ -664,86 +653,61 @@ export default function Home() {
                 </section>
 
                 {/* Equipo */}
-                <section
-                    id="equipo"
-                    className="py-24 relative overflow-hidden"
-                >
-                    {/*<div
-                        className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(251,191,36,0.08),transparent_60%)]"></div>*/}
+                <section id="equipo" className="py-24 relative overflow-hidden">
                     <div className="relative mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="text-center mb-12">
-                            <ReusableBadge>
-                                Nuestro Equipo
-                            </ReusableBadge>
+                            <ReusableBadge>Nuestro Equipo</ReusableBadge>
                             <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4 leading-tight">
-                                Profesionales Cualificados
+                                Profesionales en Nutrición
                             </h2>
-                            <div
-                                className="w-24 h-1 bg-gradient-to-r from-green-500 to-green-600 mx-auto mb-4 rounded-full"></div>
+                            <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-green-600 mx-auto mb-4 rounded-full"></div>
                             <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed-moveup">
-                                Contamos con un equipo de especialistas con amplia experiencia en medicina estética,
-                                comprometidos con
-                                tu bienestar y belleza.
+                                Un equipo humano, basado en evidencia y enfocado en acompañarte con planes reales y sostenibles.
                             </p>
                         </div>
 
                         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
                             {[
                                 {
-                                    name: "Dra. Melanye Guirland",
-                                    position: "(cambiar) Directora Médica",
-                                    image: "/foto-1.jpg",
-                                    specialty: "(cambiar) Medicina Estética",
-                                    experience: "(cambiar) 8 años",
+                                    name: "Lic. Sofía Rivas",
+                                    image: "/nutricion/sofia.jpg",
                                 },
                                 {
-                                    name: "Dr. Franco Gaston Adonis",
-                                    position: "(cambiar) Dermatólogo",
-                                    image: "/foto-2.jpg",
-                                    specialty: "(cambiar) Dermatología Estética",
-                                    experience: "(cambiar) 12 años",
+                                    name: "Lic. Martín Valdez",
+                                    image: "/nutricion/martin.jpg",
                                 },
                             ].map((member, i) => (
                                 <Card
                                     key={i}
                                     className="group relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 bg-white/90 backdrop-blur-sm pt-0"
                                 >
-                                    <div
-                                        className="absolute inset-0 bg-gradient-to-br from-green-50/30 to-green-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 to-green-50/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                                     <div className="relative">
                                         <div className="h-96 overflow-hidden relative">
                                             <img
                                                 src={member.image || "/placeholder.svg"}
                                                 alt={member.name}
-                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-700"
                                             />
-                                            <div
-                                                className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                            <div
-                                                className="absolute bottom-4 left-4 right-4 transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                            <div className="absolute bottom-4 left-4 right-4 transform translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
                                                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center space-x-3">
-                                                            <div
-                                                                className="bg-gradient-to-r from-green-500 to-green-600 p-2 rounded-full">
+                                                            <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-2 rounded-full">
                                                                 <Award className="h-4 w-4 text-white" />
                                                             </div>
-                                                            <span className="text-sm font-medium text-gray-700">Especialista Certificado</span>
+                                                            <span className="text-sm font-medium text-gray-700">Licenciatura en Nutrición</span>
                                                         </div>
-
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <CardHeader className=" pt-4">
-                                            <CardTitle
-                                                className="text-2xl font-bold text-gray-900 group-hover:text-green-700 transition-colors duration-300">
+                                        <CardHeader className="pt-4">
+                                            <CardTitle className="text-2xl font-bold text-gray-900 group-hover:text-emerald-700 transition-colors duration-300">
                                                 {member.name}
                                             </CardTitle>
-
-
                                         </CardHeader>
-
                                     </div>
                                 </Card>
                             ))}
@@ -752,7 +716,7 @@ export default function Home() {
                 </section>
 
                 {/* Contacto */}
-                <Contacto />
+                {/* <Contacto /> */}
             </div>
         </>
     )

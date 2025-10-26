@@ -132,7 +132,7 @@ export default function RegisterPage() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Crear cuenta</h1>
-          <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
+          <div className="mx-auto mt-3 h-1 w-16 rounded bg-green-400" />
           <p className="mt-4 text-slate-500">Registrate para reservar y gestionar tus turnos.</p>
         </div>
 
@@ -157,7 +157,7 @@ export default function RegisterPage() {
                   className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
                     touched.name && errors.name
                       ? 'border-red-300 focus:ring-red-200'
-                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                      : 'border-slate-200 focus:border-green-400 focus:ring-green-200'
                   }`}
                 />
                 {touched.name && errors.name && (
@@ -178,7 +178,7 @@ export default function RegisterPage() {
                   className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
                     touched.email && errors.email
                       ? 'border-red-300 focus:ring-red-200'
-                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                      : 'border-slate-200 focus:border-green-400 focus:ring-green-200'
                   }`}
                 />
                 {touched.email && errors.email && (
@@ -199,7 +199,7 @@ export default function RegisterPage() {
                   className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
                     touched.phone && errors.phone
                       ? 'border-red-300 focus:ring-red-200'
-                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                      : 'border-slate-200 focus:border-green-400 focus:ring-green-200'
                   }`}
                 />
                 {touched.phone && errors.phone && (
@@ -220,7 +220,7 @@ export default function RegisterPage() {
                   className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
                     touched.dni && errors.dni
                       ? 'border-red-300 focus:ring-red-200'
-                      : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                      : 'border-slate-200 focus:border-green-400 focus:ring-green-200'
                   }`}
                 />
                 {touched.dni && errors.dni && (
@@ -242,7 +242,7 @@ export default function RegisterPage() {
                     className={`w-full rounded-xl border bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
                       touched.password && errors.password
                         ? 'border-red-300 focus:ring-red-200'
-                        : 'border-slate-200 focus:border-yellow-400 focus:ring-yellow-200'
+                        : 'border-slate-200 focus:border-green-400 focus:ring-green-200'
                     }`}
                   />
                   <button
@@ -275,7 +275,7 @@ export default function RegisterPage() {
                   onSubmit();
                 }}
                 disabled={!canSubmit}
-                className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                className="w-full rounded-xl bg-green-400 text-slate-900 font-semibold py-3 shadow hover:bg-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
               >
                 {pending ? 'Creando…' : 'Crear cuenta'}
               </button>
@@ -294,7 +294,7 @@ export default function RegisterPage() {
           <div className="text-center mt-6">
             <Link
               href="/reservar"
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-yellow-50 transition"
+              className="inline-flex items-center gap-2 rounded-full border border-green-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-green-50 transition"
             >
               Ver tratamientos
               <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-900">

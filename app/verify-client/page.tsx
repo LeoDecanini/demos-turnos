@@ -195,7 +195,7 @@ export default function VerifyClientPage() {
               {error}
             </div>
             <button
-              className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 transition"
+              className="w-full rounded-xl bg-green-400 text-slate-900 font-semibold py-3 shadow hover:bg-green-500 transition"
               onClick={() => router.replace('/login')}
             >
               Ir al login
@@ -223,7 +223,7 @@ export default function VerifyClientPage() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Crear contraseña</h1>
-          <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
+          <div className="mx-auto mt-3 h-1 w-16 rounded bg-green-400" />
           <p className="mt-4 text-slate-500">
             {info.name ? `Hola ${info.name}, ` : 'Hola, '}vamos a crear tu contraseña para{' '}
             <span className="font-mono">{info.email}</span>.
@@ -234,11 +234,11 @@ export default function VerifyClientPage() {
           <div className="rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-6 md:p-8">
             {info.hasUser ? (
               <div className="space-y-5">
-                <div className="rounded-lg border border-yellow-200 bg-yellow-50 text-yellow-800 text-sm px-3 py-2">
+                <div className="rounded-lg border border-green-200 bg-green-50 text-green-800 text-sm px-3 py-2">
                   Este email ya tiene usuario. Ingresá con tu contraseña o iniciá recuperación.
                 </div>
                 <button
-                  className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 transition"
+                  className="w-full rounded-xl bg-green-400 text-slate-900 font-semibold py-3 shadow hover:bg-green-500 transition"
                   onClick={() => router.replace(`/login?email=${encodeURIComponent(info.email)}`)}
                 >
                   Ir a Ingresar
@@ -258,7 +258,7 @@ export default function VerifyClientPage() {
                     <label className="block text-sm font-medium text-slate-700">Código (8 dígitos)</label>
                     <div className="flex gap-2">
                       <input
-                        className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                        className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200 transition"
                         type="text"
                         inputMode="numeric"
                         pattern="\d{8}"
@@ -275,7 +275,7 @@ export default function VerifyClientPage() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700">Contraseña</label>
                     <input
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200 transition"
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -285,7 +285,7 @@ export default function VerifyClientPage() {
                   </div>
 
                   <button
-                    className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                    className="w-full rounded-xl bg-green-400 text-slate-900 font-semibold py-3 shadow hover:bg-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
                     onClick={submit}
                     disabled={!canSubmit || submitting}
                   >
@@ -313,7 +313,7 @@ export default function VerifyClientPage() {
           <div className="text-center mt-6">
             <button
               onClick={() => router.replace('/login')}
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-yellow-50 transition"
+              className="inline-flex items-center gap-2 rounded-full border border-green-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-green-50 transition"
             >
               Ir al Login
               <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-900">

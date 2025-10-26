@@ -36,7 +36,7 @@ export function BookingStepper({ step, includeBranchStep }: { step: number; incl
       <ol className="relative flex h-9 md:h-11 items-center justify-between">
         {/* Línea base + progreso */}
         <div className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-gray-200">
-          <div className="h-0.5 bg-gradient-to-r from-amber-500 to-yellow-600 transition-[width] duration-500" style={{ width: `${pct}%` }} />
+          <div className="h-0.5 bg-gradient-to-r from-green-500 to-green-600 transition-[width] duration-500" style={{ width: `${pct}%` }} />
         </div>
 
         {steps.map((s, idx) => {
@@ -53,8 +53,8 @@ export function BookingStepper({ step, includeBranchStep }: { step: number; incl
                 className={[
                   "flex items-center justify-center rounded-full border transition-all duration-300",
                   "h-9 w-9 md:h-11 md:w-11",
-                  isDone || isCurrent ? "bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-500 shadow-lg" : "bg-white text-gray-400 border-gray-300",
-                  isCurrent ? "ring-4 ring-amber-100" : "",
+                  isDone || isCurrent ? "bg-gradient-to-r from-green-500 to-green-600 text-white border-green-500 shadow-lg" : "bg-white text-gray-400 border-gray-300",
+                  isCurrent ? "ring-4 ring-green-100" : "",
                 ].join(" ")}
                 aria-current={isCurrent ? "step" : undefined}
                 aria-label={`${number}. ${s.title}`}
@@ -74,7 +74,7 @@ export function BookingStepper({ step, includeBranchStep }: { step: number; incl
                   "pointer-events-none absolute left-1/2 -translate-x-1/2",
                   "top-[calc(100%+0.5rem)] hidden md:block",
                   "text-xs font-medium whitespace-nowrap",
-                  isDone || isCurrent ? "text-amber-700" : "text-gray-400",
+                  isDone || isCurrent ? "text-green-700" : "text-gray-400",
                 ].join(" ")}
               >
                 {s.title}
@@ -85,7 +85,7 @@ export function BookingStepper({ step, includeBranchStep }: { step: number; incl
       </ol>
 
       {/* Etiqueta de paso actual (solo mobile) */}
-      <div className="mt-2 text-center text-xs font-medium text-amber-700 md:hidden">
+      <div className="mt-2 text-center text-xs font-medium text-green-700 md:hidden">
         {steps[visualStep - 1]?.title}
       </div>
     </nav>

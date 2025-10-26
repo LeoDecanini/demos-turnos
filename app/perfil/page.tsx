@@ -51,7 +51,7 @@ export default function PerfilPage() {
       <main className="min-h-screen pt-24 md:pt-32 px-4">
         <div className="text-center">
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">Tu cuenta</h1>
-          <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
+          <div className="mx-auto mt-3 h-1 w-16 rounded bg-green-400" />
           <p className="mt-6 text-slate-600">
             No estás logueado{' '}
             <Link href="/login" className="underline text-slate-900 hover:text-slate-700">
@@ -75,13 +75,13 @@ export default function PerfilPage() {
     <main className="min-h-screen max-w-7xl mx-auto pt-24 lg:pt-32 px-4 lg:px-6 flex items-start flex-col w-full">
       <div className="mb-6 lg:mb-8 w-full">
         <h1 className="text-2xl lg:text-4xl font-extrabold text-slate-900 text-center lg:text-left">Tu cuenta</h1>
-        <div className="mt-3 h-1 w-16 rounded bg-yellow-400 mx-auto lg:mx-0" />
+        <div className="mt-3 h-1 w-16 rounded bg-green-400 mx-auto lg:mx-0" />
       </div>
 
       <div className="flex w-full gap-6">
         <aside className="hidden lg:block w-[260px] shrink-0 rounded-2xl bg-white shadow-xl ring-1 ring-slate-100 p-4 h-max">
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-full bg-yellow-400/30 text-slate-900 flex items-center justify-center font-semibold">
+            <div className="h-10 w-10 rounded-full bg-green-400/30 text-slate-900 flex items-center justify-center font-semibold">
               {initials}
             </div>
             <div className="min-w-0">
@@ -117,7 +117,7 @@ export default function PerfilPage() {
               </div>
             </div>
             <div className="mt-3 flex items-center gap-3 px-2">
-              <div className="h-9 w-9 rounded-full bg-yellow-400/30 text-slate-900 flex items-center justify-center text-sm font-semibold">
+              <div className="h-9 w-9 rounded-full bg-green-400/30 text-slate-900 flex items-center justify-center text-sm font-semibold">
                 {initials}
               </div>
               <div className="min-w-0">
@@ -148,7 +148,7 @@ function SidebarBtn({
       onClick={onClick}
       className={[
         'w-full flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-left transition',
-        active ? 'border-yellow-400 bg-yellow-50 text-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50',
+        active ? 'border-green-400 bg-green-50 text-slate-900' : 'border-slate-200 text-slate-600 hover:bg-slate-50',
       ].join(' ')}
     >
       <span className="font-medium">{label}</span>
@@ -162,7 +162,7 @@ function MobileTab({ active, label, onClick }: { active: boolean; label: string;
       onClick={onClick}
       className={[
         'shrink-0 rounded-full px-3 py-1.5 text-sm border',
-        active ? 'border-yellow-400 bg-yellow-50 text-slate-900' : 'border-slate-200 text-slate-600',
+        active ? 'border-green-400 bg-green-50 text-slate-900' : 'border-slate-200 text-slate-600',
       ].join(' ')}
     >
       {label}
@@ -705,8 +705,8 @@ function ReservasView() {
                   {professionals.length !== 1 && (
                     <div
                       className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${selectedProfessional === 'any'
-                        ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50'
-                        : 'border-gray-200 hover:border-amber-300 bg-white/80'
+                        ? 'border-green-500 bg-gradient-to-br from-green-50 to-green-50'
+                        : 'border-gray-200 hover:border-green-300 bg-white/80'
                         }`}
                       onClick={() => {
                         setSelectedProfessional('any');
@@ -721,7 +721,7 @@ function ReservasView() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="font-semibold text-gray-900">Indistinto</div>
-                        <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
+                        <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full font-semibold">
                           Automático
                         </span>
                       </div>
@@ -782,7 +782,7 @@ function ReservasView() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                      <Calendar className="h-5 w-5 mr-2 text-amber-500" />
+                      <Calendar className="h-5 w-5 mr-2 text-green-500" />
                       Seleccionar Fecha
                     </CardTitle>
                   </CardHeader>
@@ -824,7 +824,7 @@ function ReservasView() {
                             return false;
                           }}
                           locale={es}
-                          className="rounded-xl border-2 border-amber-200 max-w-none w/full"
+                          className="rounded-xl border-2 border-green-200 max-w-none w/full"
                           classNames={{
                             months: 'flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 flex-1',
                             month: 'space-y-4 w-full flex flex-col',
@@ -848,7 +848,7 @@ function ReservasView() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                      <Clock className="h-5 w-5 mr-2 text-amber-500" />
+                      <Clock className="h-5 w-5 mr-2 text-green-500" />
                       Horarios Disponibles
                     </CardTitle>
                   </CardHeader>
@@ -872,8 +872,8 @@ function ReservasView() {
                             key={time}
                             variant={selectedTime === time ? 'default' : 'outline'}
                             className={`h-12 transition-all duration-300 ${selectedTime === time
-                              ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg border-0'
-                              : 'border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-50'
+                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg border-0'
+                              : 'border-2 border-green-200 hover:border-green-400 hover:bg-green-50'
                               }`}
                             onClick={() => setSelectedTime(time)}
                           >

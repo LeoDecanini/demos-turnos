@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { CalendarCheck, Menu, X, Phone, User } from "lucide-react"; // 👈 import User
+import { CalendarCheck, Menu, X, Phone, User, Leaf } from "lucide-react"; // 👈 import User
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/app/auth/AuthProvider";
 
@@ -12,7 +12,7 @@ const navigation = [
     { name: "Inicio", href: "/" },
     { name: "Servicios", href: "/#servicios" },
     { name: "Sobre Nosotros", href: "/#equipo" },
-    { name: "Contacto", href: "/#contacto" },
+    /* { name: "Contacto", href: "/#contacto" }, */
     { name: "Reservar", href: "/reservar" },
 ];
 
@@ -29,12 +29,12 @@ export function SiteHeader() {
             >
                 <div className="flex lg:flex-1">
                     <Link href="/" className="-m-1.5 p-1.5">
-                        <span className="sr-only">Centro de Estética</span>
+                        <span className="sr-only">Centro de Nutrición</span>
                         <div className="flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-[url(/logo.jpg)] bg-center bg-contain" />
-                            <span className="ml-2 text-xl font-semibold text-gray-900">
-                                MG Estética 22
-                            </span>
+                            <div className="h-8 w-8 rounded-md bg-green-500 flex items-center justify-center">
+                                <Leaf className="h-5 w-5 text-white" strokeWidth={2.5} />
+                            </div>
+                            <span className="ml-2 text-xl font-semibold text-gray-900">NutriVida</span>
                         </div>
                     </Link>
                 </div>
@@ -77,7 +77,7 @@ export function SiteHeader() {
 
                 {/* desktop right: perfil pill + reservar */}
                 <div className="hidden lg:flex lg:flex-1 lg:justify-end items-center gap-4">
-                    {user ? (
+                     {user ? (
                         <Link
                             href="/perfil"
                             className="inline-flex items-center gap-2 rounded-xl border border-green-400 bg-green-50 px-3 py-1.5 text-sm font-medium text-slate-900 shadow-sm hover:bg-green-100 transition"
@@ -119,9 +119,11 @@ export function SiteHeader() {
                         >
                             <span className="sr-only">Centro de Estética</span>
                             <div className="flex items-center">
-                                <div className="h-8 w-8 rounded-full bg-[url(/logo.jpg)] bg-center bg-contain" />
+                                <div className="h-8 w-8 rounded-md bg-green-500 flex items-center justify-center">
+                                    <Leaf className="h-5 w-5 text-white" strokeWidth={2.5} />
+                                </div>
                                 <span className="ml-2 text-xl font-semibold text-gray-900">
-                                    MG Estética 22
+                                    NutriVida
                                 </span>
                             </div>
                         </Link>
@@ -143,7 +145,7 @@ export function SiteHeader() {
                                     <Link
                                         href="/perfil"
                                         onClick={() => setMobileMenuOpen(false)}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-yellow-400 bg-yellow-50 px-3 py-2 text-base font-semibold text-slate-900 shadow-sm hover:bg-yellow-100 transition"
+                                        className="inline-flex items-center gap-2 rounded-xl border border-green-400 bg-green-50 px-3 py-2 text-base font-semibold text-slate-900 shadow-sm hover:bg-green-100 transition"
                                     >
                                         <User className="h-4 w-4 text-slate-600" />
                                         Perfil
@@ -167,7 +169,7 @@ export function SiteHeader() {
                                             "-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7",
                                             pathname === item.href ||
                                                 (item.href !== "/" && pathname.startsWith(item.href))
-                                                ? "bg-gray-50 text-yellow-600"
+                                                ? "bg-gray-50 text-green-600"
                                                 : "text-gray-900 hover:bg-gray-50"
                                         )}
                                         onClick={() => setMobileMenuOpen(false)}

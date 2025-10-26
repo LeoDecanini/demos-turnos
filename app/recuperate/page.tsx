@@ -117,7 +117,7 @@ export default function RecoverPage() {
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">
             Recuperar contraseña
           </h1>
-          <div className="mx-auto mt-3 h-1 w-16 rounded bg-yellow-400" />
+          <div className="mx-auto mt-3 h-1 w-16 rounded bg-green-400" />
           <p className="mt-4 text-slate-500">
             Te enviamos un código para que puedas crear una nueva contraseña.
           </p>
@@ -142,7 +142,7 @@ export default function RecoverPage() {
                   placeholder="nombre@correo.com"
                   autoComplete="email"
                   disabled={requested}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition disabled:bg-slate-50"
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200 transition disabled:bg-slate-50"
                 />
               </div>
 
@@ -150,7 +150,7 @@ export default function RecoverPage() {
                 <button
                   onClick={requestCode}
                   disabled={!canRequest}
-                  className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                  className="w-full rounded-xl bg-green-400 text-slate-900 font-semibold py-3 shadow hover:bg-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
                 >
                   {pending ? 'Enviando…' : 'Enviar código'}
                 </button>
@@ -172,7 +172,7 @@ export default function RecoverPage() {
                         }
                         onKeyDown={onEnter}
                         placeholder="Ej: 12345678"
-                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200 transition"
                       />
                     </div>
                   </div>
@@ -187,7 +187,7 @@ export default function RecoverPage() {
                         onKeyDown={onEnter}
                         placeholder="Mínimo 6 caracteres"
                         autoComplete="new-password"
-                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-200 transition"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-12 text-slate-900 placeholder-slate-400 outline-none focus:border-green-400 focus:ring-2 focus:ring-green-200 transition"
                       />
                       <button
                         type="button"
@@ -213,7 +213,7 @@ export default function RecoverPage() {
                   <button
                     onClick={confirmReset}
                     disabled={!canConfirm}
-                    className="w-full rounded-xl bg-yellow-400 text-slate-900 font-semibold py-3 shadow hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
+                    className="w-full rounded-xl bg-green-400 text-slate-900 font-semibold py-3 shadow hover:bg-green-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
                   >
                     {pending ? 'Guardando…' : 'Cambiar contraseña'}
                   </button>
@@ -234,7 +234,7 @@ export default function RecoverPage() {
           <div className="text-center mt-6">
             <Link
               href="/reservar"
-              className="inline-flex items-center gap-2 rounded-full border border-yellow-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-yellow-50 transition"
+              className="inline-flex items-center gap-2 rounded-full border border-green-400 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-green-50 transition"
             >
               Ver tratamientos
               <svg width="16" height="16" viewBox="0 0 24 24" className="text-slate-900">

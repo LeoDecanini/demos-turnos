@@ -102,8 +102,8 @@ export default function ServiceList({
                     key={s._id}
                     className={cn(
                       "flex gap-4 px-4 py-4 border-b border-gray-100 cursor-pointer transition-colors",
-                      "hover:bg-amber-50/40",
-                      selected && "bg-amber-50",
+                      "hover:bg-green-50/40",
+                      selected && "bg-green-50",
                       limitReached && "opacity-50 cursor-not-allowed"
                     )}
                     onClick={() => {
@@ -119,7 +119,7 @@ export default function ServiceList({
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-gray-900 truncate">{s.name}</span>
                         {s.popular && (
-                          <span className="inline-flex items-center text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded-full font-semibold">
+                          <span className="inline-flex items-center text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full font-semibold">
                             <Sparkles className="w-3 h-3 mr-1" />
                             Popular
                           </span>
@@ -132,7 +132,7 @@ export default function ServiceList({
 
                       <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-700">
                         <span className="inline-flex items-center">
-                          <Clock className="w-4 h-4 mr-1 text-amber-500" />
+                          <Clock className="w-4 h-4 mr-1 text-green-500" />
                           {dur ? `${dur} min` : "Duración variable"}
                         </span>
 
@@ -144,9 +144,9 @@ export default function ServiceList({
 
                         {s.price != null &&
                           (s.price === 0 ? (
-                            <span className="font-semibold text-amber-700">Gratis</span>
+                            <span className="font-semibold text-green-700">Gratis</span>
                           ) : (
-                            <span className="font-semibold text-amber-700">{money(s.price, s.currency)}</span>
+                            <span className="font-semibold text-green-700">{money(s.price, s.currency)}</span>
                           ))}
 
                         {s.depositRequired && s.depositValue != null && s.depositType && (
@@ -161,7 +161,7 @@ export default function ServiceList({
                     <div
                       className={cn(
                         "mt-1 w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors",
-                        selected ? "bg-amber-500 border-amber-500" : "border-gray-300"
+                        selected ? "bg-green-500 border-green-500" : "border-gray-300"
                       )}
                     >
                       {selected && <Check className="w-4 h-4 text-white" />}

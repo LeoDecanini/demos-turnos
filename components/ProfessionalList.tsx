@@ -66,8 +66,8 @@ export default function ProfessionalList({
                 key={p._id}
                 className={cn(
                   "flex items-center gap-4 px-4 py-4 border-b border-gray-100 cursor-pointer transition-colors",
-                  "hover:bg-amber-50/40",
-                  selected && "bg-amber-50"
+                  "hover:bg-green-50/40",
+                  selected && "bg-green-50"
                 )}
                 onClick={() => onSelect(p._id)}
               >
@@ -88,7 +88,7 @@ export default function ProfessionalList({
                 <div
                   className={cn(
                     "w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors",
-                    selected ? "bg-amber-500 border-amber-500" : "border-gray-300"
+                    selected ? "bg-green-500 border-green-500" : "border-gray-300"
                   )}
                 >
                   {selected && <Check className="w-4 h-4 text-white" />}
