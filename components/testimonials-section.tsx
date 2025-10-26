@@ -25,7 +25,6 @@ const BASE: Omit<Testimonial, "id">[] = [
   { name: "Mirta Nieves Zamora", date: "Hace 11 meses", avatar: "/6.png", rating: 5, text: "Impecable consultorio, amorosos los médicos, muy atentos. Súper recomendable." },
   { name: "Ceres Manon", date: "Hace 1 año", avatar: "/7.png", rating: 5, text: "Amo ir a esta estética, me siento segura y confiada. Los recomiendo siempre!" },
   { name: "Maria Lujan Flores", date: "Hace 1 año", avatar: "/8.png", rating: 5, text: "Excelente atención y servicios. Realmente las mejores manos y productos." },
-  { name: "Luisana Quevedo", date: "Hace 11 meses", avatar: "/9.png", rating: 5, text: "Muy profesionales, atentos y responsables. Siempre muy conforme con la atención." },
 ]
 
 function Stars({ n = 5, size = 16 }: { n?: number; size?: number }) {
