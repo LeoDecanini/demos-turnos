@@ -360,7 +360,7 @@ export default function Home() {
                             Nuestros tratamientos
                         </h2>
                         <div className="w-24 h-1 bg-gradient-to-r from-green-500 to-green-600 mx-auto mb-4 rounded-full" />
-                        <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed-moveup">
+                        <p className="text-xl px-3 text-gray-600 max-w-4xl mx-auto leading-relaxed-moveup">
                             Ofrecemos servicios de nutrición personalizados para ayudarte a alcanzar tus objetivos de salud y bienestar de forma sostenible.
                         </p>
                     </div>
