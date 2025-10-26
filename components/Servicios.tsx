@@ -77,14 +77,14 @@ export default function ServicesSlider() {
         setItems(serviciosNutricion);
         setLoading(false);
         return;
-        const res = await fetch(url, { cache: "no-store" });
+        /* const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error("Error al cargar servicios");
 
         const data = await res.json();
         const list: Service[] = Array.isArray(data?.data)
           ? data.data
           : data?.data?.items ?? [];
-        setItems(list);
+        setItems(list); */
       } catch (err) {
         console.error("Error al obtener servicios:", err);
         setItems([]);
