@@ -352,6 +352,9 @@ function RescheduleInlineNF({
 
   // Profesional FIJO proveniente del booking
   const [selectedProfessional, setSelectedProfessional] = React.useState<string>("any");
+  
+  // Modalidad por defecto presencial
+  const [selectedModality, setSelectedModality] = React.useState<'presencial' | 'virtual'>('presencial');
 
   const [availableDays, setAvailableDays] = React.useState<string[]>([]);
   const [loadingDays, setLoadingDays] = React.useState(false);
@@ -498,6 +501,8 @@ function RescheduleInlineNF({
           (bookingInfo?.professionalId && bookingInfo.professionalId) ||
           (pid && pid !== "any" ? pid : undefined);
         if (effectivePid) params.set("professional", String(effectivePid));
+        // Agregar modalidad
+        params.set("modality", selectedModality || 'presencial');
         const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
         const raw = await res.json().catch(() => ({}));
         const payload = getPayload(raw);
@@ -513,7 +518,7 @@ function RescheduleInlineNF({
         setLoadingDays(false);
       }
     },
-    [slug, visibleMonth, bookingInfo?.professionalId]
+    [slug, visibleMonth, bookingInfo?.professionalId, selectedModality]
   );
 
   // Horarios
@@ -528,6 +533,8 @@ function RescheduleInlineNF({
         params.set("date", dateStr);
         const effectivePid = bookingInfo?.professionalId || (_pid && _pid !== "any" ? _pid : undefined);
         if (effectivePid) params.set("professional", String(effectivePid));
+        // Agregar modalidad
+        params.set("modality", selectedModality || 'presencial');
         const res = await fetch(`${API_BASE}/${slug}/day-slots?${params.toString()}`, { cache: "no-store" });
         const raw = await res.json().catch(() => ({}));
         const payload = getPayload(raw);
@@ -538,7 +545,7 @@ function RescheduleInlineNF({
         setLoadingSlots(false);
       }
     },
-    [slug, availableDays, bookingInfo?.professionalId]
+    [slug, availableDays, bookingInfo?.professionalId, selectedModality]
   );
 
   // Bootstrap cuando ya tengo serviceId
@@ -1196,6 +1203,9 @@ export default function ReservarPage() {
     {}
   );
   const [profIdx, setProfIdx] = useState(0);
+  
+  // Estado para modalidad (presencial/virtual)
+  const [modalityByService, setModalityByService] = useState<Record<string, 'presencial' | 'virtual'>>({});
 
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const [availableDays, setAvailableDays] = useState<string[]>([]);
@@ -1213,7 +1223,13 @@ export default function ReservarPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [dni, setDni] = useState("");
+  const [cuit, setCuit] = useState("");
+  const [obraSocial, setObraSocial] = useState("");
   const [notes, setNotes] = useState("");
+
+  // 🏥 Obras sociales disponibles
+  const [socialWorks, setSocialWorks] = useState<Array<{ _id: string; name: string }>>([]);
+  const [loadingSocialWorks, setLoadingSocialWorks] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [bookingResult, setBookingResult] = useState<BookingResponse | null>(
@@ -1331,7 +1347,7 @@ export default function ReservarPage() {
   }>({});
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const validateField = (
-    name: "fullName" | "email" | "phone" | "dni",
+    name: "fullName" | "email" | "phone" | "dni" | "cuit",
     value: string
   ) => {
     let msg = "";
@@ -1354,6 +1370,11 @@ export default function ReservarPage() {
       if (digits.length < 6) msg = "Ingresá un DNI válido";
     }
 
+    if (name === "cuit") {
+      const digits = v.replace(/\D/g, "");
+      if (digits.length !== 11) msg = "El CUIT debe tener 11 dígitos";
+    }
+
     setErrors((prev) => ({ ...prev, [name]: msg || undefined }));
     return !msg;
   };
@@ -1361,7 +1382,8 @@ export default function ReservarPage() {
     validateField("fullName", fullName) &&
     validateField("email", email) &&
     validateField("phone", phone) &&
-    validateField("dni", dni);
+    validateField("dni", dni) &&
+    validateField("cuit", cuit);
 
   const resetCalendar = () => {
     setAvailableDays([]);
@@ -1641,6 +1663,37 @@ export default function ReservarPage() {
     });
   }, [step, profIdx, selectedServices]);
 
+  // 🏥 Cargar obras sociales disponibles
+  useEffect(() => {
+    const fetchSocialWorks = async () => {
+      setLoadingSocialWorks(true);
+      try {
+        const slug =
+          SUBDOMAIN ??
+          (typeof window !== "undefined"
+            ? window.location.hostname.split(".")[0]
+            : "");
+        
+        const res = await fetch(`${API_BASE}/${slug}/social-works`, {
+          cache: "no-store",
+        });
+
+        if (!res.ok) throw new Error("Error al cargar obras sociales");
+
+        const data = await res.json();
+        const list = data?.data || [];
+        setSocialWorks(list);
+      } catch (error) {
+        console.error("Error cargando obras sociales:", error);
+        setSocialWorks([]);
+      } finally {
+        setLoadingSocialWorks(false);
+      }
+    };
+
+    fetchSocialWorks();
+  }, []);
+
 
   const loadProfessionalsForServices = async (serviceIds: string[]) => {
     setLoadingProfessionals(true);
@@ -1697,7 +1750,8 @@ export default function ReservarPage() {
   const loadAvailableDays = async (
     srvId: string,
     profId?: string | "any",
-    monthStr?: string
+    monthStr?: string,
+    modality?: 'presencial' | 'virtual'
   ) => {
     setLoadingDays(true);
     try {
@@ -1705,6 +1759,8 @@ export default function ReservarPage() {
       params.set("service", srvId);
       params.set("month", monthStr ?? fmtMonth(visibleMonth));
       if (profId && profId !== "any") params.set("professional", profId);
+      // Agregar modalidad si está presente, sino por defecto 'presencial'
+      params.set("modality", modality || modalityByService[srvId] || 'presencial');
       const slug =
         SUBDOMAIN ??
         (typeof window !== "undefined"
@@ -1739,7 +1795,8 @@ export default function ReservarPage() {
   const loadTimeSlots = async (
     srvId: string,
     profId: string | "any" | undefined,
-    date: Date
+    date: Date,
+    modality?: 'presencial' | 'virtual'
   ) => {
     const dateStr = fmtDay(date);
     if (!srvId || !availableDays.includes(dateStr)) return;
@@ -1749,6 +1806,8 @@ export default function ReservarPage() {
       params.set("service", srvId);
       params.set("date", dateStr);
       if (profId && profId !== "any") params.set("professional", profId);
+      // Agregar modalidad si está presente, sino por defecto 'presencial'
+      params.set("modality", modality || modalityByService[srvId] || 'presencial');
       const slug =
         SUBDOMAIN ??
         (typeof window !== "undefined"
@@ -1979,6 +2038,8 @@ export default function ReservarPage() {
             email: email.trim(),
             phone: phone.trim(),
             dni: dni.trim(),
+            cuit: cuit.trim(),
+            obraSocial: obraSocial.trim() || undefined,
           },
           notes: notes?.trim() || undefined,
         }),
@@ -1990,14 +2051,14 @@ export default function ReservarPage() {
         if (!hasAnyBooking(payload)) {
           setBulkErrors(errs);
           toast.error(payload?.message || "No se pudo crear ninguna reserva. Revisá los errores.");
-          setStep(5);
+          setStep(6); // Volver al formulario de datos
           return;
         }
         if (errs.length) setBulkWarns(errs);
         setBookingResult(payload);
         const count = getBookingCount(payload);
         toast.success(count > 1 ? `¡${count} reservas creadas!` : "¡Reserva creada!");
-        setStep(6);
+        setStep(7); // Ir a confirmación
         scrollToTop();
         return;
       }
@@ -2014,6 +2075,8 @@ export default function ReservarPage() {
               email: email.trim(),
               phone: phone.trim(),
               dni: dni.trim(),
+              cuit: cuit.trim(),
+              obraSocial: obraSocial.trim() || undefined,
             },
             notes: notes?.trim() || undefined,
           }),
@@ -2039,12 +2102,12 @@ export default function ReservarPage() {
 
       const count = created.length;
       toast.success(count > 1 ? `¡${count} reservas creadas!` : "¡Reserva creada!");
-      setStep(6);
+      setStep(7); // Ir a confirmación
       scrollToTop();
     } catch (e) {
       const msg = (e as Error)?.message || "No se pudo crear la reserva. Probá nuevamente.";
       toast.error(msg);
-      setStep(5);
+      setStep(6); // Volver al formulario de datos
     } finally {
       setSubmitting(false);
     }
@@ -2202,21 +2265,21 @@ export default function ReservarPage() {
     if (profIdx + 1 < selectedServices.length) {
       setProfIdx((i) => i + 1);
     } else {
-      setScheduleIdx(0);
-      resetCalendar();
-      setStep(4); // el useEffect de abajo hará el fetch con el profesional actualizado
+      // Ir al paso 4 (selección de modalidad)
+      setStep(4);
       scrollToTop();
     }
   };
 
   useEffect(() => {
-    if (step !== 4 || !currentServiceId) return;
+    if (step !== 5 || !currentServiceId) return;
     const pid = selection[currentServiceId]?.professionalId || "any";
-    void loadAvailableDays(currentServiceId, pid);
-    // al entrar al paso 4 o cambiar el profesional del servicio actual,
+    const modality = modalityByService[currentServiceId];
+    void loadAvailableDays(currentServiceId, pid, undefined, modality);
+    // al entrar al paso 5 (calendario) o cambiar el profesional del servicio actual,
     // cargamos los días con el valor NUEVO ya aplicado
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, currentServiceId, selection[currentServiceId]?.professionalId]);
+  }, [step, currentServiceId, selection[currentServiceId]?.professionalId, modalityByService[currentServiceId]]);
 
   useEffect(() => {
     if (step !== 3) return;
@@ -3502,7 +3565,109 @@ export default function ReservarPage() {
           </div>
         )}
 
-        {step === 4 && currentServiceId && (
+        {/* STEP 4: Selección de modalidad (presencial/virtual) */}
+        {step === 4 && (
+          <div className="space-y-8">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Elegí modalidad del servicio
+              </h2>
+              <p className="text-gray-600">
+                Selecciona si prefieres atención presencial o virtual
+              </p>
+            </div>
+
+            <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Opción Presencial */}
+              <Card
+                className={`cursor-pointer transition-all border-2 ${
+                  modalityByService[selectedServices[0]] === 'presencial'
+                    ? 'border-green-500 bg-green-50/50 shadow-lg'
+                    : 'border-gray-200 hover:border-green-300 hover:shadow-md'
+                }`}
+                onClick={() => {
+                  const firstService = selectedServices[0];
+                  setModalityByService(prev => ({
+                    ...prev,
+                    [firstService]: 'presencial'
+                  }));
+                }}
+              >
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="text-6xl">📍</div>
+                  <h3 className="text-xl font-bold text-gray-900">Presencial</h3>
+                  <p className="text-sm text-gray-600">
+                    Atención en la ubicación física del profesional
+                  </p>
+                  {modalityByService[selectedServices[0]] === 'presencial' && (
+                    <div className="flex justify-center">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500 text-white">
+                        ✓ Seleccionado
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Opción Virtual */}
+              <Card
+                className={`cursor-pointer transition-all border-2 ${
+                  modalityByService[selectedServices[0]] === 'virtual'
+                    ? 'border-blue-500 bg-blue-50/50 shadow-lg'
+                    : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                }`}
+                onClick={() => {
+                  const firstService = selectedServices[0];
+                  setModalityByService(prev => ({
+                    ...prev,
+                    [firstService]: 'virtual'
+                  }));
+                }}
+              >
+                <CardContent className="p-6 text-center space-y-4">
+                  <div className="text-6xl">💻</div>
+                  <h3 className="text-xl font-bold text-gray-900">Virtual</h3>
+                  <p className="text-sm text-gray-600">
+                    Atención remota por videollamada o teléfono
+                  </p>
+                  {modalityByService[selectedServices[0]] === 'virtual' && (
+                    <div className="flex justify-center">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white">
+                        ✓ Seleccionado
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <FloatingNav
+              onBack={() => {
+                setStep(3);
+                setProfIdx(selectedServices.length - 1);
+                scrollToTop();
+              }}
+              onNext={() => {
+                const firstService = selectedServices[0];
+                if (!modalityByService[firstService]) {
+                  // Si no seleccionó, por defecto presencial
+                  setModalityByService(prev => ({
+                    ...prev,
+                    [firstService]: 'presencial'
+                  }));
+                }
+                setScheduleIdx(0);
+                resetCalendar();
+                setStep(5);
+                scrollToTop();
+              }}
+              backDisabled={submitting}
+              nextDisabled={submitting || !modalityByService[selectedServices[0]]}
+            />
+          </div>
+        )}
+
+        {step === 5 && currentServiceId && (
           <>
             <div className="text-center mb-4">
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -3546,14 +3711,14 @@ export default function ReservarPage() {
                         month={visibleMonth}
                         onMonthChange={async (m) => {
                           setVisibleMonth(m);
-                          await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m));
+                          await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId]);
                         }}
                         onSelect={async (date) => {
                           setSelectedDateObj(date || undefined);
                           if (date && availableDays.includes(fmtDay(date))) {
                             setTimeSlots([]);
                             setSelectedTimeBlock(null);
-                            await loadTimeSlots(currentServiceId, currentProfId, date);
+                            await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
                             scrollToTimes();
                           } else {
                             setTimeSlots([]);
@@ -3678,8 +3843,8 @@ export default function ReservarPage() {
             <FloatingNav
               onBack={async () => {
                 if (scheduleIdx === 0) {
-                  setStep(3);
-                  setProfIdx(selectedServices.length - 1);
+                  // Volver al paso 4 (modalidad)
+                  setStep(4);
                   scrollToTop();
                   return;
                 }
@@ -3688,7 +3853,9 @@ export default function ReservarPage() {
                 resetCalendar();
                 await loadAvailableDays(
                   selectedServices[prevIdx],
-                  selection[selectedServices[prevIdx]]?.professionalId || "any"
+                  selection[selectedServices[prevIdx]]?.professionalId || "any",
+                  undefined,
+                  modalityByService[selectedServices[prevIdx]]
                 );
                 scrollToTop();
               }}
@@ -3705,7 +3872,8 @@ export default function ReservarPage() {
                   );
                   scrollToTop();
                 } else {
-                  setStep(5);
+                  // Ir al paso 6 (datos del cliente)
+                  setStep(6);
                   scrollToTop();
                 }
               }}
@@ -3719,7 +3887,7 @@ export default function ReservarPage() {
           </>
         )}
 
-        {step === 5 && (
+        {step === 6 && (
           <>
             <div className="text-center mb-4">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -3859,6 +4027,50 @@ export default function ReservarPage() {
 
                       <div className="mt-2">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          CUIT <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          className={`w-full px-4 py-1.5 !outline-none border-2 rounded-xl ${errors.cuit ? "border-red-500" : "border-gray-200"
+                            }`}
+                          placeholder="20-12345678-9"
+                          value={cuit}
+                          onChange={(e) => {
+                            setCuit(e.target.value);
+                            if (errors.cuit) validateField("cuit", e.target.value);
+                          }}
+                          onBlur={(e) => validateField("cuit", e.target.value)}
+                          aria-invalid={!!errors.cuit}
+                        />
+                        {errors.cuit && (
+                          <p className="mt-1 text-sm text-red-600">{errors.cuit}</p>
+                        )}
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Obra Social / Prepaga
+                        </label>
+                        <select
+                          className="w-full px-4 py-1.5 !outline-none border-2 border-gray-200 rounded-xl"
+                          value={obraSocial}
+                          onChange={(e) => setObraSocial(e.target.value)}
+                          disabled={loadingSocialWorks}
+                        >
+                          <option value="">Sin obra social</option>
+                          {socialWorks.map((sw) => (
+                            <option key={sw._id} value={sw._id}>
+                              {sw.name}
+                            </option>
+                          ))}
+                        </select>
+                        {loadingSocialWorks && (
+                          <p className="mt-1 text-xs text-gray-500">Cargando obras sociales...</p>
+                        )}
+                      </div>
+
+                      <div className="mt-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                           Comentarios (opcional)
                         </label>
                         <textarea
@@ -3873,7 +4085,7 @@ export default function ReservarPage() {
                   </CardContent>
 
                   <FloatingNav
-                    onBack={() => setStep(4)}
+                    onBack={() => setStep(5)}
                     onNext={createBooking}
                     backDisabled={submitting}
                     nextDisabled={
@@ -3883,10 +4095,12 @@ export default function ReservarPage() {
                       !email.trim() ||
                       !phone.trim() ||
                       !dni.trim() ||
+                      !cuit.trim() ||
                       !!errors.fullName ||
                       !!errors.email ||
                       !!errors.phone ||
-                      !!errors.dni
+                      !!errors.dni ||
+                      !!errors.cuit
                     }
                     nextLabel={submitting ? "Creando…" : `Confirmar ${nounTitle}`}
                   />
@@ -3898,7 +4112,7 @@ export default function ReservarPage() {
 
 
 
-        {step === 6 && bookingResult && (
+        {step === 7 && bookingResult && (
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>
             {(() => {
               const groupDeadline: Date | null = (() => {
