@@ -991,6 +991,8 @@ type RawService = {
   popular?: boolean;
   sessionsCount?: number;
   sessionDuration?: number;
+  allowPresencial?: boolean;  // 🆕 Soporte de modalidades
+  allowVirtual?: boolean;     // 🆕 Soporte de modalidades
 };
 
 type DepositCfg = {
@@ -1674,14 +1676,19 @@ export default function ReservarPage() {
             ? window.location.hostname.split(".")[0]
             : "");
         
+        console.log("Fetching social works for slug:", slug);
+        console.log(`${API_BASE}/${slug}/social-works`)
         const res = await fetch(`${API_BASE}/${slug}/social-works`, {
           cache: "no-store",
         });
 
+        console.log("Response status:", res.status);
         if (!res.ok) throw new Error("Error al cargar obras sociales");
 
         const data = await res.json();
+        console.log("Social works data received:", data);
         const list = data?.data || [];
+        console.log("Social works list:", list);
         setSocialWorks(list);
       } catch (error) {
         console.error("Error cargando obras sociales:", error);
@@ -1693,7 +1700,6 @@ export default function ReservarPage() {
 
     fetchSocialWorks();
   }, []);
-
 
   const loadProfessionalsForServices = async (serviceIds: string[]) => {
     setLoadingProfessionals(true);
@@ -2027,22 +2033,34 @@ export default function ReservarPage() {
       const bulkUrl = `${API_BASE}/${slug}/create-booking-bulk`;
       const oneUrl = `${API_BASE}/${slug}/create-booking`;
 
+      const bulkPayload = {
+        items,
+        timezone: tz,
+        client: {
+          name: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          dni: dni.trim(),
+          cuit: cuit.trim(),
+          obraSocial: obraSocial.trim() || undefined,
+        },
+        notes: notes?.trim() || undefined,
+        modality: modalityByService[selectedServices[0]] || 'presencial',
+      };
+
+      console.log('🔍 [Frontend] Enviando booking BULK con modalidad:', {
+        serviceId: selectedServices[0],
+        modality: modalityByService[selectedServices[0]],
+        fallback: 'presencial',
+        finalModality: bulkPayload.modality,
+        modalityByService: modalityByService,
+        items: items,
+      });
+
       const bulkRes = await fetch(bulkUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          timezone: tz,
-          client: {
-            name: fullName.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
-            dni: dni.trim(),
-            cuit: cuit.trim(),
-            obraSocial: obraSocial.trim() || undefined,
-          },
-          notes: notes?.trim() || undefined,
-        }),
+        body: JSON.stringify(bulkPayload),
       });
 
       if (bulkRes.ok) {
@@ -2065,21 +2083,32 @@ export default function ReservarPage() {
 
       const created: BookingCreated[] = [];
       for (const it of items) {
+        const individualPayload = {
+          ...it,
+          client: {
+            name: fullName.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            dni: dni.trim(),
+            cuit: cuit.trim(),
+            obraSocial: obraSocial.trim() || undefined,
+          },
+          notes: notes?.trim() || undefined,
+          modality: modalityByService[selectedServices[0]] || 'presencial',
+        };
+        
+        console.log('🔍 [Frontend] Enviando booking individual con modalidad:', {
+          serviceId: selectedServices[0],
+          modality: modalityByService[selectedServices[0]],
+          fallback: 'presencial',
+          finalModality: individualPayload.modality,
+          modalityByService: modalityByService,
+        });
+        
         const r = await fetch(oneUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...it,
-            client: {
-              name: fullName.trim(),
-              email: email.trim(),
-              phone: phone.trim(),
-              dni: dni.trim(),
-              cuit: cuit.trim(),
-              obraSocial: obraSocial.trim() || undefined,
-            },
-            notes: notes?.trim() || undefined,
-          }),
+          body: JSON.stringify(individualPayload),
         });
 
         if (!r.ok) {
@@ -2260,14 +2289,92 @@ export default function ReservarPage() {
 
   // --- Avance automático al elegir profesional
 
+  const goNextAfterProfessional = async () => {
 
-  const goNextAfterProfessional = () => {
+    console.log("🚀 [goNextAfterProfessional] Iniciando...")
+
     if (profIdx + 1 < selectedServices.length) {
       setProfIdx((i) => i + 1);
     } else {
-      // Ir al paso 4 (selección de modalidad)
-      setStep(4);
-      scrollToTop();
+      // 🔍 Consultar al backend qué modalidades están realmente disponibles
+      const firstServiceId = selectedServices[0];
+      const service = services.find(s => s._id === firstServiceId);
+      
+      if (!service) {
+        console.log('⚠️ [goNextAfterProfessional] Servicio no encontrado, yendo a paso 4');
+        setStep(4);
+        scrollToTop();
+        return;
+      }
+
+      try {
+        // Consultar al backend las modalidades reales desde CalendarWindows
+        const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+        const professionalId = selection[firstServiceId]?.professionalId;
+        const branchId = selection[firstServiceId]?.branchId;
+        
+        const params = new URLSearchParams();
+        params.set("service", firstServiceId);
+        if (professionalId && professionalId !== "any") params.set("professional", professionalId);
+        if (branchId) params.set("branch", branchId);
+        
+        console.log('🔍 Consultando modalidades disponibles al backend...', {
+          serviceId: firstServiceId,
+          serviceName: service.name,
+          professionalId,
+          branchId
+        });
+        
+        const res = await fetch(`${API_BASE}/${slug}/service-modalities?${params.toString()}`, { 
+          cache: "no-store" 
+        });
+        const raw = await res.json().catch(() => ({}));
+        const payload = getPayload(raw);
+        
+        let availableModalities: ('presencial' | 'virtual')[] = [];
+        
+        if (Array.isArray(payload?.modalities) && payload.modalities.length > 0) {
+          availableModalities = payload.modalities;
+          console.log('✅ Modalidades obtenidas del backend:', availableModalities);
+        } else {
+          // Fallback: usar allowPresencial/allowVirtual del servicio
+          console.log('⚠️ Backend no retornó modalidades, usando configuración del servicio');
+          const allowsPresencial = service.allowPresencial === true;
+          const allowsVirtual = service.allowVirtual === true;
+          
+          if (allowsPresencial) availableModalities.push('presencial');
+          if (allowsVirtual) availableModalities.push('virtual');
+          
+          if (availableModalities.length === 0) {
+            availableModalities.push('presencial');
+          }
+        }
+        
+        console.log('📊 Modalidades finales:', availableModalities);
+        
+        // ✨ Si solo hay una modalidad, auto-seleccionarla y saltar al paso 5
+        if (availableModalities.length === 1) {
+          const onlyModality = availableModalities[0];
+          setModalityByService(prev => ({
+            ...prev,
+            [firstServiceId]: onlyModality
+          }));
+          console.log('✅ Solo una modalidad disponible, saltando al paso 5 con:', onlyModality);
+          setStep(5);
+          scrollToTop();
+        } else {
+          // Si hay 2 modalidades, mostrar paso 4
+          console.log('📋 Dos modalidades disponibles, mostrando paso de selección');
+          setStep(4);
+          scrollToTop();
+        }
+        
+      } catch (error) {
+        console.error('❌ Error consultando modalidades:', error);
+        // En caso de error, ir al paso 4 para que el usuario elija
+        setStep(4);
+        scrollToTop();
+      }
     }
   };
 
@@ -3545,14 +3652,8 @@ export default function ReservarPage() {
                       scrollToTop();
                     }}
                     onNext={() => {
-                      if (profIdx + 1 < selectedServices.length) {
-                        setProfIdx((i) => i + 1);
-                      } else {
-                        setScheduleIdx(0);
-                        resetCalendar();
-                        setStep(4); // sin loadAvailableDays acá
-                        scrollToTop();
-                      }
+                      // ✅ Usar la misma lógica que cuando se selecciona desde la lista
+                      goNextAfterProfessional();
                     }}
 
                     backDisabled={submitting}
@@ -3647,7 +3748,7 @@ export default function ReservarPage() {
                 setProfIdx(selectedServices.length - 1);
                 scrollToTop();
               }}
-              onNext={() => {
+              onNext={async () => {
                 const firstService = selectedServices[0];
                 if (!modalityByService[firstService]) {
                   // Si no seleccionó, por defecto presencial
@@ -3656,6 +3757,13 @@ export default function ReservarPage() {
                     [firstService]: 'presencial'
                   }));
                 }
+                
+                // 🔍 Precargar días disponibles con la modalidad seleccionada
+                const selectedModality = modalityByService[firstService] || 'presencial';
+                const pid = selection[firstService]?.professionalId || "any";
+                console.log('🔄 Precargando días para modalidad:', selectedModality);
+                await loadAvailableDays(firstService, pid, undefined, selectedModality);
+                
                 setScheduleIdx(0);
                 resetCalendar();
                 setStep(5);
@@ -4109,8 +4217,6 @@ export default function ReservarPage() {
             })()}
           </>
         )}
-
-
 
         {step === 7 && bookingResult && (
           <div className={submitting ? "pointer-events-none opacity-60" : ""}>

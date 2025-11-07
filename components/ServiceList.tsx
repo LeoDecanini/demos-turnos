@@ -51,12 +51,12 @@ type Props = {
 const money = (n?: number, currency = "ARS") =>
   typeof n === "number"
     ? n
-        .toLocaleString("es-AR", {
-          style: "currency",
-          currency,
-          maximumFractionDigits: 0,
-        })
-        .replace(/\s/g, "")
+      .toLocaleString("es-AR", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 0,
+      })
+      .replace(/\s/g, "")
     : "";
 
 export default function ServiceList({
