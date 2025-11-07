@@ -1208,6 +1208,8 @@ export default function ReservarPage() {
   
   // Estado para modalidad (presencial/virtual)
   const [modalityByService, setModalityByService] = useState<Record<string, 'presencial' | 'virtual'>>({});
+  // Rastrear si el paso 4 (modalidad) fue saltado porque hay una única modalidad
+  const [step4WasSkipped, setStep4WasSkipped] = useState(false);
 
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const [availableDays, setAvailableDays] = useState<string[]>([]);
@@ -2360,11 +2362,13 @@ export default function ReservarPage() {
             [firstServiceId]: onlyModality
           }));
           console.log('✅ Solo una modalidad disponible, saltando al paso 5 con:', onlyModality);
+          setStep4WasSkipped(true);
           setStep(5);
           scrollToTop();
         } else {
           // Si hay 2 modalidades, mostrar paso 4
           console.log('📋 Dos modalidades disponibles, mostrando paso de selección');
+          setStep4WasSkipped(false);
           setStep(4);
           scrollToTop();
         }
@@ -3744,6 +3748,7 @@ export default function ReservarPage() {
 
             <FloatingNav
               onBack={() => {
+                setStep4WasSkipped(false);
                 setStep(3);
                 setProfIdx(selectedServices.length - 1);
                 scrollToTop();
@@ -3951,8 +3956,11 @@ export default function ReservarPage() {
             <FloatingNav
               onBack={async () => {
                 if (scheduleIdx === 0) {
-                  // Volver al paso 4 (modalidad)
-                  setStep(4);
+                  // Si saltamos el paso 4, volver al paso 3
+                  // Si no saltamos, volver al paso 4
+                  const targetStep = step4WasSkipped ? 3 : 4;
+                  setStep4WasSkipped(false);
+                  setStep(targetStep);
                   scrollToTop();
                   return;
                 }
