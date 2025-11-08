@@ -47,6 +47,11 @@ function validatePassword(v: string) {
   if (v.length < 6) return 'Mínimo 6 caracteres';
   return '';
 }
+function validateCuit(v: string) {
+  const s = onlyDigits(v);
+  if (s.length !== 11) return 'CUIT debe tener 11 dígitos';
+  return '';
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -57,25 +62,52 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [dni, setDni] = useState('');
+  const [cuit, setCuit] = useState('');
+  const [socialWork, setSocialWork] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
 
   const [touched, setTouched] = useState<{[k:string]:boolean}>({});
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [socialWorks, setSocialWorks] = useState<Array<{_id: string; name: string}>>([]);
+  const [loadingSocialWorks, setLoadingSocialWorks] = useState(true);
 
   useEffect(() => {
     const qp = searchParams?.get('email');
     if (qp) setEmail(qp);
   }, [searchParams]);
 
+  useEffect(() => {
+    const fetchSocialWorks = async () => {
+      try {
+        const slug = getSlug();
+        if (!slug) return;
+        const r = await fetch(`${API}/bookingmodule/public/${slug}/social-works`, {
+          cache: 'no-store',
+        });
+        if (r.ok) {
+          const data = await r.json();
+          const list = data?.data || data || [];
+          setSocialWorks(Array.isArray(list) ? list : []);
+        }
+      } catch (e) {
+        console.error('Error fetching social works:', e);
+      } finally {
+        setLoadingSocialWorks(false);
+      }
+    };
+    fetchSocialWorks();
+  }, []);
+
   const errors = useMemo(() => ({
     name: validateName(name),
     email: validateEmail(email),
     phone: validatePhone(phone),
     dni: validateDni(dni),
+    cuit: validateCuit(cuit),
     password: validatePassword(password),
-  }), [name, email, phone, dni, password]);
+  }), [name, email, phone, dni, cuit, password]);
 
   const canSubmit = useMemo(() =>
     !pending &&
@@ -83,6 +115,7 @@ export default function RegisterPage() {
     !errors.email &&
     !errors.phone &&
     !errors.dni &&
+    !errors.cuit &&
     !errors.password, [errors, pending]);
 
   const onSubmit = async () => {
@@ -98,6 +131,8 @@ export default function RegisterPage() {
         email: email.trim(),
         phone: phone.trim(),
         dni: onlyDigits(dni),
+        cuit: onlyDigits(cuit),
+        socialWork: socialWork.trim(),
         password
       };
 
@@ -122,7 +157,7 @@ export default function RegisterPage() {
 
   const onEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      setTouched({ name: true, email: true, phone: true, dni: true, password: true });
+      setTouched({ name: true, email: true, phone: true, dni: true, cuit: true, password: true });
       if (canSubmit) onSubmit();
     }
   };
@@ -229,6 +264,46 @@ export default function RegisterPage() {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-slate-700">CUIT <span className="text-red-600">*</span></label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={cuit}
+                  onChange={e => setCuit(onlyDigits(e.target.value).slice(0, 11))}
+                  onBlur={() => setTouched(s => ({...s, cuit: true}))}
+                  onKeyDown={onEnter}
+                  placeholder="11 dígitos"
+                  maxLength={11}
+                  className={`mt-1 w-full rounded-xl border bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 ${
+                    touched.cuit && errors.cuit
+                      ? 'border-red-300 focus:ring-red-200'
+                      : 'border-slate-200 focus:border-green-400 focus:ring-green-200'
+                  }`}
+                />
+                {touched.cuit && errors.cuit && (
+                  <p className="mt-1 text-xs text-red-600">{errors.cuit}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Obra Social</label>
+                <select
+                  value={socialWork}
+                  onChange={e => setSocialWork(e.target.value)}
+                  onBlur={() => setTouched(s => ({...s, socialWork: true}))}
+                  disabled={loadingSocialWorks}
+                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 outline-none transition focus:ring-2 focus:border-green-400 focus:ring-green-200 disabled:opacity-50"
+                >
+                  <option value="">Selecciona una obra social</option>
+                  {socialWorks.map((sw) => (
+                    <option key={sw._id} value={sw._id}>
+                      {sw.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-slate-700">Contraseña</label>
                 <div className="mt-1 relative">
                   <input
@@ -271,7 +346,7 @@ export default function RegisterPage() {
 
               <button
                 onClick={() => {
-                  setTouched({ name: true, email: true, phone: true, dni: true, password: true });
+                  setTouched({ name: true, email: true, phone: true, dni: true, cuit: true, socialWork: true, password: true });
                   onSubmit();
                 }}
                 disabled={!canSubmit}
