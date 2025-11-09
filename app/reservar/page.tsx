@@ -72,12 +72,14 @@ function ActionInlineRouterNF({
   action,
   bookingId,
   serviceId,
-  groupMode,              // <-- NUEVO
+  groupMode,
+  modality,                // <-- NUEVO
 }: {
   action: "cancel" | "reschedule";
   bookingId: string;
   serviceId?: string | null;
-  groupMode?: boolean;     // <-- NUEVO
+  groupMode?: boolean;
+  modality?: "presencial" | "virtual";  // <-- NUEVO
 }) {
   if (action === "cancel") {
     return <CancelInlineNF bookingId={bookingId} />;
@@ -86,7 +88,8 @@ function ActionInlineRouterNF({
     <RescheduleInlineNF
       bookingId={bookingId}
       serviceId={serviceId || undefined}
-      groupMode={groupMode}   // <-- NUEVO
+      groupMode={groupMode}
+      modality={modality}    // <-- NUEVO
     />
   );
 }
@@ -333,14 +336,20 @@ function BookingContextCard({
 function RescheduleInlineNF({
   bookingId,
   serviceId: serviceIdProp,
-  groupMode, // NUEVO
+  groupMode,
+  modality: modalityProp,  // <-- NUEVO
 }: {
   bookingId: string;
   serviceId?: string;
   groupMode?: boolean;
+  modality?: "presencial" | "virtual";  // <-- NUEVO
 }) {
   const slug = getSlugFromEnvOrHost();
 
+  // ============================================================
+  // TODOS LOS HOOKS PRIMERO (antes de cualquier return)
+  // ============================================================
+  
   // Por ahora NO se puede cambiar de profesional → arrancamos en Step 3
   const [step, setStep] = React.useState<2 | 3 | 4>(3);
 
@@ -353,8 +362,8 @@ function RescheduleInlineNF({
   // Profesional FIJO proveniente del booking
   const [selectedProfessional, setSelectedProfessional] = React.useState<string>("any");
   
-  // Modalidad por defecto presencial
-  const [selectedModality, setSelectedModality] = React.useState<'presencial' | 'virtual'>('presencial');
+  // Modalidad: inicializar con la prop o por defecto 'presencial'
+  const [selectedModality, setSelectedModality] = React.useState<'presencial' | 'virtual'>(modalityProp || 'presencial');
 
   const [availableDays, setAvailableDays] = React.useState<string[]>([]);
   const [loadingDays, setLoadingDays] = React.useState(false);
@@ -369,11 +378,6 @@ function RescheduleInlineNF({
   const [err, setErr] = React.useState<string | null>(null);
   const [done, setDone] = React.useState(false);
 
-  const isDateAvailable = React.useCallback(
-    (date: Date) => availableDays.includes(fmtDay(date)),
-    [availableDays]
-  );
-
   const [bookingInfo, setBookingInfo] = React.useState<{
     serviceName?: string;
     professionalName?: string | null;
@@ -382,6 +386,96 @@ function RescheduleInlineNF({
     endISO?: string;
     status?: string;
   } | null>(null);
+
+  const isDateAvailable = React.useCallback(
+    (date: Date) => availableDays.includes(fmtDay(date)),
+    [availableDays]
+  );
+
+  // Profesionales (solo para nombres; no hay picker)
+  const loadProfessionals = React.useCallback(async (sid: string) => {
+    if (!sid || !slug) return;
+    setLoadingProfessionals(true);
+    try {
+      const res = await fetch(`${API_BASE}/${slug}/services/${sid}/professionals`, { cache: "no-store" });
+      const raw = await res.json().catch(() => ({}));
+      const payload = getPayload(raw);
+      const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
+      setProfessionals(list);
+    } finally {
+      setLoadingProfessionals(false);
+    }
+  }, [slug]);
+
+  // Días
+  const loadAvailableDays = React.useCallback(
+    async (sid: string, pid?: string | "any", monthStr?: string) => {
+      if (!sid || !slug) return;
+      setLoadingDays(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("service", sid);
+        params.set("month", monthStr ?? fmtMonth(visibleMonth));
+        const effectivePid =
+          (bookingInfo?.professionalId && bookingInfo.professionalId) ||
+          (pid && pid !== "any" ? pid : undefined);
+        if (effectivePid) params.set("professional", String(effectivePid));
+        // Agregar modalidad
+        params.set("modality", selectedModality || 'presencial');
+        const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
+        const raw = await res.json().catch(() => ({}));
+        const payload = getPayload(raw);
+        let dates: any[] = [];
+        if (Array.isArray(payload)) dates = payload;
+        else if (Array.isArray(payload?.days)) dates = payload.days;
+        else if (Array.isArray(payload?.items)) dates = payload.items;
+        if (dates.length && typeof dates[0] !== "string") {
+          dates = dates.map((d: any) => d?.date).filter(Boolean);
+        }
+        setAvailableDays(dates as string[]);
+      } finally {
+        setLoadingDays(false);
+      }
+    },
+    [slug, visibleMonth, bookingInfo?.professionalId, selectedModality]
+  );
+
+  // Horarios
+  const loadTimeSlots = React.useCallback(
+    async (sid: string, _pid: string | "any" | undefined, date: Date) => {
+      const dateStr = fmtDay(date);
+      if (!sid || !slug || !availableDays.includes(dateStr)) return;
+      setLoadingSlots(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("service", sid);
+        params.set("date", dateStr);
+        const effectivePid = bookingInfo?.professionalId || (_pid && _pid !== "any" ? _pid : undefined);
+        if (effectivePid) params.set("professional", String(effectivePid));
+        // Agregar modalidad
+        params.set("modality", selectedModality || 'presencial');
+        const res = await fetch(`${API_BASE}/${slug}/day-slots?${params.toString()}`, { cache: "no-store" });
+        const raw = await res.json().catch(() => ({}));
+        const payload = getPayload(raw);
+        const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? [];
+        setTimeSlots(slots);
+        setSelectedTime("");
+      } finally {
+        setLoadingSlots(false);
+      }
+    },
+    [slug, availableDays, bookingInfo?.professionalId, selectedModality]
+  );
+
+  // bloqueo si está cancelado - useMemo ANTES de useEffect
+  const alreadyCanceled = React.useMemo(() => {
+    const s = (bookingInfo?.status || "").toLowerCase();
+    return ["canceled", "cancelled", "canceled_by_user", "cancelled_by_user"].includes(s);
+  }, [bookingInfo?.status]);
+
+  // ============================================================
+  // EFFECTS - DESPUÉS DE TODAS LAS DECLARACIONES DE HOOKS
+  // ============================================================
 
   // Si no pasó serviceId, buscamos el booking y fijamos profesional + status
   React.useEffect(() => {
@@ -473,87 +567,16 @@ function RescheduleInlineNF({
     };
   }, [slug, bookingId, serviceId, needService, groupMode]);
 
-  // Profesionales (solo para nombres; no hay picker)
-  const loadProfessionals = React.useCallback(async (sid: string) => {
-    if (!sid || !slug) return;
-    setLoadingProfessionals(true);
-    try {
-      const res = await fetch(`${API_BASE}/${slug}/services/${sid}/professionals`, { cache: "no-store" });
-      const raw = await res.json().catch(() => ({}));
-      const payload = getPayload(raw);
-      const list: Professional[] = Array.isArray(payload) ? payload : payload?.items ?? [];
-      setProfessionals(list);
-    } finally {
-      setLoadingProfessionals(false);
-    }
-  }, [slug]);
-
-  // Días
-  const loadAvailableDays = React.useCallback(
-    async (sid: string, pid?: string | "any", monthStr?: string) => {
-      if (!sid || !slug) return;
-      setLoadingDays(true);
-      try {
-        const params = new URLSearchParams();
-        params.set("service", sid);
-        params.set("month", monthStr ?? fmtMonth(visibleMonth));
-        const effectivePid =
-          (bookingInfo?.professionalId && bookingInfo.professionalId) ||
-          (pid && pid !== "any" ? pid : undefined);
-        if (effectivePid) params.set("professional", String(effectivePid));
-        // Agregar modalidad
-        params.set("modality", selectedModality || 'presencial');
-        const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
-        const raw = await res.json().catch(() => ({}));
-        const payload = getPayload(raw);
-        let dates: any[] = [];
-        if (Array.isArray(payload)) dates = payload;
-        else if (Array.isArray(payload?.days)) dates = payload.days;
-        else if (Array.isArray(payload?.items)) dates = payload.items;
-        if (dates.length && typeof dates[0] !== "string") {
-          dates = dates.map((d: any) => d?.date).filter(Boolean);
-        }
-        setAvailableDays(dates as string[]);
-      } finally {
-        setLoadingDays(false);
-      }
-    },
-    [slug, visibleMonth, bookingInfo?.professionalId, selectedModality]
-  );
-
-  // Horarios
-  const loadTimeSlots = React.useCallback(
-    async (sid: string, _pid: string | "any" | undefined, date: Date) => {
-      const dateStr = fmtDay(date);
-      if (!sid || !slug || !availableDays.includes(dateStr)) return;
-      setLoadingSlots(true);
-      try {
-        const params = new URLSearchParams();
-        params.set("service", sid);
-        params.set("date", dateStr);
-        const effectivePid = bookingInfo?.professionalId || (_pid && _pid !== "any" ? _pid : undefined);
-        if (effectivePid) params.set("professional", String(effectivePid));
-        // Agregar modalidad
-        params.set("modality", selectedModality || 'presencial');
-        const res = await fetch(`${API_BASE}/${slug}/day-slots?${params.toString()}`, { cache: "no-store" });
-        const raw = await res.json().catch(() => ({}));
-        const payload = getPayload(raw);
-        const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? [];
-        setTimeSlots(slots);
-        setSelectedTime("");
-      } finally {
-        setLoadingSlots(false);
-      }
-    },
-    [slug, availableDays, bookingInfo?.professionalId, selectedModality]
-  );
-
   // Bootstrap cuando ya tengo serviceId
   React.useEffect(() => {
     if (!serviceId) return;
     void loadProfessionals(serviceId);
     void loadAvailableDays(serviceId, bookingInfo?.professionalId || selectedProfessional, fmtMonth(visibleMonth));
   }, [serviceId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ============================================================
+  // FUNCIONES REGULARES (NO HOOKS) - DESPUÉS DE TODOS LOS EFFECTS
+  // ============================================================
 
   const reschedulingId = bookingId;
 
@@ -580,12 +603,11 @@ function RescheduleInlineNF({
     }
   };
 
-  // bloqueo si está cancelado
-  const alreadyCanceled = React.useMemo(() => {
-    const s = (bookingInfo?.status || "").toLowerCase();
-    return ["canceled", "cancelled", "canceled_by_user", "cancelled_by_user"].includes(s);
-  }, [bookingInfo?.status]);
+  // ============================================================
+  // RENDERIZADO CONDICIONAL - ÚNICO RETURN
+  // ============================================================
 
+  // Caso 1: Cargando información del servicio
   if (needService) {
     return (
       <div className="min-h-screen pt-[120px] bg-white">
@@ -2463,17 +2485,12 @@ export default function ReservarPage() {
   // 👇 NUEVO: parsear groupMode de la URL (?groupMode=true)
   const groupModeQS = useMemo(() => (sp.get("groupMode") || "").toLowerCase() === "true", [sp]);
 
+  // 👇 NUEVO: parsear modality de la URL (?modality=virtual)
+  const modalityQS = useMemo(() => {
+    const m = (sp.get("modality") || "").toLowerCase();
+    return (m === "virtual" ? "virtual" : "presencial") as "presencial" | "virtual";
+  }, [sp]);
 
-  if (bookingIdFromQS && (actionFromQS === "cancel" || actionFromQS === "reschedule")) {
-    return (
-      <ActionInlineRouterNF
-        action={actionFromQS as "cancel" | "reschedule"}
-        bookingId={bookingIdFromQS}
-        serviceId={rescheduleServiceIdQS}
-        groupMode={groupModeQS}             // <-- NUEVO
-      />
-    );
-  }
   const serviceIdFromQS = useMemo(() => sp.get("serviceId"), [sp]);
 
   const sessionGroupId = useMemo(() => sp.get("sessionGroupId"), [sp]);
@@ -2644,6 +2661,21 @@ export default function ReservarPage() {
         (sgSubmittingData?.data?.message ?? sgSubmittingData?.data?.data?.message),
     };
   }, [sgBookingResult, sgSubmittingData]);
+
+  // ======== RENDERS CONDICIONALES (después de todos los hooks) ========
+  
+  // Modo NF (Narrow Focus): cancelar o reprogramar
+  if (bookingIdFromQS && (actionFromQS === "cancel" || actionFromQS === "reschedule")) {
+    return (
+      <ActionInlineRouterNF
+        action={actionFromQS as "cancel" | "reschedule"}
+        bookingId={bookingIdFromQS}
+        serviceId={rescheduleServiceIdQS}
+        groupMode={groupModeQS}
+        modality={modalityQS}
+      />
+    );
+  }
 
   if (sessionGroupId) {
     return (
