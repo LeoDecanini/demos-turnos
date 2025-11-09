@@ -192,6 +192,8 @@ function ReservasView() {
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // Estado del filtro
+  const [clientId, setClientId] = useState<string | null>(null); // ID del cliente real
 
   // Cancelación
   const [cancelingId, setCancelingId] = useState<string | null>(null);
@@ -222,7 +224,6 @@ function ReservasView() {
   const { user, token } = useAuth();
 
   const slug = getSlug();
-  const clientId = user?._id;
   const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const getPayload = (raw: any) => raw?.data ?? raw;
@@ -230,6 +231,26 @@ function ReservasView() {
   const getCurrentMonth = (date: Date) => format(date, 'yyyy-MM');
   const isDateAvailable = (date: Date) => availableDays.includes(formatDateForAPI(date));
   const fmt = (iso: string) => new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+
+  // --- Fetch client profile to get real clientId ---
+  useEffect(() => {
+    const fetchClientProfile = async () => {
+      if (!token || !slug) return;
+      try {
+        const url = `${API_BASE}/${slug}/clients/me`;
+        const { data } = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log('[fetchClientProfile] Client data:', data);
+        setClientId(data._id || data.id);
+      } catch (e: any) {
+        console.error('[fetchClientProfile] Error:', e);
+        setErr('No se pudo cargar el perfil del cliente');
+      }
+    };
+    void fetchClientProfile();
+  }, [token, slug]);
+
 
   // --- Fetch bookings ---
   const fetchBookings = useCallback(async () => {
@@ -242,10 +263,23 @@ function ReservasView() {
       setLoading(true);
       setErr(null);
       const url = `${API_BASE}/${slug}/clients/${clientId}/bookings`;
+      const params: any = { 
+        page, 
+        limit,
+        sort: 'start:desc', // Ordenar por fecha de cita (más reciente primero)
+      };
+      
+      // Agregar filtro de estado si no es "all"
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+
       const { data } = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { upcoming: 1, page, limit },
+        params,
       });
+
+      console.log(data)
       setItems(Array.isArray(data?.items) ? data.items : []);
       setTotal(Number(data?.total ?? 0));
       if (Number.isFinite(data?.page)) setPage(Number(data.page));
@@ -254,7 +288,7 @@ function ReservasView() {
     } finally {
       setLoading(false);
     }
-  }, [token, clientId, page, limit, slug]);
+  }, [token, clientId, page, limit, slug, statusFilter]); // Agregar statusFilter
 
   useEffect(() => {
     void fetchBookings();
@@ -469,6 +503,26 @@ function ReservasView() {
               <SelectItem className='cursor-pointer' value="10">10</SelectItem>
               <SelectItem className='cursor-pointer' value="20">20</SelectItem>
               <SelectItem className='cursor-pointer' value="50">50</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Filtro de estado */}
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1); // Reset a página 1 cuando cambia el filtro
+            }}
+          >
+            <SelectTrigger className="h-9 w-[140px] cursor-pointer rounded-lg border border-slate-300">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem className='cursor-pointer' value="all">Todos</SelectItem>
+              <SelectItem className='cursor-pointer' value="pending">Pendiente</SelectItem>
+              <SelectItem className='cursor-pointer' value="confirmed">Confirmado</SelectItem>
+              <SelectItem className='cursor-pointer' value="completed">Completado</SelectItem>
+              <SelectItem className='cursor-pointer' value="canceled">Cancelado</SelectItem>
             </SelectContent>
           </Select>
         </div>

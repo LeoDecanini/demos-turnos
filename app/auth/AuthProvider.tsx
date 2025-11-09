@@ -63,10 +63,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       });
-      if (!r.ok) throw new Error('No autorizado');
+      if (!r.ok) {
+        // Si el token no es válido para este account, hacer logout
+        console.warn('[AuthProvider] Token no válido para este account, haciendo logout');
+        throw new Error('No autorizado');
+      }
       const me = await r.json();
       setUser(me);
-    } catch {
+    } catch (err) {
+      console.error('[AuthProvider] Error refreshing user:', err);
+      // Token inválido o no pertenece a este account -> logout
+      setToken(null);
       setUser(null);
     }
   }
