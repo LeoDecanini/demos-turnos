@@ -1356,12 +1356,23 @@ export default function ReservarPage() {
 
   useEffect(() => {
     if (user) {
+      console.log('👤 Usuario logueado - datos completos:', user);
+      console.log('📋 CUIT:', user.cuit);
+      console.log('🏥 Obra Social:', user.obraSocial);
+      
       setFullName(user.name || "");
       setEmail(user.email || "");
       // @ts-ignore
       setPhone(user.phone || "");
       // @ts-ignore
       setDni(user.dni || "");
+      // @ts-ignore
+      setCuit(user.cuit || "");
+      // @ts-ignore - obraSocial puede ser string o { _id, name }
+      const obraSocialId = typeof user.obraSocial === 'object' && user.obraSocial?._id
+        ? user.obraSocial._id
+        : (user.obraSocial || "");
+      setObraSocial(String(obraSocialId));
     }
   }, [user]);
 
@@ -1370,6 +1381,7 @@ export default function ReservarPage() {
     email?: string;
     phone?: string;
     dni?: string;
+    cuit?: string;
   }>({});
   const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const validateField = (

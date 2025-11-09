@@ -3,7 +3,17 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-type User = { email: string; name?: string; _id: string; phone: string; dni: string } | null;
+type User = { 
+  email: string; 
+  name?: string; 
+  _id: string; 
+  phone: string; 
+  dni: string;
+  cuit?: string;
+  obraSocial?: string | { _id: string; name: string };
+  user?: boolean;
+  verifiedAt?: string;
+} | null;
 
 type AuthCtx = {
   user: User;
@@ -69,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No autorizado');
       }
       const me = await r.json();
+      console.log('🔍 [AuthProvider] Datos del usuario desde backend:', me);
       setUser(me);
     } catch (err) {
       console.error('[AuthProvider] Error refreshing user:', err);
