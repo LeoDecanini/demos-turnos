@@ -1,38 +1,41 @@
-import { Heart, User, Calendar, CheckCircle, Building2 } from "lucide-react"
+import { Heart, User, Calendar, CheckCircle, Building2, Shield, Layers } from "lucide-react"
 import * as React from "react"
 
 type Step = { number: number; title: string; icon: React.ComponentType<{ className?: string }> }
 
 export function BookingStepper({ step, includeBranchStep }: { step: number; includeBranchStep: boolean }) {
-  // Pasos visibles (con o sin sucursal)
+  // Nuevo flujo: 1=ObraSocial, 2=Categoría, 3=Servicio, 4=Sucursal, 5=Profesional, 6=Fecha/Hora, 7=Datos, 8=Confirmación
   const steps: Step[] = includeBranchStep
     ? [
-        { number: 1, title: "Servicio", icon: Heart },
-        { number: 2, title: "Sucursal", icon: Building2 },
-        { number: 3, title: "Profesional", icon: User },
-        { number: 4, title: "Fecha y Hora", icon: Calendar },
-        { number: 5, title: "Datos", icon: User },
-        { number: 6, title: "Confirmación", icon: CheckCircle },
+        { number: 1, title: "Obra Social", icon: Shield },
+        { number: 2, title: "Categoría", icon: Layers },
+        { number: 3, title: "Servicio", icon: Heart },
+        { number: 4, title: "Sucursal", icon: Building2 },
+        { number: 5, title: "Profesional", icon: User },
+        { number: 6, title: "Fecha y Hora", icon: Calendar },
+        { number: 7, title: "Datos", icon: User },
+        { number: 8, title: "Confirmación", icon: CheckCircle },
       ]
     : [
-        { number: 1, title: "Servicio", icon: Heart },
-        { number: 2, title: "Profesional", icon: User },
-        { number: 3, title: "Fecha y Hora", icon: Calendar },
-        { number: 4, title: "Datos", icon: User },
-        { number: 5, title: "Confirmación", icon: CheckCircle },
+        { number: 1, title: "Obra Social", icon: Shield },
+        { number: 2, title: "Categoría", icon: Layers },
+        { number: 3, title: "Servicio", icon: Heart },
+        { number: 4, title: "Profesional", icon: User },
+        { number: 5, title: "Fecha y Hora", icon: Calendar },
+        { number: 6, title: "Datos", icon: User },
+        { number: 7, title: "Confirmación", icon: CheckCircle },
       ]
 
-  // Mapeo del step "real" de la página (que siempre cuenta la sucursal como paso 2)
-  // a un step "visual" del stepper cuando la sucursal no se muestra.
-  // Página: 1(S), 2(B), 3(P), 4(F), 5(D), 6(C)
-  // Sin sucursal => Visual: 1(S), 2(P), 3(F), 4(D), 5(C)
-  const visualStep = includeBranchStep ? step : step <= 1 ? step : step - 1
+  // Mapeo del step "real" de la página
+  // Con sucursal: 1(OS), 2(Cat), 3(Serv), 4(Suc), 5(Prof), 6(FH), 7(D), 8(C)
+  // Sin sucursal: 1(OS), 2(Cat), 3(Serv), 4(Prof), 5(FH), 6(D), 7(C)
+  const visualStep = includeBranchStep ? step : step <= 3 ? step : step - 1
 
   const maxStep = steps.length
   const pct = Math.max(0, Math.min(100, ((Math.min(visualStep, maxStep) - 1) / (maxStep - 1)) * 100))
 
   return (
-    <nav aria-label="Progreso de la reserva" className="mx-auto w-full max-w-4xl pb-6 md:pb-8">
+    <nav aria-label="Progreso de la reserva" className="mx-auto w-full pb-6 md:pb-8">
       <ol className="relative flex h-9 md:h-11 items-center justify-between">
         {/* Línea base + progreso */}
         <div className="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2 bg-gray-200">
