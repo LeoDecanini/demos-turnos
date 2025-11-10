@@ -1,0 +1,22 @@
+/* Estilos personalizados para Leaflet */
+
+/* Ocultar el icono personalizado default */
+.custom-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Ajustar z-index de los controles de zoom */
+.leaflet-control-zoom {
+  z-index: 999 !important;
+}
+
+/* Estilo para el popup */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-tip {
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}

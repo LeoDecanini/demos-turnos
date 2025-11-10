@@ -43,6 +43,7 @@ import axios from "axios";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import BranchMap from "@/components/BranchMap";
 
 // =======================================================
 // ===============  MODO ENFOCADO (NF)  ==================
@@ -1148,12 +1149,16 @@ type Branch = {
     description?: string;
     default?: boolean;
     active: boolean;
+    phone?: string;
+    email?: string;
     location?: {
         addressLine?: string;
         city?: string;
         state?: string;
         postalCode?: string;
         country?: string;
+        lat?: number;
+        lng?: number;
     };
 };
 
@@ -1265,6 +1270,8 @@ export default function ReservarPage() {
 
     // Estado para modalidad (presencial/virtual)
     const [modalityByService, setModalityByService] = useState<Record<string, 'presencial' | 'virtual'>>({});
+    // 🆕 Estado para guardar las modalidades disponibles por servicio
+    const [availableModalitiesByService, setAvailableModalitiesByService] = useState<Record<string, ('presencial' | 'virtual')[]>>({});
     // Rastrear si el paso 4 (modalidad) fue saltado porque hay una única modalidad
     const [step4WasSkipped, setStep4WasSkipped] = useState(false);
 
@@ -2164,7 +2171,7 @@ export default function ReservarPage() {
                 if (!hasAnyBooking(payload)) {
                     setBulkErrors(errs);
                     toast.error(payload?.message || "No se pudo crear ninguna reserva. Revisá los errores.");
-                    setStep(8); // Volver al formulario de datos (ahora paso 8)
+                    setStep(7); // Volver al formulario de datos (ahora paso 7)
                     return;
                 }
                 if (errs.length) setBulkWarns(errs);
@@ -2231,7 +2238,7 @@ export default function ReservarPage() {
         } catch (e) {
             const msg = (e as Error)?.message || "No se pudo crear la reserva. Probá nuevamente.";
             toast.error(msg);
-            setStep(8); // Volver al formulario de datos (ahora paso 8)
+            setStep(7); // Volver al formulario de datos (ahora paso 7)
         } finally {
             setSubmitting(false);
         }
@@ -2434,8 +2441,8 @@ export default function ReservarPage() {
                 } else {
                     // Fallback: usar allowPresencial/allowVirtual del servicio
                     console.log('⚠️ Backend no retornó modalidades, usando configuración del servicio');
-                    const allowsPresencial = service.allowPresencial === true;
-                    const allowsVirtual = service.allowVirtual === true;
+                    const allowsPresencial = service.allowPresencial !== false; // true por defecto
+                    const allowsVirtual = service.allowVirtual === true; // false por defecto
 
                     if (allowsPresencial) availableModalities.push('presencial');
                     if (allowsVirtual) availableModalities.push('virtual');
@@ -2447,24 +2454,26 @@ export default function ReservarPage() {
 
                 console.log('📊 Modalidades finales:', availableModalities);
 
-                // ✨ Si solo hay una modalidad, auto-seleccionarla y saltar al paso 7 (fecha/hora)
+                // 🔥 Guardar las modalidades disponibles en el estado
+                setAvailableModalitiesByService(prev => ({
+                    ...prev,
+                    [firstServiceId]: availableModalities
+                }));
+
+                // ✨ Auto-seleccionar si solo hay una modalidad
                 if (availableModalities.length === 1) {
                     const onlyModality = availableModalities[0];
                     setModalityByService(prev => ({
                         ...prev,
                         [firstServiceId]: onlyModality
                     }));
-                    console.log('✅ Solo una modalidad disponible, saltando al paso 7 con:', onlyModality);
-                    setStep4WasSkipped(true);
-                    setStep(7);
-                    scrollToTop();
-                } else {
-                    // Si hay 2 modalidades, mostrar paso 6 (modalidad)
-                    console.log('📋 Dos modalidades disponibles, mostrando paso de selección');
-                    setStep4WasSkipped(false);
-                    setStep(6);
-                    scrollToTop();
+                    console.log('✅ Solo una modalidad disponible, auto-seleccionando:', onlyModality);
                 }
+
+                // Ir al paso 6 (modalidad + calendario)
+                console.log('📋 Mostrando paso de fecha/hora con modalidad');
+                setStep(6);
+                scrollToTop();
 
             } catch (error) {
                 console.error('❌ Error consultando modalidades:', error);
@@ -2476,11 +2485,11 @@ export default function ReservarPage() {
     };
 
     useEffect(() => {
-        if (step !== 7 || !currentServiceId) return; // Ahora es paso 7 (fecha/hora)
+        if (step !== 6 || !currentServiceId) return; // Paso 6 ahora incluye calendario
         const pid = selection[currentServiceId]?.professionalId || "any";
-        const modality = modalityByService[currentServiceId];
+        const modality = modalityByService[currentServiceId] || 'presencial';
         void loadAvailableDays(currentServiceId, pid, undefined, modality);
-        // al entrar al paso 7 (calendario) o cambiar el profesional del servicio actual,
+        // al entrar al paso 6 (calendario + modalidad) o cambiar el profesional del servicio actual,
         // cargamos los días con el valor NUEVO ya aplicado
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, currentServiceId, selection[currentServiceId]?.professionalId, modalityByService[currentServiceId]]);
@@ -3528,12 +3537,12 @@ export default function ReservarPage() {
                             </p>
                         </div>
 
-                       <CategorySelector
-                                categories={extractUniqueCategories(services)}
-                                selectedId={selectedCategory}
-                                onSelect={(id) => setSelectedCategory(id)}
-                                loading={loadingServices}
-                            />
+                        <CategorySelector
+                            categories={extractUniqueCategories(services)}
+                            selectedId={selectedCategory}
+                            onSelect={(id) => setSelectedCategory(id)}
+                            loading={loadingServices}
+                        />
 
                         <FloatingNav
                             backDisabled={false}
@@ -3602,120 +3611,169 @@ export default function ReservarPage() {
                 {step === 4 && (
                     <>
                         {(() => {
-                            const sid = selectedServices[branchIdx];
-                            const srv = services.find(s => s._id === sid);
-                            const list = branchesByService[sid] ?? [];
+                            const sid = selectedServices[branchIdx]
+                            const srv = services.find(s => s._id === sid)
+                            const list = branchesByService[sid] ?? []
+                            const selectedBranchId = selection[sid]?.branchId
+                            const selectedBranch = list.find(b => b._id === selectedBranchId)
 
                             return (
                                 <>
-                                    <div className="text-center mb-4">
-                                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                            Elegí la sucursal
-                                        </h2>
+                                    <div className="text-left mt-10 mb-6">
+                                        <h2 className="text-3xl font-bold text-gray-900 mb-2">Elegí la sucursal</h2>
                                         <p className="text-gray-600 text-lg">
                                             Servicio {branchIdx + 1} de {selectedServices.length}: {srv?.name}
                                         </p>
                                     </div>
 
-                                    <Card className="max-w-3xl mx-auto">
-                                        <CardContent className="p-6">
-                                            {loadingBranches ? (
-                                                <div className="grid gap-3">
-                                                    {Array.from({ length: 4 }).map((_, i) => (
-                                                        <Skeleton key={i} className="h-16 w-full" />
-                                                    ))}
-                                                </div>
-                                            ) : list.length === 0 ? (
+                                    {loadingBranches ? (
+                                        <div className="grid lg:grid-cols-2 gap-6">
+                                            <div className="space-y-3">
+                                                {Array.from({ length: 4 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-32 w-full" />
+                                                ))}
+                                            </div>
+                                            <Skeleton className="h-[600px] w-full rounded-xl" />
+                                        </div>
+                                    ) : list.length === 0 ? (
+                                        <Card className="max-w-3xl mx-auto">
+                                            <CardContent className="p-6">
                                                 <p className="text-gray-600">No hay sucursales para este servicio.</p>
-                                            ) : (
-                                                <div className="grid gap-3">
-                                                    {list.map((b) => {
-                                                        const selected = selection[sid]?.branchId === b._id;
-                                                        return (
-                                                            <button
-                                                                key={b._id}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setSelection((prev) => ({
-                                                                        ...prev,
-                                                                        [sid]: {
-                                                                            ...(prev[sid] || { serviceId: sid }),
-                                                                            branchId: b._id,
-                                                                            professionalId: prev[sid]?.professionalId || "any",
-                                                                        },
-                                                                    }));
-                                                                }}
-                                                                className={`text-left w-full rounded-xl border-2 px-4 py-3 transition-colors ${selected
-                                                                    ? "border-green-500 bg-green-50/60"
-                                                                    : "border-gray-200 hover:border-green-300 bg-white"
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <div className="font-semibold text-gray-900">
-                                                                        {b.name}{" "}
-                                                                        {b.default && (
-                                                                            <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">
-                                                                                Default
-                                                                            </span>
-                                                                        )}
+                                            </CardContent>
+                                        </Card>
+                                    ) : (
+                                        <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            {/* Lista de sucursales - Izquierda */}
+                                            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                                                {list.map((b) => {
+                                                    const selected = selection[sid]?.branchId === b._id
+                                                    return (
+                                                        <button
+                                                            key={b._id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelection((prev) => ({
+                                                                    ...prev,
+                                                                    [sid]: {
+                                                                        ...(prev[sid] || { serviceId: sid }),
+                                                                        branchId: b._id,
+                                                                        professionalId: prev[sid]?.professionalId || "any",
+                                                                    },
+                                                                }))
+                                                            }}
+                                                            className={`text-left w-full rounded-xl border-2 p-4 transition-all ${selected
+                                                                ? "border-green-500 bg-green-50/60 shadow-md"
+                                                                : "border-gray-200 hover:border-green-300 bg-white hover:shadow-sm"
+                                                                }`}
+                                                        >
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <div className="font-semibold text-gray-900 text-base">{b.name}</div>
+                                                                    {b.default && (
+                                                                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800 font-medium whitespace-nowrap">
+                                                                            Principal
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="flex items-start gap-2 text-sm text-gray-600">
+                                                                    <svg
+                                                                        className="w-4 h-4 mt-0.5 flex-shrink-0 text-gray-400"
+                                                                        fill="none"
+                                                                        viewBox="0 0 24 24"
+                                                                        stroke="currentColor"
+                                                                    >
+                                                                        <path
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
+                                                                            strokeWidth={2}
+                                                                            d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"
+                                                                        />
+                                                                        <path
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
+                                                                            strokeWidth={2}
+                                                                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                                                                        />
+                                                                    </svg>
+                                                                    <span className="flex-1">
+                                                                        {[b.location?.addressLine, b.location?.city, b.location?.state]
+                                                                            .filter(Boolean)
+                                                                            .join(", ") || "Dirección no especificada"}
+                                                                    </span>
+                                                                </div>
+
+                                                                {b.phone && (
+                                                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                                        <svg
+                                                                            className="w-4 h-4 flex-shrink-0 text-gray-400"
+                                                                            fill="none"
+                                                                            viewBox="0 0 24 24"
+                                                                            stroke="currentColor"
+                                                                        >
+                                                                            <path
+                                                                                strokeLinecap="round"
+                                                                                strokeLinejoin="round"
+                                                                                strokeWidth={2}
+                                                                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                                                            />
+                                                                        </svg>
+                                                                        <span>{b.phone}</span>
                                                                     </div>
-                                                                    {/* <div className="text-xs text-gray-500">
-                                    {b.active ? "Activa" : "Inactiva"}
-                                  </div> */}
-                                                                </div>
-                                                                <div className="text-sm text-gray-600 mt-1">
-                                                                    {[
-                                                                        b.location?.addressLine,
-                                                                        b.location?.city,
-                                                                        b.location?.state,
-                                                                        b.location?.country,
-                                                                    ]
-                                                                        .filter(Boolean)
-                                                                        .join(", ") || "—"}
-                                                                </div>
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </CardContent>
-                                    </Card>
+                                                                )}
+                                                            </div>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+
+                                            {/* Mapa - Derecha */}
+                                            <div className="relative rounded-xl col-span-2 overflow-hidden border-2 border-gray-200 bg-gray-100 h-[600px]">
+                                                <BranchMap
+                                                    branches={list}
+                                                    selectedBranchId={selectedBranchId}
+                                                    onBranchSelect={(branchId) => {
+                                                        setSelection((prev) => ({
+                                                            ...prev,
+                                                            [sid]: {
+                                                                ...(prev[sid] || { serviceId: sid }),
+                                                                branchId,
+                                                                professionalId: prev[sid]?.professionalId || "any",
+                                                            },
+                                                        }))
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <FloatingNav
                                         onBack={() => {
-                                            if (branchIdx === 0) {
-                                                // volver a servicios (ahora es paso 3)
-                                                setStep(3);
-                                                scrollToTop();
-                                            } else {
-                                                setBranchIdx((i) => i - 1);
-                                                scrollToTop();
-                                            }
+                                            if (branchIdx === 0) setStep(3)
+                                            else setBranchIdx((i) => i - 1)
+                                            scrollToTop()
                                         }}
                                         onNext={async () => {
-                                            // requerimos sucursal elegida para este servicio
-                                            if (!selection[sid]?.branchId) return;
-
+                                            if (!selection[sid]?.branchId) return
                                             if (branchIdx + 1 < selectedServices.length) {
-                                                setBranchIdx((i) => i + 1);
-                                                scrollToTop();
+                                                setBranchIdx((i) => i + 1)
+                                                scrollToTop()
                                             } else {
-                                                // ya elegimos sucursal para todos -> cargar profesionales por servicio y pasar a paso 5
-                                                await loadProfessionalsForServices(
-                                                    selectedServices,
-                                                    /* branchId? ya NO, ahora por servicio abajo */
-                                                );
-                                                setProfIdx(0);
-                                                setStep(5);
-                                                scrollToTop();
+                                                await loadProfessionalsForServices(selectedServices)
+                                                setProfIdx(0)
+                                                setStep(5)
+                                                scrollToTop()
                                             }
                                         }}
-                                        backDisabled={submitting}
-                                        nextDisabled={submitting || !selection[sid]?.branchId}
-                                        nextLabel={branchIdx + 1 < selectedServices.length ? "Siguiente servicio" : "Continuar"}
+                                        nextDisabled={!selection[sid]?.branchId}
+                                        nextLabel={
+                                            branchIdx + 1 < selectedServices.length
+                                                ? "Siguiente servicio"
+                                                : "Continuar"
+                                        }
                                     />
                                 </>
-                            );
+                            )
                         })()}
                     </>
                 )}
@@ -3732,7 +3790,7 @@ export default function ReservarPage() {
 
                             return (
                                 <div className="space-y-8">
-                                    <div className="text-center">
+                                    <div className="text-left mt-10 mb-6">
                                         <h2 className="text-3xl font-bold text-gray-900 mb-2">
                                             Elegí profesional
                                         </h2>
@@ -3747,76 +3805,27 @@ export default function ReservarPage() {
                                         )}
                                     </div>
 
-                                    <div className="max-w-3xl mx-auto">
-                                        {/*  {pros.length > 1 && (
-                      <div
-                        className={`mb-4 rounded-xl border-2 cursor-pointer transition-colors px-4 py-3 ${sel === "any"
-                          ? "border-amber-500 bg-gradient-to-br from-amber-50 to-yellow-50"
-                          : "border-gray-200 hover:border-amber-300 bg-white/80"
-                          }`}
-                        onClick={() => {
-                          setSelection((prev) => ({
-                            ...prev,
-                            [srvId]: {
-                              ...(prev[srvId] || { serviceId: srvId }),
-                              professionalId: "any",
-                              branchId: prev[srvId]?.branchId,
-                            },
-                          }));
-                          goNextAfterProfessional();
-                        }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="h-12 w-12 rounded-full overflow-hidden border border-gray-200 bg-gray-100 shrink-0 relative">
-                            <img
-                              src={"/indistinto.png"}
-                              alt={""}
-                              sizes="48px"
-                              className="object-cover"
-                            />
-                          </div>
-                          <div className="w-full">
-                            <div className="flex items-center justify-between">
-                              <div className="font-semibold text-gray-900">
-                                Indistinto
-                              </div>
-                              <span className="text-xs px-3 py-0.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-full font-semibold">
-                                Automático
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">
-                              Podés seleccionar “Indistinto” para que asignemos uno
-                              automáticamente.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )} */}
-
-                                        <ProfessionalList
-                                            professionals={pros.map((p: any) => ({
-                                                _id: String(p._id),
-                                                name: p.name,
-                                                photo: p.photo ? { path: p.photo.path } : undefined,
-                                            }))}
-                                            selectedId={sel}                 // ahora puede ser "any"
-                                            onSelect={(id: string) => {
-                                                setSelection((prev) => ({
-                                                    ...prev,
-                                                    [srvId]: {
-                                                        ...(prev[srvId] || { serviceId: srvId }),
-                                                        professionalId: id,        // id puede ser "any"
-                                                        branchId: prev[srvId]?.branchId,
-                                                    },
-                                                }));
-                                                goNextAfterProfessional();
-                                            }}
-                                            backendBaseUrl={process.env.NEXT_PUBLIC_CDN_URL || ""}
-                                            includeAny={pros.length > 1}
-                                        />
-
-                                    </div>
+                                    <ProfessionalList
+                                        professionals={pros.map((p: any) => ({
+                                            _id: String(p._id),
+                                            name: p.name,
+                                            photo: p.photo ? { path: p.photo.path } : undefined,
+                                        }))}
+                                        selectedId={sel}                 // ahora puede ser "any"
+                                        onSelect={(id: string) => {
+                                            setSelection((prev) => ({
+                                                ...prev,
+                                                [srvId]: {
+                                                    ...(prev[srvId] || { serviceId: srvId }),
+                                                    professionalId: id,        // id puede ser "any"
+                                                    branchId: prev[srvId]?.branchId,
+                                                },
+                                            }));
+                                            goNextAfterProfessional();
+                                        }}
+                                        backendBaseUrl={process.env.NEXT_PUBLIC_CDN_URL || ""}
+                                        includeAny={pros.length > 1}
+                                    />
 
                                     {/* Dejo el FloatingNav para "Volver" si hace falta */}
                                     <FloatingNav
@@ -3842,295 +3851,330 @@ export default function ReservarPage() {
                 )}
 
                 {/* PASO 6: Selección de modalidad (presencial/virtual) - antes era paso 4 */}
-                {step === 6 && (
-                    <div className="space-y-8">
-                        <div className="text-center">
+                {/* PASO 6 y 7 COMBINADOS: Modalidad + Fecha y horario */}
+                {step === 6 && currentServiceId && (
+                    <>
+                        <div className="text-left mt-10 mb-6">
                             <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                Elegí modalidad del servicio
+                                Agendar turno
                             </h2>
                             <p className="text-gray-600">
-                                Selecciona si prefieres atención presencial o virtual
+                                {currentService?.name}
                             </p>
                         </div>
 
-                        <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Opción Presencial */}
-                            <Card
-                                className={`cursor-pointer transition-all border-2 ${modalityByService[selectedServices[0]] === 'presencial'
-                                    ? 'border-green-500 bg-green-50/50 shadow-lg'
-                                    : 'border-gray-200 hover:border-green-300 hover:shadow-md'
-                                    }`}
-                                onClick={() => {
-                                    const firstService = selectedServices[0];
-                                    setModalityByService(prev => ({
-                                        ...prev,
-                                        [firstService]: 'presencial'
-                                    }));
-                                }}
-                            >
-                                <CardContent className="p-6 text-center space-y-4">
-                                    <div className="text-6xl">📍</div>
-                                    <h3 className="text-xl font-bold text-gray-900">Presencial</h3>
-                                    <p className="text-sm text-gray-600">
-                                        Atención en la ubicación física del profesional
-                                    </p>
-                                    {modalityByService[selectedServices[0]] === 'presencial' && (
-                                        <div className="flex justify-center">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500 text-white">
-                                                ✓ Seleccionado
-                                            </span>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* Columna Izquierda: Resumen de selección */}
+                            <div>
+                                <Card className="bg-gradient-to-br from-gray-50 to-white">
+                                    <CardHeader>
+                                        <CardTitle className="text-lg font-bold text-gray-900">
+                                            {(() => {
+                                                const profId = selection[currentServiceId]?.professionalId;
+                                                if (!profId || profId === 'any') {
+                                                    return 'Profesional Indistinto';
+                                                }
+                                                const prof = professionalsByService[currentServiceId]?.find(p => p._id === profId);
+                                                return prof ? prof.name : 'Profesional';
+                                            })()}
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {/* Obra Social */}
+                                        {(() => {
+                                            const swId = selectedSocialWork;
+                                            const sw = socialWorks.find(s => s._id === swId);
+                                            return swId ? (
+                                                <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                                        <span className="text-lg">🏥</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-gray-500 font-medium">Obra Social</p>
+                                                        <p className="font-semibold text-gray-900 truncate">{sw?.name || swId}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                                                        <span className="text-lg">💳</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-gray-500 font-medium">Modalidad de pago</p>
+                                                        <p className="font-semibold text-gray-900">Particular</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
 
-                            {/* Opción Virtual */}
-                            <Card
-                                className={`cursor-pointer transition-all border-2 ${modalityByService[selectedServices[0]] === 'virtual'
-                                    ? 'border-blue-500 bg-blue-50/50 shadow-lg'
-                                    : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
-                                    }`}
-                                onClick={() => {
-                                    const firstService = selectedServices[0];
-                                    setModalityByService(prev => ({
-                                        ...prev,
-                                        [firstService]: 'virtual'
-                                    }));
-                                }}
-                            >
-                                <CardContent className="p-6 text-center space-y-4">
-                                    <div className="text-6xl">💻</div>
-                                    <h3 className="text-xl font-bold text-gray-900">Virtual</h3>
-                                    <p className="text-sm text-gray-600">
-                                        Atención remota por videollamada o teléfono
-                                    </p>
-                                    {modalityByService[selectedServices[0]] === 'virtual' && (
-                                        <div className="flex justify-center">
-                                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white">
-                                                ✓ Seleccionado
-                                            </span>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        <FloatingNav
-                            onBack={() => {
-                                setStep4WasSkipped(false);
-                                setStep(5); // Volver a profesionales (ahora paso 5)
-                                setProfIdx(selectedServices.length - 1);
-                                scrollToTop();
-                            }}
-                            onNext={async () => {
-                                const firstService = selectedServices[0];
-                                if (!modalityByService[firstService]) {
-                                    // Si no seleccionó, por defecto presencial
-                                    setModalityByService(prev => ({
-                                        ...prev,
-                                        [firstService]: 'presencial'
-                                    }));
-                                }
-
-                                // 🔍 Precargar días disponibles con la modalidad seleccionada
-                                const selectedModality = modalityByService[firstService] || 'presencial';
-                                const pid = selection[firstService]?.professionalId || "any";
-                                console.log('🔄 Precargando días para modalidad:', selectedModality);
-                                await loadAvailableDays(firstService, pid, undefined, selectedModality);
-
-                                setScheduleIdx(0);
-                                resetCalendar();
-                                setStep(7); // Ir a fecha/hora (ahora paso 7)
-                                scrollToTop();
-                            }}
-                            backDisabled={submitting}
-                            nextDisabled={submitting || !modalityByService[selectedServices[0]]}
-                        />
-                    </div>
-                )}
-
-                {/* PASO 7: Fecha y horario - antes era paso 5 */}
-                {step === 7 && currentServiceId && (
-                    <>
-                        <div className="text-center mb-4">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                Elegí fecha y horario
-                            </h2>
-                            {!isSingleService ? (
-                                <p className="text-gray-600">
-                                    Servicio {scheduleIdx + 1} de {selectedServices.length}:{" "}
-                                    {currentService?.name}
-                                </p>
-                            ) : (
-                                <p className="text-gray-600">{currentService?.name}</p>
-                            )}
-                            {(currentService?.durationMinutes ??
-                                currentService?.sessionDuration) ? (
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Duración:{" "}
-                                    {(
-                                        currentService?.durationMinutes ??
-                                        currentService?.sessionDuration
-                                    )!}{" "}
-                                    min. Al elegir una hora se bloquea el bloque completo.
-                                </p>
-                            ) : null}
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                        <CalendarIcon className="h-5 w-5 mr-2 text-green-500" />
-                                        Seleccionar Fecha
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="w-full"> {/* <- antes: flex justify-center */}
-                                        {!loadingDays ? (
-                                            <CalendarComponent
-                                                mode="single"
-                                                selected={selectedDateObj}
-                                                month={visibleMonth}
-                                                onMonthChange={async (m) => {
-                                                    setVisibleMonth(m);
-                                                    await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId]);
-                                                }}
-                                                onSelect={async (date) => {
-                                                    setSelectedDateObj(date || undefined);
-                                                    if (date && availableDays.includes(fmtDay(date))) {
-                                                        setTimeSlots([]);
-                                                        setSelectedTimeBlock(null);
-                                                        await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
-                                                        scrollToTimes();
-                                                    } else {
-                                                        setTimeSlots([]);
-                                                        setSelectedTimeBlock(null);
-                                                    }
-                                                }}
-                                                disabled={(date) => {
-                                                    if (loadingDays) return true;
-                                                    if (disableAllDays) return true;
-                                                    if (isPast(date)) return true;
-                                                    return !availableDays.includes(fmtDay(date));
-                                                }}
-                                                locale={es}
-                                                className="rounded-lg border-2 border-green-200 w-full p-3"
-                                                classNames={{
-                                                    // layout ancho completo
-                                                    months: "w-full",
-                                                    month: "w-full",
-                                                    table: "w-full border-collapse",
-                                                    head_row: "grid grid-cols-7",
-                                                    row: "grid grid-cols-7 mt-2",
-                                                    head_cell:
-                                                        "text-center text-muted-foreground text-[0.8rem] py-1",
-                                                    cell: "p-0 relative w-full",
-
-                                                    // botón del día (hover + rounded)
-                                                    day:
-                                                        "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors " +
-                                                        "hover:bg-green-100 hover:text-green-900 " +
-                                                        "focus:outline-none focus:ring-2 focus:ring-green-300",
-
-                                                    // estados
-                                                    day_selected:
-                                                        "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
-                                                    day_today:
-                                                        "bg-green-50 text-green-700 font-semibold rounded-lg",
-                                                    day_outside:
-                                                        "text-muted-foreground opacity-60",
-                                                    day_disabled:
-                                                        "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
-
-                                                    // (opcional) si usás rango alguna vez
-                                                    day_range_start: "rounded-l-lg",
-                                                    day_range_end: "rounded-r-lg",
-                                                    day_range_middle: "rounded-none",
-                                                }}
-                                            />
-                                        ) : (
-                                            <div className="w-full">
-                                                <Skeleton className="h-[248px] w-full" />
+                                        {/* Servicio */}
+                                        {currentService && (
+                                            <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                                    <span className="text-lg">⚕️</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs text-gray-500 font-medium">Servicio</p>
+                                                    <p className="font-semibold text-gray-900">{currentService.name}</p>
+                                                    {(currentService.durationMinutes ?? currentService.sessionDuration) && (
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            Duración: {currentService.durationMinutes ?? currentService.sessionDuration} min
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         )}
-                                    </div>
-                                </CardContent>
-                            </Card>
 
-                            <Card ref={timeSectionRef}>
-                                <CardHeader>
-                                    <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
-                                        <Clock className="h-5 w-5 mr-2 text-green-500" />
-                                        Horarios Disponibles
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {loadingSlots ? (
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {Array.from({ length: 18 }).map((_, i) => (
-                                                <Skeleton key={i} className="h-9 w-full" />
-                                            ))}
+                                        {/* Sucursal */}
+                                        {(() => {
+                                            const branchId = selection[currentServiceId]?.branchId;
+                                            const branch = branches.find(b => b._id === branchId);
+                                            return branch ? (
+                                                <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                                        <span className="text-lg">📍</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-gray-500 font-medium">Sucursal</p>
+                                                        <p className="font-semibold text-gray-900">{branch.name}</p>
+                                                        {branch.location?.addressLine && (
+                                                            <p className="text-xs text-gray-600 mt-1">{branch.location.addressLine}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ) : null;
+                                        })()}
+
+                                        {/* Profesional */}
+                                        {(() => {
+                                            const profId = selection[currentServiceId]?.professionalId;
+                                            if (!profId || profId === 'any') return null;
+                                            const prof = professionalsByService[currentServiceId]?.find(p => p._id === profId);
+                                            return prof ? (
+                                                <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                                        <span className="text-lg">👤</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-gray-500 font-medium">Profesional</p>
+                                                        <p className="font-semibold text-gray-900">{prof.name}</p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                                        <span className="text-lg">👥</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-gray-500 font-medium">Profesional</p>
+                                                        <p className="font-semibold text-gray-900">Indistinto</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            {/* Columna Derecha: Calendario + Tabs + Horarios */}
+                            <div className="space-y-6 col-span-2">
+                                {/* Tabs: Presencial / Virtual - Solo mostrar si tiene ambas modalidades */}
+                                {(() => {
+                                    // 🔥 Usar las modalidades disponibles del estado (ya consultadas del backend)
+                                    const availableModalities = availableModalitiesByService[currentServiceId] || [];
+                                    const hasBothModalities = availableModalities.includes('presencial') && availableModalities.includes('virtual');
+                                    
+                                    // 🐛 Debug: mostrar valores
+                                    console.log('🔍 [TABS DEBUG]', {
+                                        serviceId: currentServiceId,
+                                        serviceName: currentService?.name,
+                                        availableModalities,
+                                        hasBothModalities
+                                    });
+                                    
+                                    if (!hasBothModalities) return null;
+                                    
+                                    return (
+                                        <div className="flex gap-2 justify-start">
+                                            <button
+                                                type="button"
+                                                className={cn(
+                                                    "px-8 py-3 font-semibold transition-all rounded-lg border-2",
+                                                    modalityByService[currentServiceId] === 'presencial' || !modalityByService[currentServiceId]
+                                                        ? "bg-green-500 border-green-500 text-white shadow-md"
+                                                        : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
+                                                )}
+                                                onClick={async () => {
+                                                    setModalityByService(prev => ({ ...prev, [currentServiceId]: 'presencial' }));
+                                                    // Recargar días disponibles con nueva modalidad
+                                                    setSelectedDateObj(undefined);
+                                                    setTimeSlots([]);
+                                                    setSelectedTimeBlock(null);
+                                                    await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'presencial');
+                                                }}
+                                            >
+                                                📍 Presencial
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={cn(
+                                                    "px-8 py-3 font-semibold transition-all rounded-lg border-2",
+                                                    modalityByService[currentServiceId] === 'virtual'
+                                                        ? "bg-green-500 border-green-500 text-white shadow-md"
+                                                        : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
+                                                )}
+                                                onClick={async () => {
+                                                    setModalityByService(prev => ({ ...prev, [currentServiceId]: 'virtual' }));
+                                                    // Recargar días disponibles con nueva modalidad
+                                                    setSelectedDateObj(undefined);
+                                                    setTimeSlots([]);
+                                                    setSelectedTimeBlock(null);
+                                                    await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'virtual');
+                                                }}
+                                            >
+                                                💻 Virtual
+                                            </button>
                                         </div>
-                                    ) : !selectedDateObj ? (
-                                        <p className="text-gray-600">
-                                            Elegí una fecha para ver los horarios.
-                                        </p>
-                                    ) : !availableDays.includes(fmtDay(selectedDateObj)) ? (
-                                        <p className="text-gray-600">Esta fecha no está disponible.</p>
-                                    ) : timeSlots.length === 0 ? (
-                                        <p className="text-gray-600">
-                                            No hay horarios disponibles para esta fecha.
-                                        </p>
-                                    ) : (
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {timeSlots.map((time) => {
-                                                const blockedByDur = isSlotBlockedByDuration(time); // tu bloque para “pintar” el bloque cuando ya elegiste en el mismo servicio
-                                                const blockedByPrev = isSlotOverlappingWithPrevSelections(time); // ← nuevo
-                                                const picked = selectedTimeBlock === time;
-                                                const blocked = (blockedByDur && !picked) || blockedByPrev;
+                                    );
+                                })()}
 
-                                                const hasPrevFixed = selectedServices
-                                                    .slice(0, scheduleIdx)
-                                                    .some(sid => selection[sid]?.date && selection[sid]?.time);
-
-                                                const blockHelpersActive = selectedServices.length > 1 && scheduleIdx > 0 && hasPrevFixed;
-
-
-                                                return (
-                                                    <Button
-                                                        key={time}
-                                                        variant={picked ? "default" : "outline"}
-                                                        disabled={blocked}
-                                                        className={`h-12 transition-all duration-300 ${picked
-                                                            ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg border-0"
-                                                            : blocked
-                                                                ? "opacity-40 cursor-not-allowed border-2"
-                                                                : "border-2 border-green-200 hover:border-green-400 hover:bg-green-50"
-                                                            }`}
-                                                        onClick={() => {
-                                                            if (!selectedDateObj) return;
-                                                            handleConfirmTimesForCurrent(selectedDateObj, time);
-                                                        }}
-                                                    >
-                                                        {time}
-                                                    </Button>
-                                                );
-                                            })}
+                                {/* Calendario */}
+                                <Card className="py-0">
+                                    <CardContent className="p-6">
+                                        <div className="w-full">
+                                            {!loadingDays ? (
+                                                <CalendarComponent
+                                                    mode="single"
+                                                    selected={selectedDateObj}
+                                                    month={visibleMonth}
+                                                    onMonthChange={async (m) => {
+                                                        setVisibleMonth(m);
+                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId]);
+                                                    }}
+                                                    onSelect={async (date) => {
+                                                        setSelectedDateObj(date || undefined);
+                                                        if (date && availableDays.includes(fmtDay(date))) {
+                                                            setTimeSlots([]);
+                                                            setSelectedTimeBlock(null);
+                                                            await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
+                                                            scrollToTimes();
+                                                        } else {
+                                                            setTimeSlots([]);
+                                                            setSelectedTimeBlock(null);
+                                                        }
+                                                    }}
+                                                    disabled={(date) => {
+                                                        if (loadingDays) return true;
+                                                        if (disableAllDays) return true;
+                                                        if (isPast(date)) return true;
+                                                        return !availableDays.includes(fmtDay(date));
+                                                    }}
+                                                    locale={es}
+                                                    className="rounded-lg border-2 border-green-200 w-full p-3"
+                                                    classNames={{
+                                                        months: "w-full",
+                                                        month: "w-full",
+                                                        table: "w-full border-collapse",
+                                                        head_row: "grid grid-cols-7",
+                                                        row: "grid grid-cols-7 mt-2",
+                                                        head_cell: "text-center text-muted-foreground text-[0.8rem] py-1",
+                                                        cell: "p-0 relative w-full",
+                                                        day: "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors hover:bg-green-100 hover:text-green-900 focus:outline-none focus:ring-2 focus:ring-green-300",
+                                                        day_selected: "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
+                                                        day_today: "bg-green-50 text-green-700 font-semibold rounded-lg",
+                                                        day_outside: "text-muted-foreground opacity-60",
+                                                        day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
+                                                        day_range_start: "rounded-l-lg",
+                                                        day_range_end: "rounded-r-lg",
+                                                        day_range_middle: "rounded-none",
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div className="w-full">
+                                                    <Skeleton className="h-[248px] w-full" />
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Horarios */}
+                                <Card className="py-0">
+                                    <CardContent className="p-6">
+                                        {/* Horarios - Solo mostrar si hay fecha seleccionada */}
+                                        {!selectedDateObj ? (
+                                            <div className="text-center py-12">
+                                                <div className="text-5xl mb-4">📅</div>
+                                                <p className="text-gray-600 font-medium">
+                                                    Seleccioná una fecha en el calendario
+                                                </p>
+                                            </div>
+                                        ) : loadingSlots ? (
+                                            <div className="grid grid-cols-4 gap-3">
+                                                {Array.from({ length: 12 }).map((_, i) => (
+                                                    <Skeleton key={i} className="h-20 w-full" />
+                                                ))}
+                                            </div>
+                                        ) : !availableDays.includes(fmtDay(selectedDateObj)) ? (
+                                            <div className="text-center py-12">
+                                                <div className="text-5xl mb-4">❌</div>
+                                                <p className="text-gray-600 font-medium">
+                                                    Esta fecha no está disponible
+                                                </p>
+                                            </div>
+                                        ) : timeSlots.length === 0 ? (
+                                            <div className="text-center py-12">
+                                                <div className="text-5xl mb-4">😔</div>
+                                                <p className="text-gray-600 font-medium">
+                                                    No hay horarios disponibles para esta fecha
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-4 gap-3 overflow-y-auto pr-2">
+                                                {timeSlots.map((time) => {
+                                                    const blockedByDur = isSlotBlockedByDuration(time);
+                                                    const blockedByPrev = isSlotOverlappingWithPrevSelections(time);
+                                                    const picked = selectedTimeBlock === time;
+                                                    const blocked = (blockedByDur && !picked) || blockedByPrev;
+
+                                                    return (
+                                                        <button
+                                                            key={time}
+                                                            type="button"
+                                                            disabled={blocked}
+                                                            className={cn(
+                                                                "py-3 px-4 rounded-lg border-2 transition-all duration-200 font-semibold text-base",
+                                                                picked
+                                                                    ? "bg-green-500 border-green-500 text-white shadow-md"
+                                                                    : blocked
+                                                                        ? "opacity-40 cursor-not-allowed border-gray-200 bg-gray-50"
+                                                                        : "border-gray-200 bg-white hover:border-green-400 hover:bg-green-50 text-gray-900"
+                                                            )}
+                                                            onClick={() => {
+                                                                if (!selectedDateObj) return;
+                                                                handleConfirmTimesForCurrent(selectedDateObj, time);
+                                                            }}
+                                                        >
+                                                            {time}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
                         </div>
 
                         <FloatingNav
                             onBack={async () => {
                                 if (scheduleIdx === 0) {
-                                    // Si saltamos el paso 4, volver al paso 3
-                                    // Si no saltamos, volver al paso 4
-                                    const targetStep = step4WasSkipped ? 3 : 4;
-                                    setStep4WasSkipped(false);
-                                    setStep(targetStep);
+                                    // Limpiar selección de fecha/hora al volver
+                                    setSelectedDateObj(undefined);
+                                    setTimeSlots([]);
+                                    setSelectedTimeBlock(null);
+                                    setStep(5); // Volver a profesionales
+                                    setProfIdx(selectedServices.length - 1);
                                     scrollToTop();
                                     return;
                                 }
@@ -4147,8 +4191,13 @@ export default function ReservarPage() {
                             }}
                             onNext={async () => {
                                 const nextIdx = scheduleIdx + 1;
-                                if (!selection[currentServiceId]?.date || !selection[currentServiceId]?.time)
-                                    return;
+                                if (!selection[currentServiceId]?.date || !selection[currentServiceId]?.time) return;
+
+                                // Asegurar que la modalidad esté guardada
+                                if (!modalityByService[currentServiceId]) {
+                                    setModalityByService(prev => ({ ...prev, [currentServiceId]: 'presencial' }));
+                                }
+
                                 if (nextIdx < selectedServices.length) {
                                     setScheduleIdx(nextIdx);
                                     resetCalendar();
@@ -4158,8 +4207,7 @@ export default function ReservarPage() {
                                     );
                                     scrollToTop();
                                 } else {
-                                    // Ir al paso 8 (datos del cliente - antes era paso 6)
-                                    setStep(8);
+                                    setStep(7); // Ir a datos del cliente
                                     scrollToTop();
                                 }
                             }}
@@ -4173,8 +4221,8 @@ export default function ReservarPage() {
                     </>
                 )}
 
-                {/* PASO 8: Datos del cliente - antes era paso 6 */}
-                {step === 8 && (
+                {/* PASO 7: Datos del cliente - antes era paso 6 y luego paso 8 */}
+                {step === 7 && (
                     <>
                         <div className="text-center mb-4">
                             <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -4353,7 +4401,7 @@ export default function ReservarPage() {
                                     </CardContent>
 
                                     <FloatingNav
-                                        onBack={() => setStep(7)} // Volver a fecha/hora (ahora paso 7)
+                                        onBack={() => setStep(6)} // Volver a fecha/hora (ahora paso 6)
                                         onNext={createBooking}
                                         backDisabled={submitting}
                                         nextDisabled={

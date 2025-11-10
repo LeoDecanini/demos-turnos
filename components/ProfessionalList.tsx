@@ -54,49 +54,47 @@ export default function ProfessionalList({
     : professionals;
 
   return (
-    <div className="bg-white rounded-xl shadow border overflow-hidden">
-      <div className={cn("relative overflow-y-auto", heightClassName || "max-h-[60vh]")}>
-        <ul>
-          {items.map((p) => {
-            const selected = selectedId === p._id;
-            const imgSrc = srcFor(p.photo?.path);
+    <div className={cn("relative overflow-y-auto", heightClassName || "max-h-[60vh]")}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {items.map((p) => {
+          const selected = selectedId === p._id;
+          const imgSrc = srcFor(p.photo?.path);
 
-            return (
-              <li
-                key={p._id}
-                className={cn(
-                  "flex items-center gap-4 px-4 py-4 border-b border-gray-100 cursor-pointer transition-colors",
-                  "hover:bg-green-50/40",
-                  selected && "bg-green-50"
+          return (
+            <button
+              key={p._id}
+              type="button"
+              className={cn(
+                "flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                "hover:shadow-md hover:border-green-300",
+                selected
+                  ? "bg-green-50 border-green-500 shadow-md"
+                  : "bg-white border-gray-200"
+              )}
+              onClick={() => onSelect(p._id)}
+            >
+              <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-gray-200 bg-gray-100 shrink-0 relative">
+                {imgSrc ? (
+                  <Image src={imgSrc} alt={p.name} fill sizes="64px" className="object-cover" />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                    {initials(p.name)}
+                  </div>
                 )}
-                onClick={() => onSelect(p._id)}
-              >
-                <div className="h-12 w-12 rounded-full overflow-hidden border border-gray-200 bg-gray-100 shrink-0 relative">
-                  {imgSrc ? (
-                    <Image src={imgSrc} alt={p.name} fill sizes="48px" className="object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-xs font-semibold text-gray-600">
-                      {initials(p.name)}
-                    </div>
-                  )}
-                </div>
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{p.name}</p>
-                </div>
+              <div className="flex-1 min-w-0 text-center">
+                <p className="font-medium text-gray-900 text-sm line-clamp-2">{p.name}</p>
+              </div>
 
-                <div
-                  className={cn(
-                    "w-6 h-6 rounded-full border flex items-center justify-center shrink-0 transition-colors",
-                    selected ? "bg-green-500 border-green-500" : "border-gray-300"
-                  )}
-                >
-                  {selected && <Check className="w-4 h-4 text-white" />}
+              {selected && (
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                  <Check className="w-4 h-4 text-white" />
                 </div>
-              </li>
-            );
-          })}
-        </ul>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
