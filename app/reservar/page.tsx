@@ -1915,6 +1915,10 @@ export default function ReservarPage() {
             if (profId && profId !== "any") params.set("professional", profId);
             // Agregar modalidad si está presente, sino por defecto 'presencial'
             params.set("modality", modality || modalityByService[srvId] || 'presencial');
+            // 🆕 Agregar obra social si está seleccionada
+            if (selectedSocialWork) {
+                params.set("socialWork", selectedSocialWork);
+            }
             const slug =
                 SUBDOMAIN ??
                 (typeof window !== "undefined"
@@ -2148,6 +2152,7 @@ export default function ReservarPage() {
                 },
                 notes: notes?.trim() || undefined,
                 modality: modalityByService[selectedServices[0]] || 'presencial',
+                socialWork: selectedSocialWork || undefined, // 🆕 Pasar obra social como campo separado
             };
 
             console.log('🔍 [Frontend] Enviando booking BULK con modalidad:', {
@@ -2197,6 +2202,7 @@ export default function ReservarPage() {
                     },
                     notes: notes?.trim() || undefined,
                     modality: modalityByService[selectedServices[0]] || 'presencial',
+                    socialWork: selectedSocialWork || undefined, // 🆕 Pasar obra social como campo separado
                 };
 
                 console.log('🔍 [Frontend] Enviando booking individual con modalidad:', {
