@@ -17,6 +17,9 @@ import {
     IdCard,
     ExternalLink,
     UserPlus,
+    Video,
+    MapPin,
+    Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -345,6 +348,13 @@ const BookingPublicView = (props: Props) => {
                                         <InfoRow icon={<Clock className="w-4 h-4 text-green-600" />} label="Horario" value={`${startTime} — ${endTime}`} />
                                         <InfoRow icon={<NotebookText className="w-4 h-4 text-green-600" />} label="Servicio" value={service?.name} />
                                         <InfoRow icon={<User className="w-4 h-4 text-green-600" />} label="Profesional" value={professional?.name || "Indistinto"} />
+                                        {booking.modality && (
+                                            <InfoRow 
+                                                icon={booking.modality === 'virtual' ? <Video className="w-4 h-4 text-blue-600" /> : <MapPin className="w-4 h-4 text-green-600" />} 
+                                                label="Modalidad" 
+                                                value={booking.modality === 'virtual' ? 'Virtual' : 'Presencial'} 
+                                            />
+                                        )}
                                         {!!booking.price && (
                                             <InfoRow icon={<Wallet className="w-4 h-4 text-green-600" />} label="Precio" value={fmtMoney(booking.price, booking.currency)} />
                                         )}
@@ -354,6 +364,26 @@ const BookingPublicView = (props: Props) => {
                                         <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
                                             <div className="font-semibold mb-1">Notas</div>
                                             <p className="whitespace-pre-wrap">{booking.notes}</p>
+                                        </div>
+                                    )}
+
+                                    {booking.modality === 'virtual' && booking.meet?.url && (
+                                        <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Video className="w-5 h-5 text-blue-600" />
+                                                <div className="font-semibold text-blue-900">Link de Google Meet</div>
+                                            </div>
+                                            <a 
+                                                href={booking.meet.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-sm text-blue-700 hover:text-blue-800 underline break-all"
+                                            >
+                                                {booking.meet.url}
+                                            </a>
+                                            <p className="text-xs text-blue-600 mt-2">
+                                                Hacé clic en el link para unirte a la videollamada en el horario de tu cita.
+                                            </p>
                                         </div>
                                     )}
                                 </CardContent>
@@ -373,6 +403,12 @@ const BookingPublicView = (props: Props) => {
                                     <InfoRow icon={<Mail className="w-4 h-4 text-gray-500" />} label="Email" value={booking.client?.email} />
                                     <InfoRow icon={<Phone className="w-4 h-4 text-gray-500" />} label="Teléfono" value={booking.client?.phone} />
                                     <InfoRow icon={<IdCard className="w-4 h-4 text-gray-500" />} label="DNI" value={booking.client?.dni} />
+                                    {booking.client?.cuit && (
+                                        <InfoRow icon={<IdCard className="w-4 h-4 text-gray-500" />} label="CUIT" value={booking.client.cuit} />
+                                    )}
+                                    {booking.socialWork?.name && (
+                                        <InfoRow icon={<Heart className="w-4 h-4 text-red-500" />} label="Obra Social" value={booking.socialWork.name} />
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
