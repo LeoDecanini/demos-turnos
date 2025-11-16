@@ -19,6 +19,9 @@ import {
     Sparkles,
     Award,
     Heart, ChevronDown,
+    Repeat,
+    Flashlight,
+    ChartBar,
 } from "lucide-react"
 import ReusableBadge from "@/components/reusable-badge";
 import Link from "next/link";
@@ -26,6 +29,7 @@ import OpinionesPage from "@/components/testimonials-section"
 import Contacto from "@/components/Contacto"
 import Servicios from "@/components/Servicios"
 import React from "react"
+import { HeroSection } from "@/components/hero-section"
 
 export default function Home() {
     const router = useRouter()
@@ -299,336 +303,314 @@ export default function Home() {
 
     // === En ServiciosSection: carrusel grande con deslizamiento horizontal + drag ===
     // === Carrusel grande con deslizamiento horizontal + drag ===
-    function ServiciosSection() {
-        const pages = services.map((s) => [s]) // 1 por página
-        const [page, setPage] = React.useState(0)
-        const goPrev = () => setPage((p) => (p - 1 + pages.length) % pages.length)
-        const goNext = () => setPage((p) => (p + 1) % pages.length)
-
-        // refs y drag
-        const trackRef = React.useRef<HTMLDivElement | null>(null)
-        const viewportRef = React.useRef<HTMLDivElement | null>(null)
-        const startX = React.useRef<number | null>(null)
-        const deltaX = React.useRef(0)
-        const [dragging, setDragging] = React.useState(false)
-        const viewportW = React.useRef(1)
-        const THRESHOLD_PX = 80
-        const [, setBump] = React.useState(0)
-
-        const onOuterDown = (e: React.PointerEvent) => {
-            setDragging(true)
-            startX.current = e.clientX
-            deltaX.current = 0
-            viewportW.current = viewportRef.current?.clientWidth || 1
-                ; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-        }
-        const onOuterMove = (e: React.PointerEvent) => {
-            if (!dragging || startX.current == null) return
-            deltaX.current = e.clientX - startX.current
-            setBump((v) => v + 1)
-        }
-        const onOuterUp = (e: React.PointerEvent) => {
-            if (!dragging) return
-            setDragging(false)
-                ; (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-            const dx = deltaX.current
-            deltaX.current = 0
-            startX.current = null
-            if (Math.abs(dx) > THRESHOLD_PX) dx < 0 ? goNext() : goPrev()
-            else setBump((v) => v + 1)
-        }
-
-        React.useEffect(() => {
-            const h = (ev: KeyboardEvent) => {
-                if (ev.key === "ArrowLeft") goPrev()
-                if (ev.key === "ArrowRight") goNext()
-            }
-            window.addEventListener("keydown", h)
-            return () => window.removeEventListener("keydown", h)
-        }, [])
-
-        const offsetPctWhileDrag = dragging
-            ? (-page * 100) + (deltaX.current / (viewportW.current || 1)) * 100
-            : (-page * 100)
-
+    function Servicios() {
         return (
-            <section id="servicios" className="py-24 relative overflow-hidden">
-                <div className="relative max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="text-center mb-8">
-                        <ReusableBadge className="mb-2">Nuestros Servicios</ReusableBadge>
-                        <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-800 to-gray-700 bg-clip-text text-transparent mb-4 leading-tight">
-                            Nuestros tratamientos
+            <section id="servicios" className="py-28 bg-white">
+                <div className="max-w-7xl mx-auto px-6 lg:px-8 space-y-32">
+
+                    {/* Título principal */}
+                    <div className="text-center max-w-2xl mx-auto">
+                        <ReusableBadge>Nuestros Servicios</ReusableBadge>
+                        <h2 className="text-5xl font-bold text-gray-900 mt-4 leading-tight">
+                            Tratamientos diseñados para transformar tu salud
                         </h2>
-                        <div className="w-24 h-1 bg-gradient-to-r from-green-500 to-green-600 mx-auto mb-4 rounded-full" />
-                        <p className="text-xl px-3 text-gray-600 max-w-4xl mx-auto leading-relaxed-moveup">
-                            Ofrecemos servicios de nutrición personalizados para ayudarte a alcanzar tus objetivos de salud y bienestar de forma sostenible.
+                        <p className="text-xl text-gray-600 mt-4">
+                            Planes personalizados basados en evidencia y adaptados a tu vida real.
                         </p>
                     </div>
 
-                    {/* Viewport: overflow-hidden, separación lateral de cada página */}
-                    <div
-                        ref={viewportRef}
-                        className="relative overflow-hidden select-none touch-pan-y"
-                        onPointerDown={onOuterDown}
-                        onPointerMove={onOuterMove}
-                        onPointerUp={onOuterUp}
-                        onPointerCancel={onOuterUp}
-                        onPointerLeave={(e) => dragging && onOuterUp(e as any)}
-                    >
-                        {/* Track horizontal */}
-                        <div
-                            ref={trackRef}
-                            className="flex w-full"
-                            style={{
-                                transform: `translateX(${offsetPctWhileDrag}%)`,
-                                transition: dragging ? "none" : "transform 450ms cubic-bezier(.22,.61,.36,1)",
-                                willChange: "transform",
-                            }}
-                        >
-                            {pages.map((group, i) => (
-                                <div key={i} className="basis-full shrink-0 grow-0 px-4 md:px-6">
-                                    {group.map((s, idx) => (
-                                        <div key={`${i}-${idx}-${s.title}`} className="mb-8">
-                                            <ServiceCard s={s} />
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
+                    {/* Servicio 1 */}
+                    <div className="grid lg:grid-cols-2 gap-16 items-center">
+                        <div className="rounded-3xl overflow-hidden shadow-xl">
+                            <img
+                                src="https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=1932&auto=format&fit=crop"
+                                className="w-full h-[420px] object-cover"
+                            />
                         </div>
-
-                        {/* Dots */}
-                        <div className="flex items-center justify-center gap-2 mt-2">
-                            {pages.map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setPage(i)}
-                                    className={`h-2.5 w-2.5 rounded-full ${i === page ? "bg-green-500" : "bg-green-200 hover:bg-green-300"}`}
-                                    aria-label={`Ir a servicio ${i + 1}`}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Flechas externas (md+) visibles en desktop */}
-                        <button
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:grid place-items-center h-11 w-11 rounded-full
-             bg-white/90 backdrop-blur border border-black/10 hover:bg-white z-30"
-                        >
-                            <ChevronRight className="h-5 w-5 rotate-180" />
-                        </button>
-
-                        <button
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={(e) => { e.stopPropagation(); goNext(); }}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:grid place-items-center h-11 w-11 rounded-full
-             bg-white/90 backdrop-blur border border-black/10 hover:bg-white z-30"
-                        >
-                            <ChevronRight className="h-5 w-5" />
-                        </button>
-                    </div>
-
-                    {/* CTA igual */}
-                    <div className="mt-16 text-center">
-                        <Link href={"/reservar"}>
-                            <Button variant="outline" className="bg-gradient-to-r from-green-50 to-green-50 border-2 border-green-200 hover:from-green-500 hover:to-green-600 hover:text-white transition-all duration-300 font-semibold py-3">
-                                Ver todos los servicios
-                                <ChevronRight className="h-6 w-6" />
+                        <div className="space-y-6">
+                            <ReusableBadge>Más elegido</ReusableBadge>
+                            <h3 className="text-4xl font-bold text-gray-900">
+                                Consulta Nutricional Inicial
+                            </h3>
+                            <p className="text-lg text-gray-700 leading-relaxed">
+                                Evaluación completa, hábitos, mediciones y plan personalizado adaptado a tus objetivos.
+                            </p>
+                            <ul className="space-y-3 text-gray-700">
+                                <li className="flex items-center gap-3">
+                                    <ShieldCheck className="h-5 w-5 text-green-600" />
+                                    Evaluación antropométrica completa
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <Sparkles className="h-5 w-5 text-green-600" />
+                                    Plan nutricional personalizado
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <Heart className="h-5 w-5 text-green-600" />
+                                    Recomendaciones y educación alimentaria
+                                </li>
+                            </ul>
+                            <Button
+                                className="bg-[#4CCB89] hover:bg-[#3BAB71] text-white shadow-lg mt-4"
+                                asChild
+                            >
+                                <Link href="/reservar">Reservar Consulta</Link>
                             </Button>
-                        </Link>
+                        </div>
                     </div>
+
+                    {/* Servicio 2 */}
+                    <div className="grid lg:grid-cols-2 gap-16 items-center lg:flex-row-reverse">
+                        <div className="rounded-3xl overflow-hidden shadow-xl">
+                            <img
+                                src="https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=2070&auto=format&fit=crop"
+                                className="w-full h-[420px] object-cover"
+                            />
+                        </div>
+                        <div className="space-y-6">
+                            <ReusableBadge>Rendimiento</ReusableBadge>
+                            <h3 className="text-4xl font-bold text-gray-900">
+                                Nutrición Deportiva
+                            </h3>
+                            <p className="text-lg text-gray-700 leading-relaxed">
+                                Alimentación para rendimiento, fuerza, recuperación y composición corporal.
+                            </p>
+                            <ul className="space-y-3 text-gray-700">
+                                <li className="flex items-center gap-3">
+                                    <Award className="h-5 w-5 text-green-600" />
+                                    Plan según tu deporte y volumen de entrenamiento
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <Flashlight className="h-5 w-5 text-green-600" />
+                                    Suplementación inteligente
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <ChartBar className="h-5 w-5 text-green-600" />
+                                    Optimización de recuperación muscular
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Servicio 3 */}
+                    <div className="grid lg:grid-cols-2 gap-16 items-center">
+                        <div className="rounded-3xl overflow-hidden shadow-xl">
+                            <img
+                                src="https://images.unsplash.com/photo-1511688878353-3a2f5be94cd7?q=80&w=2087&auto=format&fit=crop"
+                                className="w-full h-[420px] object-cover"
+                            />
+                        </div>
+                        <div className="space-y-6">
+                            <ReusableBadge>Seguimiento</ReusableBadge>
+                            <h3 className="text-4xl font-bold text-gray-900">
+                                Control y Seguimiento Mensual
+                            </h3>
+                            <p className="text-lg text-gray-700 leading-relaxed">
+                                Ajustes continuos del plan, mediciones actualizadas y monitoreo real de tu progreso.
+                            </p>
+                            <ul className="space-y-3 text-gray-700">
+                                <li className="flex items-center gap-3">
+                                    <Clock className="h-5 w-5 text-green-600" />
+                                    Controles antropométricos
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <Repeat className="h-5 w-5 text-green-600" />
+                                    Ajustes del plan según resultados
+                                </li>
+                                <li className="flex items-center gap-3">
+                                    <HeartHandshake className="h-5 w-5 text-green-600" />
+                                    Acompañamiento sostenido
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
                 </div>
             </section>
         )
     }
 
-
     return (
         <>
             <div className="min-h-svh">
-                <section className="relative h-[92vh] min-h-[700px] w-full overflow-hidden">
-                    <div className="absolute inset-0 w-full h-full">
-                        <img
-                            src="/instalanciones-1.jpg"
-                            alt="Centro de estética"
-                            className="w-full h-full object-cover scale-105"
-                        />
-                        <div
-                            className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/50 to-green-900/40"></div>
-                        <div
-                            className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                    </div>
+                <HeroSection />
 
-                    <div
-                        className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center">
-                        <div className="backdrop-blur-sm bg-white/5 rounded-2xl p-4 md:p-8 border border-white/10 max-w-2xl">
-                            <Badge className="mb-3 bg-gradient-to-r from-green-100 to-emerald-100 text-emerald-800 hover:from-green-200 hover:to-emerald-200 border-0 px-4 py-2 text-sm font-medium shadow-lg transition-colors">
-                                <Sparkles className="w-4 h-4 mr-2" />
-                                Centro de Nutrición
-                            </Badge>
-
-                            <h1 className="text-2xl md:text-5xl font-bold text-white mb-3 leading-tight">
-                                Nutrición y Bienestar{" "}
-                                <span className="bg-gradient-to-r from-green-300 to-emerald-400 bg-clip-text text-transparent">
-                                    Profesional
-                                </span>
-                            </h1>
-
-                            <p className="text-lg md:text-xl text-gray-100 mb-6 leading-relaxed-moveup font-light">
-                                Planes de alimentación personalizados, asesoramiento nutricional y
-                                acompañamiento para crear hábitos saludables. Te ayudamos a alcanzar
-                                tus objetivos: bajar de peso, mejorar rendimiento, cuidar tu salud
-                                digestiva y mucho más.
-                            </p>
-
-                            <div className="flex flex-col sm:flex-row gap-6">
-                                <Link href={"/reservar"}>
-                                    <Button
-                                        size="lg"
-                                        className="h-14 px-8 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold shadow-xl border-0 transition-all duration-300 hover:scale-105"
-                                    >
-                                        <CalendarCheck className="mr-3 h-6 w-6" />
-                                        Reservar Consulta
-                                    </Button>
-                                </Link>
-
-                                <Link href={"#servicios"}>
-                                    <Button
-                                        size="lg"
-                                        variant="outline"
-                                        className="h-14 px-8 text-white hover:text-green-900 border-2 border-white/30 hover:bg-white/90 bg-white/10 backdrop-blur-sm font-semibold transition-all duration-300 hover:scale-105"
-                                    >
-                                        Ver Planes y Servicios
-                                        <ChevronRight className="ml-3 h-6 w-6" />
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-
-                    </div>
-                </section>
-
-                {ServiciosSection()}
+                {Servicios()}
 
                 <section
                     id="diferenciales"
-                    className="py-24 bg-gradient-to-br from-white via-emerald-50/30 to-green-50/50 relative overflow-hidden"
+                    className="py-24 bg-white relative"
                 >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.1),transparent_50%)]"></div>
-                    <div className="relative mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <ReusableBadge>¿Por qué elegirnos?</ReusableBadge>
-                        <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-6">
-                            Nutrición basada en evidencia
-                        </h2>
-                        <div className="w-24 h-1 bg-gradient-to-r from-emerald-500 to-green-600 mx-auto mb-8 rounded-full"></div>
-                        <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed-moveup mb-16">
-                            Te acompañamos con planes realistas, educación alimentaria y seguimiento cercano para que los cambios sean sostenibles.
-                        </p>
+                    <div className="max-w-7xl mx-auto px-6 lg:px-8">
 
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                        {/* Encabezado */}
+                        <div className="text-center max-w-3xl mx-auto mb-16">
+                            <ReusableBadge>¿Por qué elegirnos?</ReusableBadge>
+
+                            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                                Nutrición basada en evidencia
+                            </h2>
+
+                            <div className="w-24 h-1 bg-gradient-to-r from-[#4CCB89] to-[#157347] mx-auto mb-6 rounded-full"></div>
+
+                            <p className="text-xl text-gray-600 leading-relaxed">
+                                Te acompañamos con claridad, evidencia y seguimiento real para que los
+                                cambios sean sostenibles.
+                            </p>
+                        </div>
+
+                        {/* Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                            {[
+                                {
+                                    icon: ShieldCheck,
+                                    title: "Evidencia y claridad",
+                                    desc: "Recomendaciones actualizadas, sin mitos ni modas.",
+                                    image: "/nutricion/evidencia.jpg",
+                                },
+                                {
+                                    icon: HeartHandshake,
+                                    title: "Acompañamiento real",
+                                    desc: "Seguimiento periódico y ajustes personalizados.",
+                                    image: "/nutricion/acompanamiento.jpg",
+                                },
+                                {
+                                    icon: Leaf,
+                                    title: "Plan sostenible",
+                                    desc: "Flexibilidad real sin dietas extremas ni prohibiciones.",
+                                    image: "/nutricion/sostenible.jpg",
+                                },
+                            ].map((item, i) => (
+                                <div
+                                    key={i}
+                                    className="
+            group rounded-3xl overflow-hidden bg-white 
+            border border-gray-200 shadow-sm 
+            hover:shadow-xl hover:-translate-y-2 
+            transition-all duration-500
+          "
+                                >
+                                    {/* Imagen */}
+                                    <div className="relative h-64 overflow-hidden">
+                                        <img
+                                            src={item.image}
+                                            alt={item.title}
+                                            className="w-full h-full object-cover transition-all duration-700 group-hover:scale-105"
+                                        />
+                                    </div>
+
+                                    {/* Contenido */}
+                                    <div className="p-8 text-left">
+                                        <div className="flex items-center mb-4">
+                                            <div className="p-3 rounded-2xl bg-[#E8F9EF] border border-[#4CCB89]/20 shadow-sm">
+                                                <item.icon className="h-6 w-6 text-[#157347]" />
+                                            </div>
+                                            <h3 className="ml-4 text-2xl font-semibold text-gray-900">
+                                                {item.title}
+                                            </h3>
+                                        </div>
+
+                                        <p className="text-gray-600 text-lg leading-relaxed">
+                                            {item.desc}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                    </div>
+                </section>
+
+                <section className="py-28 bg-white">
+                    <div className="max-w-7xl mx-auto px-6 lg:px-8 grid lg:grid-cols-2 gap-20 items-center">
+
+                        {/* Columna de texto */}
+                        <div className="space-y-10">
+
+                            <div className="space-y-4">
+                                <ReusableBadge>Nuestra Historia</ReusableBadge>
+
+                                <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
+                                    7 años acompañando cambios reales
+                                </h2>
+
+                                <p className="text-xl text-gray-600 leading-relaxed">
+                                    Somos la Lic. Sofía Rivas y el Lic. Martín Valdez. Desde 2016 nos dedicamos a que comer mejor sea posible en la vida real: con claridad, evidencia y un acompañamiento humano.
+                                </p>
+                            </div>
+
+                            {/* 3 bloques destacados con íconos */}
+                            <div className="space-y-8">
+
                                 {[
                                     {
-                                        icon: ShieldCheck,
-                                        title: "Evidencia y claridad",
-                                        desc: "Recomendaciones actualizadas, sin mitos ni modas. Educación simple para tomar mejores decisiones.",
-                                        image: "/nutricion/evidencia.jpg",
+                                        icon: Leaf,
+                                        text: "Experiencia en hospitales, centros deportivos y consultorios. Siempre con enfoque práctico y basado en evidencia."
                                     },
                                     {
                                         icon: HeartHandshake,
-                                        title: "Acompañamiento real",
-                                        desc: "Seguimiento periódico, ajustes por progreso y herramientas prácticas para construir hábitos.",
-                                        image: "/nutricion/acompanamiento.jpg",
+                                        text: "En 2019 abrimos nuestro espacio propio y desde entonces acompañamos a cientos de pacientes con seguimiento cercano."
                                     },
                                     {
-                                        icon: Leaf,
-                                        title: "Plan sostenible",
-                                        desc: "Flexibilidad, gustos y contexto personal. Comer mejor sin dietas extremas ni prohibiciones.",
-                                        image: "/nutricion/sostenible.jpg",
-                                    },
+                                        icon: ShieldCheck,
+                                        text: "Nuestro método combina evidencia, flexibilidad y ajustes constantes según tu contexto y tus objetivos reales."
+                                    }
                                 ].map((item, i) => (
-                                    <div
-                                        key={i}
-                                        className="group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3"
-                                    >
-                                        <div className="relative h-80 overflow-hidden">
-                                            <img
-                                                src={item.image || "/placeholder.svg"}
-                                                alt={item.title}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                            />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
-                                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/20 to-green-900/20 group-hover:from-emerald-800/30 group-hover:to-green-800/30 transition-all duration-500"></div>
+                                    <div key={i} className="flex gap-4 items-start">
+
+                                        {/* Ícono cuadrado pegado arriba */}
+                                        <div className="
+        p-3 rounded-xl 
+        bg-[#E8F9EF] 
+        border border-[#4CCB89]/30 
+        flex items-start justify-center
+      ">
+                                            <item.icon className="h-5 w-5 text-[#157347]" />
                                         </div>
-                                        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                                            <div className="flex items-center mb-4">
-                                                <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-3 rounded-2xl mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                                    <item.icon className="h-6 w-6 text-white" />
-                                                </div>
-                                                <h3 className="font-bold text-2xl group-hover:text-emerald-200 transition-colors duration-300">
-                                                    {item.title}
-                                                </h3>
-                                            </div>
-                                            <p className="text-gray-100 text-left text-lg leading-relaxed-moveup font-light">{item.desc}</p>
-                                        </div>
+
+                                        {/* Texto */}
+                                        <p className="text-gray-700 text-lg leading-relaxed">
+                                            {item.text}
+                                        </p>
+
                                     </div>
                                 ))}
+
                             </div>
+
+                            {/* Botón premium */}
+                            <Link href="#equipo">
+                                <Button className="bg-[#4CCB89] hover:bg-[#3BAB71] text-white shadow-md text-lg px-6 py-6 rounded-xl">
+                                    Conocé a Nuestro Equipo
+                                    <ChevronDown className="h-6 w-6 ml-2" />
+                                </Button>
+                            </Link>
+
+                        </div>
+
+                        {/* Columna de imágenes mejoradas */}
+                        <div className="relative">
+
+                            <div className="rounded-3xl overflow-hidden shadow-xl">
+                                <img
+                                    src="/nutricion/espacio-1.jpg"
+                                    alt="Consultorio"
+                                    className="w-full h-[500px] object-cover"
+                                />
+                            </div>
+
+                            {/* Imagen flotante premium */}
+                            <div className="absolute -bottom-14 -left-8 w-64 h-64 rounded-3xl overflow-hidden shadow-lg border-4 border-white">
+                                <img
+                                    src="/nutricion/espacio-2.jpg"
+                                    alt="Atención nutricional"
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+
                         </div>
                     </div>
                 </section>
 
-                {/* Sobre Nosotros */}
-                <section className="py-20 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                            <div className="space-y-8">
-                                <div>
-                                    <ReusableBadge>Nuestra Historia</ReusableBadge>
-                                    <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                                        Más de 7 años acompañando cambios reales
-                                    </h2>
-                                    <p className="text-lg text-gray-700 mb-6">
-                                        Somos la Lic. Sofía Rivas y el Lic. Martín Valdez, un equipo de nutrición que nació en 2016 con una idea simple: comer mejor tiene que ser posible en la vida real. Empezamos atendiendo en consultorios pequeños y, con el tiempo, fuimos sumando experiencia en hospitales y centros deportivos, siempre con enfoque humano y basado en evidencia.
-                                    </p>
-                                    <p className="text-lg text-gray-700 mb-8">
-                                        En 2019 abrimos nuestro primer espacio propio y desde entonces trabajamos en planes personalizados, educación alimentaria y seguimiento cercano. Durante 2021 incorporamos atención online y herramientas digitales para que cada persona pueda sostener hábitos sin dietas extremas ni culpas.
-                                    </p>
-                                    <p className="text-lg text-gray-700 mb-8">
-                                        Hoy acompañamos a adolescentes y adultos con objetivos diversos: recomposición corporal, salud cardiometabólica, digestiva y mejora del rendimiento. Nuestro método combina claridad, flexibilidad y ajustes constantes según tu contexto.
-                                    </p>
-                                </div>
-
-                                <Link href={"#equipo"}>
-                                    <Button
-                                        variant="outline"
-                                        className="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 hover:from-emerald-500 hover:to-green-600 hover:text-white transition-all duration-300 font-semibold py-3"
-                                    >
-                                        Conocé a Nuestro Equipo
-                                        <ChevronDown className="h-6 w-6" />
-                                    </Button>
-                                </Link>
-                            </div>
-
-                            <div className="relative">
-                                <div className="aspect-square rounded-2xl overflow-hidden shadow-xl">
-                                    <img
-                                        src="/nutricion/espacio-1.jpg"
-                                        alt="Nuestro consultorio de nutrición"
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                                <div className="absolute -bottom-16 sm:-bottom-6 -left-3 sm:-left-6 w-64 h-64 rounded-2xl overflow-hidden border-8 border-white shadow-xl">
-                                    <img
-                                        src="/nutricion/espacio-2.jpg"
-                                        alt="Sesión de educación alimentaria"
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
                 {/* Testimonios */}
                 <section
