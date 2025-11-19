@@ -1276,6 +1276,14 @@ export default function ReservarPage() {
     const [step4WasSkipped, setStep4WasSkipped] = useState(false);
 
     const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
+    const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
+        const today = new Date();
+        const day = today.getDay();
+        const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Lunes de la semana actual
+        return new Date(today.setDate(diff));
+    });
+    const [isFirstCalendarLoad, setIsFirstCalendarLoad] = useState(true);
+    const [hasCompletedFirstLoad, setHasCompletedFirstLoad] = useState(false);
     const [availableDays, setAvailableDays] = useState<string[]>([]);
     const [loadingDays, setLoadingDays] = useState(false);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
@@ -2492,13 +2500,96 @@ export default function ReservarPage() {
 
     useEffect(() => {
         if (step !== 6 || !currentServiceId) return; // Paso 6 ahora incluye calendario
+        
+        // Resetear flags cuando entramos al paso 6
+        setIsFirstCalendarLoad(true);
+        setHasCompletedFirstLoad(false);
+        
         const pid = selection[currentServiceId]?.professionalId || "any";
         const modality = modalityByService[currentServiceId] || 'presencial';
-        void loadAvailableDays(currentServiceId, pid, undefined, modality);
+        
+        // Cargar días y marcar cuando termina
+        loadAvailableDays(currentServiceId, pid, undefined, modality).then(() => {
+            setHasCompletedFirstLoad(true);
+        });
         // al entrar al paso 6 (calendario + modalidad) o cambiar el profesional del servicio actual,
         // cargamos los días con el valor NUEVO ya aplicado
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, currentServiceId, selection[currentServiceId]?.professionalId, modalityByService[currentServiceId]]);
+
+    // Auto-avanzar a la primera semana con días disponibles (solo la primera vez)
+    useEffect(() => {
+        if (step !== 6 || !currentServiceId || !isFirstCalendarLoad || !hasCompletedFirstLoad) return;
+        
+        const checkAndAdvanceWeek = async () => {
+            // Marcar inmediatamente para evitar re-ejecuciones
+            setIsFirstCalendarLoad(false);
+            
+            let weekStart = new Date(currentWeekStart);
+            let currentDays = [...availableDays]; // Capturar valor actual
+            let attempts = 0;
+            const maxAttempts = 12; // Máximo 12 semanas (3 meses)
+            let lastMonthLoaded = fmtMonth(visibleMonth);
+            
+            while (attempts < maxAttempts) {
+                // Calcular los días de la semana actual
+                const weekDays = Array.from({ length: 7 }).map((_, i) => {
+                    const d = new Date(weekStart);
+                    d.setDate(d.getDate() + i);
+                    return fmtDay(d);
+                });
+                
+                // Verificar si algún día de esta semana está disponible
+                const hasAvailableDays = weekDays.some(day => currentDays.includes(day));
+                
+                if (hasAvailableDays) {
+                    // Si encontramos días disponibles, actualizar si es necesario
+                    if (attempts > 0) {
+                        setCurrentWeekStart(weekStart);
+                        const newMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1);
+                        setVisibleMonth(newMonth);
+                    }
+                    break;
+                }
+                
+                // Avanzar a la siguiente semana
+                weekStart.setDate(weekStart.getDate() + 7);
+                attempts++;
+                
+                // Si cambiamos de mes, cargar los días de ese mes
+                const nextMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1);
+                const nextMonthStr = fmtMonth(nextMonth);
+                
+                if (nextMonthStr !== lastMonthLoaded) {
+                    // Hacer petición y esperar resultado
+                    const response = await fetch(`/api/availability/days`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            serviceId: currentServiceId,
+                            professionalId: selection[currentServiceId]?.professionalId || "any",
+                            month: nextMonthStr,
+                            modality: modalityByService[currentServiceId]
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        currentDays = data.availableDays || [];
+                        // Actualizar el estado solo si es el último mes que vamos a cargar
+                        if (weekDays.some(day => currentDays.includes(day))) {
+                            setAvailableDays(currentDays);
+                        }
+                    }
+                    
+                    lastMonthLoaded = nextMonthStr;
+                }
+            }
+        };
+        
+        checkAndAdvanceWeek();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step, currentServiceId, hasCompletedFirstLoad]);
 
     useEffect(() => {
         if (step !== 3) return;
@@ -4044,60 +4135,124 @@ export default function ReservarPage() {
                                     );
                                 })()}
 
-                                {/* Calendario */}
+                                {/* Calendario Semanal */}
                                 <Card className="py-0">
                                     <CardContent className="p-6">
                                         <div className="w-full">
                                             {!loadingDays ? (
-                                                <CalendarComponent
-                                                    mode="single"
-                                                    selected={selectedDateObj}
-                                                    month={visibleMonth}
-                                                    onMonthChange={async (m) => {
-                                                        setVisibleMonth(m);
-                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId]);
-                                                    }}
-                                                    onSelect={async (date) => {
-                                                        setSelectedDateObj(date || undefined);
-                                                        if (date && availableDays.includes(fmtDay(date))) {
-                                                            setTimeSlots([]);
-                                                            setSelectedTimeBlock(null);
-                                                            await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
-                                                            scrollToTimes();
-                                                        } else {
-                                                            setTimeSlots([]);
-                                                            setSelectedTimeBlock(null);
-                                                        }
-                                                    }}
-                                                    disabled={(date) => {
-                                                        if (loadingDays) return true;
-                                                        if (disableAllDays) return true;
-                                                        if (isPast(date)) return true;
-                                                        return !availableDays.includes(fmtDay(date));
-                                                    }}
-                                                    locale={es}
-                                                    className="rounded-lg border-2 border-green-200 w-full p-3"
-                                                    classNames={{
-                                                        months: "w-full",
-                                                        month: "w-full",
-                                                        table: "w-full border-collapse",
-                                                        head_row: "grid grid-cols-7",
-                                                        row: "grid grid-cols-7 mt-2",
-                                                        head_cell: "text-center text-muted-foreground text-[0.8rem] py-1",
-                                                        cell: "p-0 relative w-full",
-                                                        day: "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors hover:bg-green-100 hover:text-green-900 focus:outline-none focus:ring-2 focus:ring-green-300",
-                                                        day_selected: "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
-                                                        day_today: "bg-green-50 text-green-700 font-semibold rounded-lg",
-                                                        day_outside: "text-muted-foreground opacity-60",
-                                                        day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
-                                                        day_range_start: "rounded-l-lg",
-                                                        day_range_end: "rounded-r-lg",
-                                                        day_range_middle: "rounded-none",
-                                                    }}
-                                                />
+                                                <div className="space-y-4">
+                                                    {/* Header con navegación */}
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                const newWeek = new Date(currentWeekStart);
+                                                                newWeek.setDate(newWeek.getDate() - 7);
+                                                                setCurrentWeekStart(newWeek);
+                                                                const newMonth = new Date(newWeek.getFullYear(), newWeek.getMonth(), 1);
+                                                                setVisibleMonth(newMonth);
+                                                                await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(newMonth), modalityByService[currentServiceId]);
+                                                            }}
+                                                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                                        >
+                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                                            </svg>
+                                                        </button>
+                                                        
+                                                        <h3 className="text-lg font-semibold text-gray-900">
+                                                            {(() => {
+                                                                const endWeek = new Date(currentWeekStart);
+                                                                endWeek.setDate(endWeek.getDate() + 6);
+                                                                const sameMonth = currentWeekStart.getMonth() === endWeek.getMonth();
+                                                                if (sameMonth) {
+                                                                    return `${currentWeekStart.toLocaleDateString('es', { month: 'long', year: 'numeric' })}`;
+                                                                }
+                                                                return `${currentWeekStart.toLocaleDateString('es', { month: 'short' })} - ${endWeek.toLocaleDateString('es', { month: 'short', year: 'numeric' })}`;
+                                                            })()}
+                                                        </h3>
+                                                        
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                const newWeek = new Date(currentWeekStart);
+                                                                newWeek.setDate(newWeek.getDate() + 7);
+                                                                setCurrentWeekStart(newWeek);
+                                                                const newMonth = new Date(newWeek.getFullYear(), newWeek.getMonth(), 1);
+                                                                setVisibleMonth(newMonth);
+                                                                await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(newMonth), modalityByService[currentServiceId]);
+                                                            }}
+                                                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                                                        >
+                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+
+                                                    {/* Días de la semana */}
+                                                    <div className="grid grid-cols-7 gap-2">
+                                                        {Array.from({ length: 7 }).map((_, i) => {
+                                                            const date = new Date(currentWeekStart);
+                                                            date.setDate(date.getDate() + i);
+                                                            const dayStr = fmtDay(date);
+                                                            const isAvailable = availableDays.includes(dayStr);
+                                                            const isSelected = selectedDateObj && fmtDay(selectedDateObj) === dayStr;
+                                                            const isToday = fmtDay(new Date()) === dayStr;
+                                                            const isPastDate = isPast(date);
+                                                            const isDisabled = isPastDate || !isAvailable;
+
+                                                            return (
+                                                                <button
+                                                                    key={i}
+                                                                    type="button"
+                                                                    disabled={isDisabled}
+                                                                    onClick={async () => {
+                                                                        setSelectedDateObj(date);
+                                                                        if (isAvailable) {
+                                                                            setTimeSlots([]);
+                                                                            setSelectedTimeBlock(null);
+                                                                            await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
+                                                                            scrollToTimes();
+                                                                        }
+                                                                    }}
+                                                                    className={cn(
+                                                                        "flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all",
+                                                                        isSelected
+                                                                            ? "bg-green-500 border-green-500 text-white shadow-lg scale-105"
+                                                                            : isDisabled
+                                                                            ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
+                                                                            : isToday
+                                                                            ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                                                                            : "border-gray-200 hover:border-green-400 hover:bg-green-50"
+                                                                    )}
+                                                                >
+                                                                    <span className={cn(
+                                                                        "text-xs font-medium mb-1",
+                                                                        isSelected ? "text-green-100" : isDisabled ? "text-gray-400" : "text-gray-500"
+                                                                    )}>
+                                                                        {date.toLocaleDateString('es', { weekday: 'short' }).toUpperCase()}
+                                                                    </span>
+                                                                    <span className={cn(
+                                                                        "text-2xl font-bold",
+                                                                        isSelected ? "text-white" : isDisabled ? "text-gray-300" : "text-gray-900"
+                                                                    )}>
+                                                                        {date.getDate()}
+                                                                    </span>
+                                                                    <span className={cn(
+                                                                        "text-xs mt-1",
+                                                                        isSelected ? "text-green-100" : isDisabled ? "text-gray-400" : "text-gray-500"
+                                                                    )}>
+                                                                        {date.toLocaleDateString('es', { month: 'short' })}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
                                             ) : (
                                                 <div className="w-full">
-                                                    <Skeleton className="h-[248px] w-full" />
+                                                    <Skeleton className="h-[180px] w-full" />
                                                 </div>
                                             )}
                                         </div>

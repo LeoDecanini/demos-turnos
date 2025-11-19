@@ -137,7 +137,7 @@ export default function ServiceList({
               {s.price != null && (
                 <div className="mt-4">
                   {s.price === 0 ? (
-                    <span className="text-2xl font-bold text-green-600">Gratis</span>
+                    <span className="text-xl font-bold text-green-600">Pago en consultorio</span>
                   ) : (
                     <span className="text-2xl font-bold text-green-600">
                       {money(s.price, s.currency)}
