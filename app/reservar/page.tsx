@@ -1284,6 +1284,7 @@ export default function ReservarPage() {
     });
     const [isFirstCalendarLoad, setIsFirstCalendarLoad] = useState(true);
     const [hasCompletedFirstLoad, setHasCompletedFirstLoad] = useState(false);
+    const [noAvailableDays, setNoAvailableDays] = useState(false);
     const [availableDays, setAvailableDays] = useState<string[]>([]);
     const [loadingDays, setLoadingDays] = useState(false);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
@@ -2504,6 +2505,7 @@ export default function ReservarPage() {
         // Resetear flags cuando entramos al paso 6
         setIsFirstCalendarLoad(true);
         setHasCompletedFirstLoad(false);
+        setNoAvailableDays(false);
         
         const pid = selection[currentServiceId]?.professionalId || "any";
         const modality = modalityByService[currentServiceId] || 'presencial';
@@ -2584,6 +2586,11 @@ export default function ReservarPage() {
                     
                     lastMonthLoaded = nextMonthStr;
                 }
+            }
+            
+            // Si no encontramos días disponibles en ninguna semana, marcar el flag
+            if (attempts >= maxAttempts) {
+                setNoAvailableDays(true);
             }
         };
         
@@ -4141,8 +4148,20 @@ export default function ReservarPage() {
                                         <div className="w-full">
                                             {!loadingDays ? (
                                                 <div className="space-y-4">
-                                                    {/* Header con navegación */}
-                                                    <div className="flex items-center justify-between mb-4">
+                                                    {noAvailableDays ? (
+                                                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                                                            <div className="mb-4 text-6xl">📅</div>
+                                                            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                                                                No hay días disponibles
+                                                            </h3>
+                                                            <p className="text-gray-600 max-w-md">
+                                                                No se encontraron días disponibles para este servicio en los próximos 3 meses. Por favor, intenta con otro profesional o servicio.
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            {/* Header con navegación */}
+                                                            <div className="flex items-center justify-between mb-4">
                                                         <button
                                                             type="button"
                                                             onClick={async () => {
@@ -4249,6 +4268,8 @@ export default function ReservarPage() {
                                                             );
                                                         })}
                                                     </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="w-full">
