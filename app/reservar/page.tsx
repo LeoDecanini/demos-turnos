@@ -1320,11 +1320,8 @@ export default function ReservarPage() {
         const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Lunes de la semana actual
         return new Date(today.setDate(diff));
     });
-    const [isFirstCalendarLoad, setIsFirstCalendarLoad] = useState(true);
-    const [noAvailableDays, setNoAvailableDays] = useState(false);
     const [availableDays, setAvailableDays] = useState<string[]>([]);
     const [loadingDays, setLoadingDays] = useState(false);
-    const hasAutoAdvancedRef = useRef(false);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [scheduleIdx, setScheduleIdx] = useState(0);
@@ -2571,130 +2568,14 @@ export default function ReservarPage() {
     };
 
     useEffect(() => {
-        if (step !== 6 || !currentServiceId) return; // Paso 6 ahora incluye calendario
-        
-        // Resetear flags cuando entramos al paso 6
-        setIsFirstCalendarLoad(true);
-        setNoAvailableDays(false);
-        hasAutoAdvancedRef.current = false;
+        if (step !== 6 || !currentServiceId) return;
         
         const pid = selection[currentServiceId]?.professionalId || "any";
         const modality = modalityByService[currentServiceId] || 'presencial';
         
-        // Cargar días inicial
         void loadAvailableDays(currentServiceId, pid, undefined, modality);
-        // al entrar al paso 6 (calendario + modalidad) o cambiar el profesional del servicio actual,
-        // cargamos los días con el valor NUEVO ya aplicado
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, currentServiceId, selection[currentServiceId]?.professionalId, modalityByService[currentServiceId]]);
-
-    // Auto-avanzar a la primera semana con días disponibles (solo la primera vez)
-    useEffect(() => {
-        // Condiciones de salida
-        if (step !== 6 || !currentServiceId) return;
-        if (loadingDays) return; // Esperar a que termine la carga
-        if (hasAutoAdvancedRef.current) return; // Ya se ejecutó
-        if (availableDays.length === 0) {
-            // Si después de cargar no hay días, esperar un poco y verificar si realmente no hay
-            const timer = setTimeout(() => {
-                if (availableDays.length === 0 && !loadingDays) {
-                    hasAutoAdvancedRef.current = true;
-                    setNoAvailableDays(true);
-                }
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-        
-        const checkAndAdvanceWeek = async () => {
-            // Marcar que ya se ejecutó
-            hasAutoAdvancedRef.current = true;
-            setIsFirstCalendarLoad(false);
-            
-            // Calcular los días de la semana actual
-            const currentWeekDays = Array.from({ length: 7 }).map((_, i) => {
-                const d = new Date(currentWeekStart);
-                d.setDate(d.getDate() + i);
-                return fmtDay(d);
-            });
-            
-            // Si la semana actual tiene días disponibles, no hacer nada
-            const hasCurrentWeekDays = currentWeekDays.some(day => availableDays.includes(day));
-            if (hasCurrentWeekDays) return;
-            
-            console.log('🔍 Semana actual sin días, buscando siguiente semana con disponibilidad...');
-            
-            // Buscar la siguiente semana con días disponibles
-            let weekStart = new Date(currentWeekStart);
-            let attempts = 0;
-            const maxAttempts = 12; // Máximo 12 semanas (3 meses)
-            const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
-            
-            while (attempts < maxAttempts) {
-                // Avanzar a la siguiente semana
-                weekStart.setDate(weekStart.getDate() + 7);
-                attempts++;
-                
-                // Si cambiamos de mes, cargar los días de ese mes
-                const nextMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1);
-                const nextMonthStr = fmtMonth(nextMonth);
-                const currentMonthStr = fmtMonth(visibleMonth);
-                
-                let daysToCheck = [...availableDays];
-                
-                if (nextMonthStr !== currentMonthStr) {
-                    // Cargar días del nuevo mes
-                    const params = new URLSearchParams();
-                    params.set("service", currentServiceId);
-                    params.set("month", nextMonthStr);
-                    const pid = selection[currentServiceId]?.professionalId || "any";
-                    if (pid && pid !== "any") params.set("professional", pid);
-                    params.set("modality", modalityByService[currentServiceId] || 'presencial');
-                    
-                    try {
-                        const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
-                        const raw = await res.json().catch(() => ({}));
-                        const payload = getPayload(raw);
-                        let dates: any[] = [];
-                        if (Array.isArray(payload)) dates = payload;
-                        else if (Array.isArray(payload?.days)) dates = payload.days;
-                        else if (Array.isArray(payload?.items)) dates = payload.items;
-                        daysToCheck = dates as string[];
-                    } catch {
-                        continue;
-                    }
-                }
-                
-                // Calcular los días de esta semana
-                const weekDays = Array.from({ length: 7 }).map((_, i) => {
-                    const d = new Date(weekStart);
-                    d.setDate(d.getDate() + i);
-                    return fmtDay(d);
-                });
-                
-                // Verificar si esta semana tiene días disponibles
-                const hasAvailableDays = weekDays.some(day => daysToCheck.includes(day));
-                
-                if (hasAvailableDays) {
-                    // Encontramos una semana con días, actualizar
-                    console.log('✅ Encontrada semana con días:', fmtMonth(nextMonth));
-                    setCurrentWeekStart(weekStart);
-                    const newMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1);
-                    setVisibleMonth(newMonth);
-                    if (nextMonthStr !== currentMonthStr) {
-                        setAvailableDays(daysToCheck);
-                    }
-                    return;
-                }
-            }
-            
-            // Si no encontramos días disponibles en 12 semanas, marcar el flag
-            console.log('❌ No se encontraron días disponibles en 12 semanas');
-            setNoAvailableDays(true);
-        };
-        
-        checkAndAdvanceWeek();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loadingDays, availableDays.length]);
 
     useEffect(() => {
         if (step !== 3) return;
@@ -4281,20 +4162,8 @@ export default function ReservarPage() {
                                         <div className="w-full">
                                             {!loadingDays ? (
                                                 <div className="space-y-4">
-                                                    {noAvailableDays ? (
-                                                        <div className="flex flex-col items-center justify-center py-12 text-center">
-                                                            <div className="mb-4 text-6xl">📅</div>
-                                                            <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                                                                No hay días disponibles
-                                                            </h3>
-                                                            <p className="text-gray-600 max-w-md">
-                                                                No se encontraron días disponibles para este servicio en los próximos 3 meses. Por favor, intenta con otro profesional o servicio.
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            {/* Header con navegación */}
-                                                            <div className="flex items-center justify-between mb-4">
+                                                    {/* Header con navegación */}
+                                                    <div className="flex items-center justify-between mb-4">
                                                         <button
                                                             type="button"
                                                             onClick={async () => {
@@ -4401,8 +4270,6 @@ export default function ReservarPage() {
                                                             );
                                                         })}
                                                     </div>
-                                                        </>
-                                                    )}
                                                 </div>
                                             ) : (
                                                 <div className="w-full">
