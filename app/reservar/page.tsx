@@ -413,17 +413,8 @@ function RescheduleInlineNF({
 
     // Días
     const loadAvailableDays = React.useCallback(
-        async (sid: string, pid?: string | "any", monthStr?: string, attemptCount = 0) => {
+        async (sid: string, pid?: string | "any", monthStr?: string) => {
             if (!sid || !slug) return;
-            
-            // Límite de 6 meses hacia adelante
-            const MAX_ATTEMPTS = 6;
-            if (attemptCount >= MAX_ATTEMPTS) {
-                console.log('⚠️ No se encontraron días disponibles en los próximos 6 meses');
-                setLoadingDays(false);
-                return;
-            }
-            
             setLoadingDays(true);
             try {
                 const params = new URLSearchParams();
@@ -435,9 +426,6 @@ function RescheduleInlineNF({
                 if (effectivePid) params.set("professional", String(effectivePid));
                 // Agregar modalidad
                 params.set("modality", selectedModality || 'presencial');
-                
-                console.log(`🔍 Buscando días disponibles (intento ${attemptCount + 1}/${MAX_ATTEMPTS}):`, monthStr ?? fmtMonth(visibleMonth));
-                
                 const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
                 const payload = getPayload(raw);
@@ -448,34 +436,8 @@ function RescheduleInlineNF({
                 if (dates.length && typeof dates[0] !== "string") {
                     dates = dates.map((d: any) => d?.date).filter(Boolean);
                 }
-                
-                console.log(`📅 Días encontrados:`, dates.length);
-                
-                // Si no hay días disponibles, avanzar al siguiente mes
-                if (dates.length === 0 && attemptCount < MAX_ATTEMPTS - 1) {
-                    console.log('➡️ Sin disponibilidad, avanzando al siguiente mes...');
-                    const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
-                    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-                    const nextMonthStr = fmtMonth(nextMonth);
-                    
-                    // Actualizar el mes visible ANTES de la llamada recursiva
-                    setVisibleMonth(nextMonth);
-                    
-                    // Recursivamente buscar en el siguiente mes (NO terminar el loading aquí)
-                    await loadAvailableDays(sid, pid, nextMonthStr, attemptCount + 1);
-                    return; // El return evita el finally, el loading se maneja en la recursión
-                }
-                
-                // Actualizar mes visible y días en un solo batch si el mes es diferente
-                const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
-                if (dates.length > 0 && monthStr && fmtMonth(visibleMonth) !== monthStr) {
-                    setVisibleMonth(currentMonth);
-                }
                 setAvailableDays(dates as string[]);
-                setLoadingDays(false);
-            } catch (error) {
-                console.error('Error loading available days:', error);
-                setAvailableDays([]);
+            } finally {
                 setLoadingDays(false);
             }
         },
@@ -1314,12 +1276,6 @@ export default function ReservarPage() {
     const [step4WasSkipped, setStep4WasSkipped] = useState(false);
 
     const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
-    const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
-        const today = new Date();
-        const day = today.getDay();
-        const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Lunes de la semana actual
-        return new Date(today.setDate(diff));
-    });
     const [availableDays, setAvailableDays] = useState<string[]>([]);
     const [loadingDays, setLoadingDays] = useState(false);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
@@ -1889,17 +1845,8 @@ export default function ReservarPage() {
         srvId: string,
         profId?: string | "any",
         monthStr?: string,
-        modality?: 'presencial' | 'virtual',
-        attemptCount = 0
+        modality?: 'presencial' | 'virtual'
     ) => {
-        // Límite de 6 meses hacia adelante
-        const MAX_ATTEMPTS = 6;
-        if (attemptCount >= MAX_ATTEMPTS) {
-            console.log('⚠️ No se encontraron días disponibles en los próximos 6 meses');
-            setLoadingDays(false);
-            return;
-        }
-        
         setLoadingDays(true);
         try {
             const params = new URLSearchParams();
@@ -1920,7 +1867,7 @@ export default function ReservarPage() {
                     : "");
 
             const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
-            console.log(`[FRONTEND] 🔍 Llamando available-days (intento ${attemptCount + 1}/${MAX_ATTEMPTS}):`, url);
+            console.log('[FRONTEND] 🔍 Llamando available-days:', url);
             console.log('[FRONTEND] 📋 Parámetros:', {
                 service: srvId,
                 month: monthStr ?? fmtMonth(visibleMonth),
@@ -1943,36 +1890,12 @@ export default function ReservarPage() {
             else if (Array.isArray(payload?.items)) dates = payload.items;
             if (dates.length && typeof dates[0] !== "string")
                 dates = dates.map((d: any) => d?.date).filter(Boolean);
-            
-            console.log(`[FRONTEND] 📅 Días encontrados:`, dates.length);
-            
-            // Si no hay días disponibles, avanzar al siguiente mes
-            if (dates.length === 0 && attemptCount < MAX_ATTEMPTS - 1) {
-                console.log('[FRONTEND] ➡️ Sin disponibilidad, avanzando al siguiente mes...');
-                const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
-                const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-                const nextMonthStr = fmtMonth(nextMonth);
-                
-                // Actualizar el mes visible ANTES de la llamada recursiva
-                setVisibleMonth(nextMonth);
-                
-                // Recursivamente buscar en el siguiente mes (NO terminar el loading aquí)
-                await loadAvailableDays(srvId, profId, nextMonthStr, modality, attemptCount + 1);
-                return; // El return evita el catch/finally, el loading se maneja en la recursión
-            }
-            
-            // Actualizar mes visible y días en un solo batch si el mes es diferente
-            const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
-            if (dates.length > 0 && monthStr && fmtMonth(visibleMonth) !== monthStr) {
-                setVisibleMonth(currentMonth);
-            }
             setAvailableDays(dates as string[]);
-            setLoadingDays(false);
-        } catch (error) {
-            console.error('[FRONTEND] Error loading available days:', error);
+        } catch {
             setAvailableDays([]);
-            setLoadingDays(false);
             toast.error("Error al cargar días");
+        } finally {
+            setLoadingDays(false);
         }
     };
 
@@ -2568,12 +2491,12 @@ export default function ReservarPage() {
     };
 
     useEffect(() => {
-        if (step !== 6 || !currentServiceId) return;
-        
+        if (step !== 6 || !currentServiceId) return; // Paso 6 ahora incluye calendario
         const pid = selection[currentServiceId]?.professionalId || "any";
         const modality = modalityByService[currentServiceId] || 'presencial';
-        
         void loadAvailableDays(currentServiceId, pid, undefined, modality);
+        // al entrar al paso 6 (calendario + modalidad) o cambiar el profesional del servicio actual,
+        // cargamos los días con el valor NUEVO ya aplicado
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, currentServiceId, selection[currentServiceId]?.professionalId, modalityByService[currentServiceId]]);
 
@@ -2699,55 +2622,20 @@ export default function ReservarPage() {
         setSelectedServices(prev => (prev.length ? prev : valid.slice(0, 3)));
     }, [serviceIdFromQS, services, loadingServices, sessionGroupId, setSelectedServices]);
 
-    const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string, attemptCount = 0) => {
-        // Límite de 6 meses hacia adelante
-        const MAX_ATTEMPTS = 6;
-        if (attemptCount >= MAX_ATTEMPTS) {
-            console.log('⚠️ [SessionGroup] No se encontraron días disponibles en los próximos 6 meses');
-            setSgLoadingDays(false);
-            return;
-        }
-        
+    const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string) => {
         setSgLoadingDays(true)
         try {
             const params = new URLSearchParams()
             params.set("month", monthStr ?? fmtMonth(sgVisibleMonth))
             const url = `${API_BASE}/${slug}/session-group/${groupId}/available-days?${params.toString()}`
-            
-            console.log(`[SessionGroup] 🔍 Buscando días disponibles (intento ${attemptCount + 1}/${MAX_ATTEMPTS}):`, monthStr ?? fmtMonth(sgVisibleMonth));
-            
             const res = await axios.get(url)
             const payload = res.data?.data ?? res.data
             let dates: any[] = Array.isArray(payload) ? payload : (payload?.items ?? payload?.days ?? [])
             if (dates.length && typeof dates[0] !== "string") dates = dates.map((d: any) => d?.date).filter(Boolean)
-            
-            console.log(`[SessionGroup] 📅 Días encontrados:`, dates.length);
-            
-            // Si no hay días disponibles, avanzar al siguiente mes
-            if (dates.length === 0 && attemptCount < MAX_ATTEMPTS - 1) {
-                console.log('[SessionGroup] ➡️ Sin disponibilidad, avanzando al siguiente mes...');
-                const currentMonth = monthStr ? new Date(monthStr + '-01') : sgVisibleMonth;
-                const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-                const nextMonthStr = fmtMonth(nextMonth);
-                
-                // Actualizar el mes visible ANTES de la llamada recursiva
-                setSgVisibleMonth(nextMonth);
-                
-                // Recursivamente buscar en el siguiente mes (NO terminar el loading aquí)
-                await loadSgAvailableDays(slug, groupId, nextMonthStr, attemptCount + 1);
-                return; // El return evita el catch/finally, el loading se maneja en la recursión
-            }
-            
-            // Actualizar mes visible y días en un solo batch si el mes es diferente
-            const currentMonth = monthStr ? new Date(monthStr + '-01') : sgVisibleMonth;
-            if (dates.length > 0 && monthStr && fmtMonth(sgVisibleMonth) !== monthStr) {
-                setSgVisibleMonth(currentMonth);
-            }
             setSgAvailableDays(dates as string[])
-            setSgLoadingDays(false)
-        } catch (error) {
-            console.error('[SessionGroup] Error loading available days:', error);
+        } catch {
             setSgAvailableDays([])
+        } finally {
             setSgLoadingDays(false)
         }
     }
@@ -4156,124 +4044,60 @@ export default function ReservarPage() {
                                     );
                                 })()}
 
-                                {/* Calendario Semanal */}
+                                {/* Calendario */}
                                 <Card className="py-0">
                                     <CardContent className="p-6">
                                         <div className="w-full">
                                             {!loadingDays ? (
-                                                <div className="space-y-4">
-                                                    {/* Header con navegación */}
-                                                    <div className="flex items-center justify-between mb-4">
-                                                        <button
-                                                            type="button"
-                                                            onClick={async () => {
-                                                                const newWeek = new Date(currentWeekStart);
-                                                                newWeek.setDate(newWeek.getDate() - 7);
-                                                                setCurrentWeekStart(newWeek);
-                                                                const newMonth = new Date(newWeek.getFullYear(), newWeek.getMonth(), 1);
-                                                                setVisibleMonth(newMonth);
-                                                                await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(newMonth), modalityByService[currentServiceId]);
-                                                            }}
-                                                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                                        >
-                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                                            </svg>
-                                                        </button>
-                                                        
-                                                        <h3 className="text-lg font-semibold text-gray-900">
-                                                            {(() => {
-                                                                const endWeek = new Date(currentWeekStart);
-                                                                endWeek.setDate(endWeek.getDate() + 6);
-                                                                const sameMonth = currentWeekStart.getMonth() === endWeek.getMonth();
-                                                                if (sameMonth) {
-                                                                    return `${currentWeekStart.toLocaleDateString('es', { month: 'long', year: 'numeric' })}`;
-                                                                }
-                                                                return `${currentWeekStart.toLocaleDateString('es', { month: 'short' })} - ${endWeek.toLocaleDateString('es', { month: 'short', year: 'numeric' })}`;
-                                                            })()}
-                                                        </h3>
-                                                        
-                                                        <button
-                                                            type="button"
-                                                            onClick={async () => {
-                                                                const newWeek = new Date(currentWeekStart);
-                                                                newWeek.setDate(newWeek.getDate() + 7);
-                                                                setCurrentWeekStart(newWeek);
-                                                                const newMonth = new Date(newWeek.getFullYear(), newWeek.getMonth(), 1);
-                                                                setVisibleMonth(newMonth);
-                                                                await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(newMonth), modalityByService[currentServiceId]);
-                                                            }}
-                                                            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-                                                        >
-                                                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                            </svg>
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Días de la semana */}
-                                                    <div className="grid grid-cols-7 gap-2">
-                                                        {Array.from({ length: 7 }).map((_, i) => {
-                                                            const date = new Date(currentWeekStart);
-                                                            date.setDate(date.getDate() + i);
-                                                            const dayStr = fmtDay(date);
-                                                            const isAvailable = availableDays.includes(dayStr);
-                                                            const isSelected = selectedDateObj && fmtDay(selectedDateObj) === dayStr;
-                                                            const isToday = fmtDay(new Date()) === dayStr;
-                                                            const isPastDate = isPast(date);
-                                                            const isDisabled = isPastDate || !isAvailable;
-
-                                                            return (
-                                                                <button
-                                                                    key={i}
-                                                                    type="button"
-                                                                    disabled={isDisabled}
-                                                                    onClick={async () => {
-                                                                        setSelectedDateObj(date);
-                                                                        if (isAvailable) {
-                                                                            setTimeSlots([]);
-                                                                            setSelectedTimeBlock(null);
-                                                                            await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
-                                                                            scrollToTimes();
-                                                                        }
-                                                                    }}
-                                                                    className={cn(
-                                                                        "flex flex-col items-center justify-center py-4 rounded-xl border-2 transition-all",
-                                                                        isSelected
-                                                                            ? "bg-green-500 border-green-500 text-white shadow-lg scale-105"
-                                                                            : isDisabled
-                                                                            ? "border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed"
-                                                                            : isToday
-                                                                            ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
-                                                                            : "border-gray-200 hover:border-green-400 hover:bg-green-50"
-                                                                    )}
-                                                                >
-                                                                    <span className={cn(
-                                                                        "text-xs font-medium mb-1",
-                                                                        isSelected ? "text-green-100" : isDisabled ? "text-gray-400" : "text-gray-500"
-                                                                    )}>
-                                                                        {date.toLocaleDateString('es', { weekday: 'short' }).toUpperCase()}
-                                                                    </span>
-                                                                    <span className={cn(
-                                                                        "text-2xl font-bold",
-                                                                        isSelected ? "text-white" : isDisabled ? "text-gray-300" : "text-gray-900"
-                                                                    )}>
-                                                                        {date.getDate()}
-                                                                    </span>
-                                                                    <span className={cn(
-                                                                        "text-xs mt-1",
-                                                                        isSelected ? "text-green-100" : isDisabled ? "text-gray-400" : "text-gray-500"
-                                                                    )}>
-                                                                        {date.toLocaleDateString('es', { month: 'short' })}
-                                                                    </span>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
+                                                <CalendarComponent
+                                                    mode="single"
+                                                    selected={selectedDateObj}
+                                                    month={visibleMonth}
+                                                    onMonthChange={async (m) => {
+                                                        setVisibleMonth(m);
+                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId]);
+                                                    }}
+                                                    onSelect={async (date) => {
+                                                        setSelectedDateObj(date || undefined);
+                                                        if (date && availableDays.includes(fmtDay(date))) {
+                                                            setTimeSlots([]);
+                                                            setSelectedTimeBlock(null);
+                                                            await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
+                                                            scrollToTimes();
+                                                        } else {
+                                                            setTimeSlots([]);
+                                                            setSelectedTimeBlock(null);
+                                                        }
+                                                    }}
+                                                    disabled={(date) => {
+                                                        if (loadingDays) return true;
+                                                        if (disableAllDays) return true;
+                                                        if (isPast(date)) return true;
+                                                        return !availableDays.includes(fmtDay(date));
+                                                    }}
+                                                    locale={es}
+                                                    className="rounded-lg border-2 border-green-200 w-full p-3"
+                                                    classNames={{
+                                                        months: "w-full",
+                                                        month: "w-full",
+                                                        table: "w-full border-collapse",
+                                                        head_row: "grid grid-cols-7",
+                                                        row: "grid grid-cols-7 mt-2",
+                                                        head_cell: "text-center text-muted-foreground text-[0.8rem] py-1",
+                                                        cell: "p-0 relative w-full",
+                                                        day: "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors hover:bg-green-100 hover:text-green-900 focus:outline-none focus:ring-2 focus:ring-green-300",
+                                                        day_selected: "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
+                                                        day_today: "bg-green-50 text-green-700 font-semibold rounded-lg",
+                                                        day_outside: "text-muted-foreground opacity-60",
+                                                        day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
+                                                        day_range_start: "rounded-l-lg",
+                                                        day_range_end: "rounded-r-lg",
+                                                        day_range_middle: "rounded-none",
+                                                    }}
+                                                />
                                             ) : (
                                                 <div className="w-full">
-                                                    <Skeleton className="h-[180px] w-full" />
+                                                    <Skeleton className="h-[248px] w-full" />
                                                 </div>
                                             )}
                                         </div>
