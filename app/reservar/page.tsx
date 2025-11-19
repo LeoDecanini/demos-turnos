@@ -413,8 +413,17 @@ function RescheduleInlineNF({
 
     // Días
     const loadAvailableDays = React.useCallback(
-        async (sid: string, pid?: string | "any", monthStr?: string) => {
+        async (sid: string, pid?: string | "any", monthStr?: string, attemptCount = 0) => {
             if (!sid || !slug) return;
+            
+            // Límite de 6 meses hacia adelante
+            const MAX_ATTEMPTS = 6;
+            if (attemptCount >= MAX_ATTEMPTS) {
+                console.log('⚠️ No se encontraron días disponibles en los próximos 6 meses');
+                setLoadingDays(false);
+                return;
+            }
+            
             setLoadingDays(true);
             try {
                 const params = new URLSearchParams();
@@ -426,6 +435,9 @@ function RescheduleInlineNF({
                 if (effectivePid) params.set("professional", String(effectivePid));
                 // Agregar modalidad
                 params.set("modality", selectedModality || 'presencial');
+                
+                console.log(`🔍 Buscando días disponibles (intento ${attemptCount + 1}/${MAX_ATTEMPTS}):`, monthStr ?? fmtMonth(visibleMonth));
+                
                 const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
                 const payload = getPayload(raw);
@@ -436,8 +448,34 @@ function RescheduleInlineNF({
                 if (dates.length && typeof dates[0] !== "string") {
                     dates = dates.map((d: any) => d?.date).filter(Boolean);
                 }
+                
+                console.log(`📅 Días encontrados:`, dates.length);
+                
+                // Si no hay días disponibles, avanzar al siguiente mes
+                if (dates.length === 0 && attemptCount < MAX_ATTEMPTS - 1) {
+                    console.log('➡️ Sin disponibilidad, avanzando al siguiente mes...');
+                    const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
+                    const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+                    const nextMonthStr = fmtMonth(nextMonth);
+                    
+                    // Actualizar el mes visible ANTES de la llamada recursiva
+                    setVisibleMonth(nextMonth);
+                    
+                    // Recursivamente buscar en el siguiente mes (NO terminar el loading aquí)
+                    await loadAvailableDays(sid, pid, nextMonthStr, attemptCount + 1);
+                    return; // El return evita el finally, el loading se maneja en la recursión
+                }
+                
+                // Actualizar mes visible y días en un solo batch si el mes es diferente
+                const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
+                if (dates.length > 0 && monthStr && fmtMonth(visibleMonth) !== monthStr) {
+                    setVisibleMonth(currentMonth);
+                }
                 setAvailableDays(dates as string[]);
-            } finally {
+                setLoadingDays(false);
+            } catch (error) {
+                console.error('Error loading available days:', error);
+                setAvailableDays([]);
                 setLoadingDays(false);
             }
         },
@@ -1283,10 +1321,10 @@ export default function ReservarPage() {
         return new Date(today.setDate(diff));
     });
     const [isFirstCalendarLoad, setIsFirstCalendarLoad] = useState(true);
-    const [hasCompletedFirstLoad, setHasCompletedFirstLoad] = useState(false);
     const [noAvailableDays, setNoAvailableDays] = useState(false);
     const [availableDays, setAvailableDays] = useState<string[]>([]);
     const [loadingDays, setLoadingDays] = useState(false);
+    const hasAutoAdvancedRef = useRef(false);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [scheduleIdx, setScheduleIdx] = useState(0);
@@ -1854,8 +1892,17 @@ export default function ReservarPage() {
         srvId: string,
         profId?: string | "any",
         monthStr?: string,
-        modality?: 'presencial' | 'virtual'
+        modality?: 'presencial' | 'virtual',
+        attemptCount = 0
     ) => {
+        // Límite de 6 meses hacia adelante
+        const MAX_ATTEMPTS = 6;
+        if (attemptCount >= MAX_ATTEMPTS) {
+            console.log('⚠️ No se encontraron días disponibles en los próximos 6 meses');
+            setLoadingDays(false);
+            return;
+        }
+        
         setLoadingDays(true);
         try {
             const params = new URLSearchParams();
@@ -1876,7 +1923,7 @@ export default function ReservarPage() {
                     : "");
 
             const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
-            console.log('[FRONTEND] 🔍 Llamando available-days:', url);
+            console.log(`[FRONTEND] 🔍 Llamando available-days (intento ${attemptCount + 1}/${MAX_ATTEMPTS}):`, url);
             console.log('[FRONTEND] 📋 Parámetros:', {
                 service: srvId,
                 month: monthStr ?? fmtMonth(visibleMonth),
@@ -1899,12 +1946,36 @@ export default function ReservarPage() {
             else if (Array.isArray(payload?.items)) dates = payload.items;
             if (dates.length && typeof dates[0] !== "string")
                 dates = dates.map((d: any) => d?.date).filter(Boolean);
+            
+            console.log(`[FRONTEND] 📅 Días encontrados:`, dates.length);
+            
+            // Si no hay días disponibles, avanzar al siguiente mes
+            if (dates.length === 0 && attemptCount < MAX_ATTEMPTS - 1) {
+                console.log('[FRONTEND] ➡️ Sin disponibilidad, avanzando al siguiente mes...');
+                const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
+                const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+                const nextMonthStr = fmtMonth(nextMonth);
+                
+                // Actualizar el mes visible ANTES de la llamada recursiva
+                setVisibleMonth(nextMonth);
+                
+                // Recursivamente buscar en el siguiente mes (NO terminar el loading aquí)
+                await loadAvailableDays(srvId, profId, nextMonthStr, modality, attemptCount + 1);
+                return; // El return evita el catch/finally, el loading se maneja en la recursión
+            }
+            
+            // Actualizar mes visible y días en un solo batch si el mes es diferente
+            const currentMonth = monthStr ? new Date(monthStr + '-01') : visibleMonth;
+            if (dates.length > 0 && monthStr && fmtMonth(visibleMonth) !== monthStr) {
+                setVisibleMonth(currentMonth);
+            }
             setAvailableDays(dates as string[]);
-        } catch {
-            setAvailableDays([]);
-            toast.error("Error al cargar días");
-        } finally {
             setLoadingDays(false);
+        } catch (error) {
+            console.error('[FRONTEND] Error loading available days:', error);
+            setAvailableDays([]);
+            setLoadingDays(false);
+            toast.error("Error al cargar días");
         }
     };
 
@@ -2504,16 +2575,14 @@ export default function ReservarPage() {
         
         // Resetear flags cuando entramos al paso 6
         setIsFirstCalendarLoad(true);
-        setHasCompletedFirstLoad(false);
         setNoAvailableDays(false);
+        hasAutoAdvancedRef.current = false;
         
         const pid = selection[currentServiceId]?.professionalId || "any";
         const modality = modalityByService[currentServiceId] || 'presencial';
         
-        // Cargar días y marcar cuando termina
-        loadAvailableDays(currentServiceId, pid, undefined, modality).then(() => {
-            setHasCompletedFirstLoad(true);
-        });
+        // Cargar días inicial
+        void loadAvailableDays(currentServiceId, pid, undefined, modality);
         // al entrar al paso 6 (calendario + modalidad) o cambiar el profesional del servicio actual,
         // cargamos los días con el valor NUEVO ya aplicado
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2521,39 +2590,46 @@ export default function ReservarPage() {
 
     // Auto-avanzar a la primera semana con días disponibles (solo la primera vez)
     useEffect(() => {
-        if (step !== 6 || !currentServiceId || !isFirstCalendarLoad || !hasCompletedFirstLoad) return;
+        // Condiciones de salida
+        if (step !== 6 || !currentServiceId) return;
+        if (loadingDays) return; // Esperar a que termine la carga
+        if (hasAutoAdvancedRef.current) return; // Ya se ejecutó
+        if (availableDays.length === 0) {
+            // Si después de cargar no hay días, esperar un poco y verificar si realmente no hay
+            const timer = setTimeout(() => {
+                if (availableDays.length === 0 && !loadingDays) {
+                    hasAutoAdvancedRef.current = true;
+                    setNoAvailableDays(true);
+                }
+            }, 500);
+            return () => clearTimeout(timer);
+        }
         
         const checkAndAdvanceWeek = async () => {
-            // Marcar inmediatamente para evitar re-ejecuciones
+            // Marcar que ya se ejecutó
+            hasAutoAdvancedRef.current = true;
             setIsFirstCalendarLoad(false);
             
+            // Calcular los días de la semana actual
+            const currentWeekDays = Array.from({ length: 7 }).map((_, i) => {
+                const d = new Date(currentWeekStart);
+                d.setDate(d.getDate() + i);
+                return fmtDay(d);
+            });
+            
+            // Si la semana actual tiene días disponibles, no hacer nada
+            const hasCurrentWeekDays = currentWeekDays.some(day => availableDays.includes(day));
+            if (hasCurrentWeekDays) return;
+            
+            console.log('🔍 Semana actual sin días, buscando siguiente semana con disponibilidad...');
+            
+            // Buscar la siguiente semana con días disponibles
             let weekStart = new Date(currentWeekStart);
-            let currentDays = [...availableDays]; // Capturar valor actual
             let attempts = 0;
             const maxAttempts = 12; // Máximo 12 semanas (3 meses)
-            let lastMonthLoaded = fmtMonth(visibleMonth);
+            const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
             
             while (attempts < maxAttempts) {
-                // Calcular los días de la semana actual
-                const weekDays = Array.from({ length: 7 }).map((_, i) => {
-                    const d = new Date(weekStart);
-                    d.setDate(d.getDate() + i);
-                    return fmtDay(d);
-                });
-                
-                // Verificar si algún día de esta semana está disponible
-                const hasAvailableDays = weekDays.some(day => currentDays.includes(day));
-                
-                if (hasAvailableDays) {
-                    // Si encontramos días disponibles, actualizar si es necesario
-                    if (attempts > 0) {
-                        setCurrentWeekStart(weekStart);
-                        const newMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1);
-                        setVisibleMonth(newMonth);
-                    }
-                    break;
-                }
-                
                 // Avanzar a la siguiente semana
                 weekStart.setDate(weekStart.getDate() + 7);
                 attempts++;
@@ -2561,42 +2637,64 @@ export default function ReservarPage() {
                 // Si cambiamos de mes, cargar los días de ese mes
                 const nextMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1);
                 const nextMonthStr = fmtMonth(nextMonth);
+                const currentMonthStr = fmtMonth(visibleMonth);
                 
-                if (nextMonthStr !== lastMonthLoaded) {
-                    // Hacer petición y esperar resultado
-                    const response = await fetch(`/api/availability/days`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            serviceId: currentServiceId,
-                            professionalId: selection[currentServiceId]?.professionalId || "any",
-                            month: nextMonthStr,
-                            modality: modalityByService[currentServiceId]
-                        })
-                    });
+                let daysToCheck = [...availableDays];
+                
+                if (nextMonthStr !== currentMonthStr) {
+                    // Cargar días del nuevo mes
+                    const params = new URLSearchParams();
+                    params.set("service", currentServiceId);
+                    params.set("month", nextMonthStr);
+                    const pid = selection[currentServiceId]?.professionalId || "any";
+                    if (pid && pid !== "any") params.set("professional", pid);
+                    params.set("modality", modalityByService[currentServiceId] || 'presencial');
                     
-                    if (response.ok) {
-                        const data = await response.json();
-                        currentDays = data.availableDays || [];
-                        // Actualizar el estado solo si es el último mes que vamos a cargar
-                        if (weekDays.some(day => currentDays.includes(day))) {
-                            setAvailableDays(currentDays);
-                        }
+                    try {
+                        const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
+                        const raw = await res.json().catch(() => ({}));
+                        const payload = getPayload(raw);
+                        let dates: any[] = [];
+                        if (Array.isArray(payload)) dates = payload;
+                        else if (Array.isArray(payload?.days)) dates = payload.days;
+                        else if (Array.isArray(payload?.items)) dates = payload.items;
+                        daysToCheck = dates as string[];
+                    } catch {
+                        continue;
                     }
-                    
-                    lastMonthLoaded = nextMonthStr;
+                }
+                
+                // Calcular los días de esta semana
+                const weekDays = Array.from({ length: 7 }).map((_, i) => {
+                    const d = new Date(weekStart);
+                    d.setDate(d.getDate() + i);
+                    return fmtDay(d);
+                });
+                
+                // Verificar si esta semana tiene días disponibles
+                const hasAvailableDays = weekDays.some(day => daysToCheck.includes(day));
+                
+                if (hasAvailableDays) {
+                    // Encontramos una semana con días, actualizar
+                    console.log('✅ Encontrada semana con días:', fmtMonth(nextMonth));
+                    setCurrentWeekStart(weekStart);
+                    const newMonth = new Date(weekStart.getFullYear(), weekStart.getMonth(), 1);
+                    setVisibleMonth(newMonth);
+                    if (nextMonthStr !== currentMonthStr) {
+                        setAvailableDays(daysToCheck);
+                    }
+                    return;
                 }
             }
             
-            // Si no encontramos días disponibles en ninguna semana, marcar el flag
-            if (attempts >= maxAttempts) {
-                setNoAvailableDays(true);
-            }
+            // Si no encontramos días disponibles en 12 semanas, marcar el flag
+            console.log('❌ No se encontraron días disponibles en 12 semanas');
+            setNoAvailableDays(true);
         };
         
         checkAndAdvanceWeek();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [step, currentServiceId, hasCompletedFirstLoad]);
+    }, [loadingDays, availableDays.length]);
 
     useEffect(() => {
         if (step !== 3) return;
@@ -2720,20 +2818,55 @@ export default function ReservarPage() {
         setSelectedServices(prev => (prev.length ? prev : valid.slice(0, 3)));
     }, [serviceIdFromQS, services, loadingServices, sessionGroupId, setSelectedServices]);
 
-    const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string) => {
+    const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string, attemptCount = 0) => {
+        // Límite de 6 meses hacia adelante
+        const MAX_ATTEMPTS = 6;
+        if (attemptCount >= MAX_ATTEMPTS) {
+            console.log('⚠️ [SessionGroup] No se encontraron días disponibles en los próximos 6 meses');
+            setSgLoadingDays(false);
+            return;
+        }
+        
         setSgLoadingDays(true)
         try {
             const params = new URLSearchParams()
             params.set("month", monthStr ?? fmtMonth(sgVisibleMonth))
             const url = `${API_BASE}/${slug}/session-group/${groupId}/available-days?${params.toString()}`
+            
+            console.log(`[SessionGroup] 🔍 Buscando días disponibles (intento ${attemptCount + 1}/${MAX_ATTEMPTS}):`, monthStr ?? fmtMonth(sgVisibleMonth));
+            
             const res = await axios.get(url)
             const payload = res.data?.data ?? res.data
             let dates: any[] = Array.isArray(payload) ? payload : (payload?.items ?? payload?.days ?? [])
             if (dates.length && typeof dates[0] !== "string") dates = dates.map((d: any) => d?.date).filter(Boolean)
+            
+            console.log(`[SessionGroup] 📅 Días encontrados:`, dates.length);
+            
+            // Si no hay días disponibles, avanzar al siguiente mes
+            if (dates.length === 0 && attemptCount < MAX_ATTEMPTS - 1) {
+                console.log('[SessionGroup] ➡️ Sin disponibilidad, avanzando al siguiente mes...');
+                const currentMonth = monthStr ? new Date(monthStr + '-01') : sgVisibleMonth;
+                const nextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+                const nextMonthStr = fmtMonth(nextMonth);
+                
+                // Actualizar el mes visible ANTES de la llamada recursiva
+                setSgVisibleMonth(nextMonth);
+                
+                // Recursivamente buscar en el siguiente mes (NO terminar el loading aquí)
+                await loadSgAvailableDays(slug, groupId, nextMonthStr, attemptCount + 1);
+                return; // El return evita el catch/finally, el loading se maneja en la recursión
+            }
+            
+            // Actualizar mes visible y días en un solo batch si el mes es diferente
+            const currentMonth = monthStr ? new Date(monthStr + '-01') : sgVisibleMonth;
+            if (dates.length > 0 && monthStr && fmtMonth(sgVisibleMonth) !== monthStr) {
+                setSgVisibleMonth(currentMonth);
+            }
             setSgAvailableDays(dates as string[])
-        } catch {
+            setSgLoadingDays(false)
+        } catch (error) {
+            console.error('[SessionGroup] Error loading available days:', error);
             setSgAvailableDays([])
-        } finally {
             setSgLoadingDays(false)
         }
     }
