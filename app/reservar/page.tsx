@@ -23,6 +23,7 @@ import {
     XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
@@ -115,6 +116,7 @@ function AdministrarInlineNF({
     modality?: "presencial" | "virtual";
 }) {
     const slug = getSlugFromEnvOrHost();
+    const router = useRouter();
     const [loadingInfo, setLoadingInfo] = React.useState(true);
     const [bookingInfo, setBookingInfo] = React.useState<{
         serviceName?: string;
@@ -128,7 +130,7 @@ function AdministrarInlineNF({
     React.useEffect(() => {
         if (!slug || !bookingId) return;
         setLoadingInfo(true);
-        fetch(`${API_BASE}/${slug}/bookings/${bookingId}`, {
+        fetch(`${API_BASE}/${slug}/booking/${bookingId}`, {
             headers: { "Content-Type": "application/json" },
         })
             .then((r) => (r.ok ? r.json() : Promise.reject("Error al cargar reserva")))
@@ -200,36 +202,30 @@ function AdministrarInlineNF({
                     <CardContent className="space-y-3">
                         {/* Botón Reprogramar */}
                         <Button
-                            asChild
+                            onClick={() => window.location.href = rescheduleUrl}
                             className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
                         >
-                            <Link href={rescheduleUrl}>
-                                <CalendarIcon className="w-5 h-5 mr-2" />
-                                Reprogramar reserva
-                            </Link>
+                            <CalendarIcon className="w-5 h-5 mr-2" />
+                            Reprogramar reserva
                         </Button>
 
                         {/* Botón Cancelar */}
                         <Button
-                            asChild
+                            onClick={() => window.location.href = cancelUrl}
                             variant="outline"
                             className="w-full h-12 border-rose-300 text-rose-600 hover:bg-rose-50"
                         >
-                            <Link href={cancelUrl}>
-                                <XCircle className="w-5 h-5 mr-2" />
-                                Cancelar reserva
-                            </Link>
+                            <XCircle className="w-5 h-5 mr-2" />
+                            Cancelar reserva
                         </Button>
 
                         {/* Botón Volver */}
                         <Button
-                            asChild
+                            onClick={() => router.push("/")}
                             variant="ghost"
                             className="w-full h-12 text-gray-600"
                         >
-                            <Link href="/">
-                                Volver al inicio
-                            </Link>
+                            Volver al inicio
                         </Button>
                     </CardContent>
                 </Card>
@@ -509,6 +505,9 @@ function RescheduleInlineNF({
     // Modalidad: inicializar con la prop o por defecto 'presencial'
     const [selectedModality, setSelectedModality] = React.useState<'presencial' | 'virtual'>(modalityProp || 'presencial');
 
+    // 🆕 Obra social del booking original (para filtrar disponibilidad)
+    const [bookingSocialWork, setBookingSocialWork] = React.useState<string | null>(null);
+
     const [availableDays, setAvailableDays] = React.useState<string[]>([]);
     const [loadingDays, setLoadingDays] = React.useState(false);
     const [visibleMonth, setVisibleMonth] = React.useState<Date>(new Date());
@@ -566,7 +565,20 @@ function RescheduleInlineNF({
                 if (effectivePid) params.set("professional", String(effectivePid));
                 // Agregar modalidad
                 params.set("modality", selectedModality || 'presencial');
-                const res = await fetch(`${API_BASE}/${slug}/available-days?${params.toString()}`, { cache: "no-store" });
+                // 🆕 CRÍTICO: Agregar obra social del booking (igual que en reserva normal)
+                params.set("socialWork", bookingSocialWork || "null");
+                
+                const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
+                console.log("📅 [RESCHEDULE] URL completa:", url);
+                console.log("📅 [RESCHEDULE] Params:", {
+                    service: sid,
+                    month: monthStr ?? fmtMonth(visibleMonth),
+                    professional: effectivePid || 'ninguno',
+                    modality: selectedModality || 'presencial',
+                    socialWork: bookingSocialWork || 'null',
+                });
+                
+                const res = await fetch(url, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
                 const payload = getPayload(raw);
                 let dates: any[] = [];
@@ -576,19 +588,42 @@ function RescheduleInlineNF({
                 if (dates.length && typeof dates[0] !== "string") {
                     dates = dates.map((d: any) => d?.date).filter(Boolean);
                 }
+                console.log("📅 [RESCHEDULE] Días disponibles:", dates.length);
+                if (dates.length === 0) {
+                    console.error("❌ [RESCHEDULE] NO HAY DÍAS DISPONIBLES - Posibles causas:");
+                    console.error("   1. No hay CalendarWindows configurados para este profesional/servicio");
+                    console.error("   2. El mes está fuera del rango de las ventanas de calendario");
+                    console.error("   3. Todas las fechas están bloqueadas en customSchedules");
+                    console.error("   4. Filtros de modalidad/obra social muy restrictivos");
+                }
                 setAvailableDays(dates as string[]);
             } finally {
                 setLoadingDays(false);
             }
         },
-        [slug, visibleMonth, bookingInfo?.professionalId, selectedModality]
+        [slug, visibleMonth, bookingInfo?.professionalId, selectedModality, bookingSocialWork]
     );
 
     // Horarios
     const loadTimeSlots = React.useCallback(
         async (sid: string, _pid: string | "any" | undefined, date: Date) => {
             const dateStr = fmtDay(date);
-            if (!sid || !slug || !availableDays.includes(dateStr)) return;
+            console.log("⏰ [RESCHEDULE] loadTimeSlots called:", {
+                serviceId: sid, 
+                professionalId: _pid,
+                dateStr,
+                availableDays: availableDays.length,
+                includesDate: availableDays.includes(dateStr),
+                slug,
+            });
+            if (!sid || !slug || !availableDays.includes(dateStr)) {
+                console.warn("⏰ [RESCHEDULE] Early return - validación falló:", {
+                    hasSid: !!sid,
+                    hasSlug: !!slug,
+                    dateInAvailable: availableDays.includes(dateStr),
+                });
+                return;
+            }
             setLoadingSlots(true);
             try {
                 const params = new URLSearchParams();
@@ -598,17 +633,27 @@ function RescheduleInlineNF({
                 if (effectivePid) params.set("professional", String(effectivePid));
                 // Agregar modalidad
                 params.set("modality", selectedModality || 'presencial');
+                // 🆕 CRÍTICO: Agregar obra social del booking (igual que en reserva normal)
+                if (bookingSocialWork) {
+                    params.set("socialWork", bookingSocialWork);
+                }
+                
+                console.log("⏰ [RESCHEDULE] Cargando slots con modalidad:", selectedModality || 'presencial', "fecha:", dateStr);
+                console.log("⏰ [RESCHEDULE] socialWork:", bookingSocialWork || 'ninguna');
+                
                 const res = await fetch(`${API_BASE}/${slug}/day-slots?${params.toString()}`, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
                 const payload = getPayload(raw);
                 const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? [];
+                
+                console.log("⏰ [RESCHEDULE] Slots disponibles:", slots.length);
                 setTimeSlots(slots);
                 setSelectedTime("");
             } finally {
                 setLoadingSlots(false);
             }
         },
-        [slug, availableDays, bookingInfo?.professionalId, selectedModality]
+        [slug, availableDays, bookingInfo?.professionalId, selectedModality, bookingSocialWork]
     );
 
     // bloqueo si está cancelado - useMemo ANTES de useEffect
@@ -636,6 +681,8 @@ function RescheduleInlineNF({
                 }
                 const raw = await res.json().catch(() => ({}));
                 const payload = getPayload(raw);
+
+                console.log("🔍 [RESCHEDULE] Payload del booking:", payload);
 
                 const sid =
                     payload?.service?._id ||
@@ -682,6 +729,22 @@ function RescheduleInlineNF({
                     payload?.groupItem?.status ||
                     "";
 
+                const modality =
+                    payload?.modality ||
+                    payload?.data?.modality ||
+                    payload?.booking?.modality ||
+                    payload?.groupItem?.modality ||
+                    "presencial";
+
+                const socialWork =
+                    payload?.socialWork?._id ||
+                    payload?.data?.socialWork?._id ||
+                    payload?.booking?.socialWork?._id ||
+                    payload?.groupItem?.socialWork?._id ||
+                    null;
+
+                console.log("🏥 [RESCHEDULE] Obra social del booking:", socialWork);
+
                 setBookingInfo({
                     serviceName: svcName,
                     professionalName: profName,
@@ -692,6 +755,20 @@ function RescheduleInlineNF({
                 });
 
                 if (profId) setSelectedProfessional(String(profId));
+                
+                // 🔥 IMPORTANTE: Actualizar modalidad desde el booking original
+                if (modality === 'virtual' || modality === 'presencial') {
+                    console.log("🎭 [RESCHEDULE] Estableciendo modalidad:", modality);
+                    setSelectedModality(modality);
+                } else {
+                    console.warn("⚠️ [RESCHEDULE] Modalidad no válida o undefined:", modality);
+                }
+
+                // 🔥 IMPORTANTE: Guardar obra social del booking original
+                if (socialWork) {
+                    console.log("🏥 [RESCHEDULE] Guardando obra social:", socialWork);
+                    setBookingSocialWork(socialWork);
+                }
 
                 if (!ignore) {
                     if (sid) {
@@ -868,20 +945,28 @@ function RescheduleInlineNF({
                                                 void loadAvailableDays(serviceId!, bookingInfo?.professionalId || selectedProfessional, fmtMonth(m));
                                             }}
                                             onSelect={async (date) => {
+                                                console.log("📅 [RESCHEDULE] Fecha seleccionada:", date, "disponible:", date ? isDateAvailable(date) : false);
                                                 setSelectedDate(date || undefined);
                                                 if (date && isDateAvailable(date)) {
                                                     setTimeSlots([]); setSelectedTime("");
+                                                    console.log("📅 [RESCHEDULE] Llamando loadTimeSlots...");
                                                     await loadTimeSlots(serviceId!, bookingInfo?.professionalId || selectedProfessional, date);
                                                 } else {
+                                                    console.log("📅 [RESCHEDULE] Fecha no disponible o nula");
                                                     setTimeSlots([]); setSelectedTime("");
                                                 }
                                             }}
                                             disabled={(date) => {
                                                 const today = new Date(); today.setHours(0, 0, 0, 0);
                                                 const d = new Date(date); d.setHours(0, 0, 0, 0);
+                                                // Siempre deshabilitar fechas pasadas
                                                 if (d < today) return true;
-                                                if (availableDays.length > 0) return !isDateAvailable(date);
-                                                return false;
+                                                // Si está cargando, deshabilitar todo excepto pasados
+                                                if (loadingDays) return false;
+                                                // Si no hay días disponibles cargados, deshabilitar todo
+                                                if (availableDays.length === 0) return true;
+                                                // Si hay días disponibles, solo habilitar los que están en la lista
+                                                return !isDateAvailable(date);
                                             }}
                                             locale={es}
                                             className="rounded-lg border-2 border-green-200 w-full p-3"
@@ -3115,6 +3200,7 @@ export default function ReservarPage() {
     if (bookingIdFromQS && (actionFromQS === "cancel" || actionFromQS === "reschedule" || actionFromQS === "administrar")) {
         return (
             <ActionInlineRouterNF
+                key={`${actionFromQS}-${bookingIdFromQS}`}
                 action={actionFromQS as "cancel" | "reschedule" | "administrar"}
                 bookingId={bookingIdFromQS}
                 serviceId={rescheduleServiceIdQS}
