@@ -104,10 +104,7 @@ export default function ServiceList({
               )}
               {s.depositRequired && s.depositValue != null && s.depositType && (
                 <span className="inline-flex items-center text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">
-                  Seña:{" "}
-                  {s.depositType === "percent"
-                    ? `${s.depositValue}%`
-                    : money(s.depositValue, s.currency)}
+                  Seña: {money(s.depositValue, s.currency)}
                 </span>
               )}
             </div>

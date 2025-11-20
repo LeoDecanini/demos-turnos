@@ -958,9 +958,8 @@ function SessionGroupSummary({ data }: { data: any }) {
                                 <div className="mt-1 flex items-center gap-2">
                                     <Badge className={`${H.chip} bg-emerald-50 text-emerald-700 border border-emerald-200`}>Requerido</Badge>
                                     <div className="text-[13px]">
-                                        {next.deposit.type === "percent"
-                                            ? `${next.deposit.amount}%`
-                                            : `${next?.currency ?? "ARS"} ${Number(next.deposit.amount).toLocaleString("es-AR")}`}
+                                        {/* Mostrar siempre como precio formateado, sin importar si es percent o fixed */}
+                                        {`${next?.currency ?? "ARS"} ${Number(next.deposit.amount).toLocaleString("es-AR")}`}
                                         <span className={`ml-2 ${H.tiny}`}>origen: {next.deposit.source}</span>
                                     </div>
                                 </div>
@@ -1019,6 +1018,12 @@ type RawService = {
     sessionDuration?: number;
     allowPresencial?: boolean;  // 🆕 Soporte de modalidades
     allowVirtual?: boolean;     // 🆕 Soporte de modalidades
+    // 🔧 Campos calculados del backend
+    depositAmountCalculated?: number;
+    depositRequiredCalculated?: boolean;
+    depositTypeCalculated?: DepositType;
+    depositCurrencyCalculated?: string;
+    depositSourceCalculated?: string;
 };
 
 type DepositCfg = {
@@ -1057,6 +1062,25 @@ function filterServicesByCategory(services: RawService[], categoryId: string | n
 }
 
 const applyDepositPolicy = (list: RawService[], cfg?: DepositCfg) => {
+    // 🔧 Si los servicios YA vienen con cálculos del backend, usarlos directamente
+    const hasBackendCalculations = list.some(s =>
+        s.depositAmountCalculated !== undefined ||
+        s.depositRequiredCalculated !== undefined
+    );
+
+    if (hasBackendCalculations) {
+        console.log('[applyDepositPolicy] ✅ Usando cálculos del BACKEND');
+        return list.map(s => ({
+            ...s,
+            // Mapear los campos calculados a los campos que usa ServiceList
+            depositRequired: s.depositRequiredCalculated ?? s.depositRequired,
+            depositType: (s.depositTypeCalculated?.toLowerCase() as DepositType) ?? s.depositType,
+            depositValue: s.depositAmountCalculated ?? s.depositValue,
+        }));
+    }
+
+    // Fallback: si no hay cálculos del backend, usar la lógica anterior
+    console.log('[applyDepositPolicy] ⚠️ Backend NO envió cálculos, usando fallback');
     if (!cfg) return list;
     if (cfg.allowOverrideOnService === false)
         return list.map((s) => ({
@@ -1599,16 +1623,44 @@ export default function ReservarPage() {
                 const list: RawService[] = Array.isArray(payload)
                     ? payload
                     : payload?.items ?? [];
+
+                console.log('[SERVICES API RESPONSE] 📦 Datos completos recibidos:', {
+                    totalServices: list.length,
+                    primerServicio: list[0] ? {
+                        name: list[0].name,
+                        price: list[0].price,
+                        depositRequired: list[0].depositRequired,
+                        depositType: list[0].depositType,
+                        depositValue: list[0].depositValue,
+                        usesGlobalDepositConfig: list[0].usesGlobalDepositConfig,
+                        // Campos calculados del backend
+                        depositAmountCalculated: list[0].depositAmountCalculated,
+                        depositRequiredCalculated: list[0].depositRequiredCalculated,
+                        depositTypeCalculated: list[0].depositTypeCalculated,
+                    } : null,
+                    depositCfg,
+                });
+
                 const listWithDeposit = applyDepositPolicy(list, depositCfg);
+
+                console.log('[DEPOSIT DEBUG] 🔍 Después de applyDepositPolicy:', {
+                    primerServicio: listWithDeposit[0] ? {
+                        name: listWithDeposit[0].name,
+                        depositRequired: listWithDeposit[0].depositRequired,
+                        depositType: listWithDeposit[0].depositType,
+                        depositValue: listWithDeposit[0].depositValue,
+                    } : null,
+                });
+
                 setServices(listWithDeposit);
-                
+
                 // 🆕 CAMBIO 1: Auto-seleccionar categoría si solo hay una
                 const categories = extractUniqueCategories(listWithDeposit);
                 if (categories.length === 1) {
                     console.log('✨ Solo una categoría disponible, auto-seleccionando:', categories[0].name);
                     setSelectedCategory(categories[0]._id);
                 }
-                
+
                 if (listWithDeposit.length === 0)
                     toast.error("No hay servicios disponibles en este momento");
             } catch {
@@ -1990,11 +2042,8 @@ export default function ReservarPage() {
                         ? booking.depositValue
                         : null;
 
-        if (rawType === "percent" && rawAmount != null) {
-            return { label: `${rawAmount}%`, amount: rawAmount, currency, isPercent: true } as const;
-        }
-
         if (rawAmount != null) {
+            // Siempre mostrar como monto en dinero, sin porcentaje
             return { label: money(rawAmount, currency), amount: rawAmount, currency, isPercent: false } as const;
         }
 
@@ -2508,7 +2557,7 @@ export default function ReservarPage() {
         if (step !== 6 || !currentServiceId) return; // Paso 6 ahora incluye calendario
         const pid = selection[currentServiceId]?.professionalId || "any";
         const modality = modalityByService[currentServiceId] || 'presencial';
-        
+
         // 🆕 CAMBIO 3: Buscar disponibilidad automáticamente hasta 3 meses adelante
         const searchAvailabilityUpTo3Months = async () => {
             setLoadingDays(true);
@@ -2517,13 +2566,13 @@ export default function ReservarPage() {
             let foundDays: string[] = [];
             let foundMonth: Date | null = null;
             const maxMonthsToSearch = 3;
-            
+
             console.log('🔍 [AUTO-SEARCH] Iniciando búsqueda de disponibilidad hasta 3 meses adelante...');
-            
+
             for (let i = 0; i < maxMonthsToSearch; i++) {
                 const monthStr = fmtMonth(searchMonth);
                 console.log(`🔍 [AUTO-SEARCH] Buscando en mes ${i + 1}/${maxMonthsToSearch}: ${monthStr}`);
-                
+
                 try {
                     const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
                     const params = new URLSearchParams();
@@ -2532,18 +2581,18 @@ export default function ReservarPage() {
                     if (pid && pid !== "any") params.set("professional", pid);
                     params.set("modality", modality);
                     params.set("socialWork", selectedSocialWork || "null");
-                    
+
                     const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
                     const res = await fetch(url, { cache: "no-store" });
                     const raw = await res.json().catch(() => ({}));
-                    
+
                     if (raw?.message === "Reservas bloqueadas") {
                         setIsBlocked(true);
                         setBlockMsg("Reservas bloqueadas");
                         setLoadingDays(false);
                         return;
                     }
-                    
+
                     const payload = getPayload(raw);
                     let dates: any[] = [];
                     if (Array.isArray(payload)) dates = payload;
@@ -2551,7 +2600,7 @@ export default function ReservarPage() {
                     else if (Array.isArray(payload?.items)) dates = payload.items;
                     if (dates.length && typeof dates[0] !== "string")
                         dates = dates.map((d: any) => d?.date).filter(Boolean);
-                    
+
                     if (dates.length > 0) {
                         foundDays = dates as string[];
                         foundMonth = new Date(searchMonth);
@@ -2563,11 +2612,11 @@ export default function ReservarPage() {
                 } catch (error) {
                     console.error(`❌ [AUTO-SEARCH] Error buscando en ${monthStr}:`, error);
                 }
-                
+
                 // Avanzar al siguiente mes
                 searchMonth = new Date(searchMonth.getFullYear(), searchMonth.getMonth() + 1, 1);
             }
-            
+
             if (foundDays.length > 0 && foundMonth) {
                 console.log(`✅ [AUTO-SEARCH] Actualizando calendario a ${fmtMonth(foundMonth)}`);
                 setVisibleMonth(foundMonth);
@@ -2579,10 +2628,10 @@ export default function ReservarPage() {
                 setAvailableDays([]);
                 setShowNoAvailabilityMessage(true); // ⚠️ Mostrar mensaje solo aquí, después de búsqueda automática
             }
-            
+
             setLoadingDays(false);
         };
-        
+
         void searchAvailabilityUpTo3Months();
         // al entrar al paso 6 (calendario + modalidad) o cambiar el profesional del servicio actual,
         // cargamos los días con el valor NUEVO ya aplicado
@@ -2596,13 +2645,13 @@ export default function ReservarPage() {
         let foundDays: string[] = [];
         let foundMonth: Date | null = null;
         const maxMonthsToSearch = 3;
-        
+
         console.log('🔍 [MANUAL-SEARCH] Buscando disponibilidad desde', fmtMonth(startMonth));
-        
+
         for (let i = 0; i < maxMonthsToSearch; i++) {
             const monthStr = fmtMonth(searchMonth);
             console.log(`🔍 [MANUAL-SEARCH] Mes ${i + 1}/${maxMonthsToSearch}: ${monthStr}`);
-            
+
             try {
                 const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
                 const params = new URLSearchParams();
@@ -2611,18 +2660,18 @@ export default function ReservarPage() {
                 if (profId && profId !== "any") params.set("professional", profId);
                 params.set("modality", modality);
                 params.set("socialWork", selectedSocialWork || "null");
-                
+
                 const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
                 const res = await fetch(url, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
-                
+
                 if (raw?.message === "Reservas bloqueadas") {
                     setIsBlocked(true);
                     setBlockMsg("Reservas bloqueadas");
                     setLoadingDays(false);
                     return;
                 }
-                
+
                 const payload = getPayload(raw);
                 let dates: any[] = [];
                 if (Array.isArray(payload)) dates = payload;
@@ -2630,7 +2679,7 @@ export default function ReservarPage() {
                 else if (Array.isArray(payload?.items)) dates = payload.items;
                 if (dates.length && typeof dates[0] !== "string")
                     dates = dates.map((d: any) => d?.date).filter(Boolean);
-                
+
                 if (dates.length > 0) {
                     foundDays = dates as string[];
                     foundMonth = new Date(searchMonth);
@@ -2642,11 +2691,11 @@ export default function ReservarPage() {
             } catch (error) {
                 console.error(`❌ [MANUAL-SEARCH] Error en ${monthStr}:`, error);
             }
-            
+
             // Avanzar al siguiente mes
             searchMonth = new Date(searchMonth.getFullYear(), searchMonth.getMonth() + 1, 1);
         }
-        
+
         if (foundDays.length > 0 && foundMonth) {
             console.log(`✅ [MANUAL-SEARCH] Actualizando a ${fmtMonth(foundMonth)}`);
             setVisibleMonth(foundMonth);
@@ -2656,7 +2705,7 @@ export default function ReservarPage() {
             setVisibleMonth(startMonth);
             setAvailableDays([]);
         }
-        
+
         setLoadingDays(false);
     };
 
@@ -2782,11 +2831,15 @@ export default function ReservarPage() {
         setSelectedServices(prev => (prev.length ? prev : valid.slice(0, 3)));
     }, [serviceIdFromQS, services, loadingServices, sessionGroupId, setSelectedServices]);
 
-    const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string) => {
+    const loadSgAvailableDays = async (slug: string, groupId: string, monthStr?: string, modality?: string) => {
         setSgLoadingDays(true)
         try {
             const params = new URLSearchParams()
             params.set("month", monthStr ?? fmtMonth(sgVisibleMonth))
+
+            const modalityToUse = modality ?? groupData?.bookings?.[0]?.modality ?? null
+            if (modalityToUse) params.set("modality", modalityToUse)
+
             const url = `${API_BASE}/${slug}/session-group/${groupId}/available-days?${params.toString()}`
             const res = await axios.get(url)
             const payload = res.data?.data ?? res.data
@@ -3664,14 +3717,14 @@ export default function ReservarPage() {
                     // 🆕 CAMBIO 1: Si solo hay una categoría, saltear automáticamente al paso 3
                     const categories = extractUniqueCategories(services);
                     const shouldSkipCategoryStep = categories.length === 1;
-                    
+
                     console.log('🔍 [PASO 1 DEBUG]', {
                         totalCategories: categories.length,
                         shouldSkipCategoryStep,
                         selectedCategory,
                         categories: categories.map(c => c.name)
                     });
-                    
+
                     return (
                         <>
                             <div className="text-lefet mt-10 mb-6">
@@ -3749,10 +3802,10 @@ export default function ReservarPage() {
                                 totalServices: services.length,
                                 filteredServices: filterServicesByCategory(services, selectedCategory).length
                             });
-                            
+
                             return null;
                         })()}
-                        
+
                         <div className="text-left mt-10 mb-6">
                             <h2 className="text-3xl font-bold text-gray-900 mb-2">
                                 Nuestros Servicios
@@ -4182,7 +4235,7 @@ export default function ReservarPage() {
                                     const hasPresencial = availableModalities.includes('presencial');
                                     const hasVirtual = availableModalities.includes('virtual');
                                     const hasBothModalities = hasPresencial && hasVirtual;
-                                    
+
                                     // 🐛 Debug: mostrar valores
                                     console.log('🔍 [TABS DEBUG]', {
                                         serviceId: currentServiceId,
@@ -4192,13 +4245,13 @@ export default function ReservarPage() {
                                         hasVirtual,
                                         hasBothModalities
                                     });
-                                    
+
                                     // 🆕 CAMBIO 2: Si solo tiene una modalidad, no mostrar tabs (ya está auto-seleccionada)
                                     if (!hasBothModalities) {
                                         console.log('✨ Solo una modalidad disponible, no se muestran tabs');
                                         return null;
                                     }
-                                    
+
                                     return (
                                         <div className="flex gap-2 justify-start">
                                             {hasPresencial && (
