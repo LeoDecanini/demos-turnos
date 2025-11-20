@@ -1278,6 +1278,8 @@ export default function ReservarPage() {
     const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
     const [availableDays, setAvailableDays] = useState<string[]>([]);
     const [loadingDays, setLoadingDays] = useState(false);
+    // 🆕 Flag para mostrar mensaje de no disponibilidad solo después de búsqueda automática inicial
+    const [showNoAvailabilityMessage, setShowNoAvailabilityMessage] = useState(false);
     const [timeSlots, setTimeSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [scheduleIdx, setScheduleIdx] = useState(0);
@@ -1599,6 +1601,14 @@ export default function ReservarPage() {
                     : payload?.items ?? [];
                 const listWithDeposit = applyDepositPolicy(list, depositCfg);
                 setServices(listWithDeposit);
+                
+                // 🆕 CAMBIO 1: Auto-seleccionar categoría si solo hay una
+                const categories = extractUniqueCategories(listWithDeposit);
+                if (categories.length === 1) {
+                    console.log('✨ Solo una categoría disponible, auto-seleccionando:', categories[0].name);
+                    setSelectedCategory(categories[0]._id);
+                }
+                
                 if (listWithDeposit.length === 0)
                     toast.error("No hay servicios disponibles en este momento");
             } catch {
@@ -1683,6 +1693,7 @@ export default function ReservarPage() {
                 setSelection(nextSel);
                 setBranchesByService(map);
                 setHasBranchStep(false); // redundante pero explícito
+                console.log('🔍 [loadBranchesForServices] Cargando profesionales y yendo al paso 5');
                 await loadProfessionalsForServices(serviceIds);
                 setProfIdx(0);
                 setStep(5); // Paso de profesionales (antes era 3, ahora es 5)
@@ -1829,10 +1840,13 @@ export default function ReservarPage() {
             results.forEach(({ sid, raw }) => {
                 const list = coerceList(raw);
                 map[sid] = list as Professional[];
+                console.log(`🔍 [loadProfessionalsForServices] Servicio ${sid}: ${list.length} profesionales`);
             });
 
             setProfessionalsByService(map);
-        } catch {
+            console.log('✅ [loadProfessionalsForServices] Profesionales cargados:', Object.keys(map).length, 'servicios');
+        } catch (error) {
+            console.error('❌ [loadProfessionalsForServices] Error:', error);
             setProfessionalsByService({});
             toast.error("Error al cargar profesionales");
         } finally {
@@ -2494,11 +2508,157 @@ export default function ReservarPage() {
         if (step !== 6 || !currentServiceId) return; // Paso 6 ahora incluye calendario
         const pid = selection[currentServiceId]?.professionalId || "any";
         const modality = modalityByService[currentServiceId] || 'presencial';
-        void loadAvailableDays(currentServiceId, pid, undefined, modality);
+        
+        // 🆕 CAMBIO 3: Buscar disponibilidad automáticamente hasta 3 meses adelante
+        const searchAvailabilityUpTo3Months = async () => {
+            setLoadingDays(true);
+            const today = new Date();
+            let searchMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            let foundDays: string[] = [];
+            let foundMonth: Date | null = null;
+            const maxMonthsToSearch = 3;
+            
+            console.log('🔍 [AUTO-SEARCH] Iniciando búsqueda de disponibilidad hasta 3 meses adelante...');
+            
+            for (let i = 0; i < maxMonthsToSearch; i++) {
+                const monthStr = fmtMonth(searchMonth);
+                console.log(`🔍 [AUTO-SEARCH] Buscando en mes ${i + 1}/${maxMonthsToSearch}: ${monthStr}`);
+                
+                try {
+                    const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+                    const params = new URLSearchParams();
+                    params.set("service", currentServiceId);
+                    params.set("month", monthStr);
+                    if (pid && pid !== "any") params.set("professional", pid);
+                    params.set("modality", modality);
+                    params.set("socialWork", selectedSocialWork || "null");
+                    
+                    const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
+                    const res = await fetch(url, { cache: "no-store" });
+                    const raw = await res.json().catch(() => ({}));
+                    
+                    if (raw?.message === "Reservas bloqueadas") {
+                        setIsBlocked(true);
+                        setBlockMsg("Reservas bloqueadas");
+                        setLoadingDays(false);
+                        return;
+                    }
+                    
+                    const payload = getPayload(raw);
+                    let dates: any[] = [];
+                    if (Array.isArray(payload)) dates = payload;
+                    else if (Array.isArray(payload?.days)) dates = payload.days;
+                    else if (Array.isArray(payload?.items)) dates = payload.items;
+                    if (dates.length && typeof dates[0] !== "string")
+                        dates = dates.map((d: any) => d?.date).filter(Boolean);
+                    
+                    if (dates.length > 0) {
+                        foundDays = dates as string[];
+                        foundMonth = new Date(searchMonth);
+                        console.log(`✅ [AUTO-SEARCH] ¡Disponibilidad encontrada en ${monthStr}!`, foundDays.length, 'días disponibles');
+                        break;
+                    } else {
+                        console.log(`⚠️ [AUTO-SEARCH] Sin disponibilidad en ${monthStr}`);
+                    }
+                } catch (error) {
+                    console.error(`❌ [AUTO-SEARCH] Error buscando en ${monthStr}:`, error);
+                }
+                
+                // Avanzar al siguiente mes
+                searchMonth = new Date(searchMonth.getFullYear(), searchMonth.getMonth() + 1, 1);
+            }
+            
+            if (foundDays.length > 0 && foundMonth) {
+                console.log(`✅ [AUTO-SEARCH] Actualizando calendario a ${fmtMonth(foundMonth)}`);
+                setVisibleMonth(foundMonth);
+                setAvailableDays(foundDays);
+                setShowNoAvailabilityMessage(false); // Hay disponibilidad, no mostrar mensaje
+            } else {
+                console.log('❌ [AUTO-SEARCH] No hay disponibilidad en los próximos 3 meses');
+                setVisibleMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+                setAvailableDays([]);
+                setShowNoAvailabilityMessage(true); // ⚠️ Mostrar mensaje solo aquí, después de búsqueda automática
+            }
+            
+            setLoadingDays(false);
+        };
+        
+        void searchAvailabilityUpTo3Months();
         // al entrar al paso 6 (calendario + modalidad) o cambiar el profesional del servicio actual,
         // cargamos los días con el valor NUEVO ya aplicado
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step, currentServiceId, selection[currentServiceId]?.professionalId, modalityByService[currentServiceId]]);
+
+    // 🆕 Función helper para buscar disponibilidad desde un mes específico
+    const searchAvailabilityFrom = async (startMonth: Date, serviceId: string, profId: string, modality: 'presencial' | 'virtual') => {
+        setLoadingDays(true);
+        let searchMonth = new Date(startMonth.getFullYear(), startMonth.getMonth(), 1);
+        let foundDays: string[] = [];
+        let foundMonth: Date | null = null;
+        const maxMonthsToSearch = 3;
+        
+        console.log('🔍 [MANUAL-SEARCH] Buscando disponibilidad desde', fmtMonth(startMonth));
+        
+        for (let i = 0; i < maxMonthsToSearch; i++) {
+            const monthStr = fmtMonth(searchMonth);
+            console.log(`🔍 [MANUAL-SEARCH] Mes ${i + 1}/${maxMonthsToSearch}: ${monthStr}`);
+            
+            try {
+                const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
+                const params = new URLSearchParams();
+                params.set("service", serviceId);
+                params.set("month", monthStr);
+                if (profId && profId !== "any") params.set("professional", profId);
+                params.set("modality", modality);
+                params.set("socialWork", selectedSocialWork || "null");
+                
+                const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
+                const res = await fetch(url, { cache: "no-store" });
+                const raw = await res.json().catch(() => ({}));
+                
+                if (raw?.message === "Reservas bloqueadas") {
+                    setIsBlocked(true);
+                    setBlockMsg("Reservas bloqueadas");
+                    setLoadingDays(false);
+                    return;
+                }
+                
+                const payload = getPayload(raw);
+                let dates: any[] = [];
+                if (Array.isArray(payload)) dates = payload;
+                else if (Array.isArray(payload?.days)) dates = payload.days;
+                else if (Array.isArray(payload?.items)) dates = payload.items;
+                if (dates.length && typeof dates[0] !== "string")
+                    dates = dates.map((d: any) => d?.date).filter(Boolean);
+                
+                if (dates.length > 0) {
+                    foundDays = dates as string[];
+                    foundMonth = new Date(searchMonth);
+                    console.log(`✅ [MANUAL-SEARCH] Disponibilidad encontrada en ${monthStr}!`, foundDays.length, 'días');
+                    break;
+                } else {
+                    console.log(`⚠️ [MANUAL-SEARCH] Sin disponibilidad en ${monthStr}`);
+                }
+            } catch (error) {
+                console.error(`❌ [MANUAL-SEARCH] Error en ${monthStr}:`, error);
+            }
+            
+            // Avanzar al siguiente mes
+            searchMonth = new Date(searchMonth.getFullYear(), searchMonth.getMonth() + 1, 1);
+        }
+        
+        if (foundDays.length > 0 && foundMonth) {
+            console.log(`✅ [MANUAL-SEARCH] Actualizando a ${fmtMonth(foundMonth)}`);
+            setVisibleMonth(foundMonth);
+            setAvailableDays(foundDays);
+        } else {
+            console.log('❌ [MANUAL-SEARCH] No hay disponibilidad en los próximos 3 meses');
+            setVisibleMonth(startMonth);
+            setAvailableDays([]);
+        }
+        
+        setLoadingDays(false);
+    };
 
     useEffect(() => {
         if (step !== 3) return;
@@ -3500,36 +3660,55 @@ export default function ReservarPage() {
                 </div>
 
                 {/* 🆕 PASO 1: Seleccionar Obra Social */}
-                {step === 1 && (
-                    <>
-                        <div className="text-lefet mt-10 mb-6">
-                            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                                Seleccioná tu Obra Social
-                            </h2>
-                            <p className="text-gray-600 text-lg">
-                                Esto nos permitirá mostrarte los días y horarios disponibles según tu cobertura
-                            </p>
-                        </div>
+                {step === 1 && (() => {
+                    // 🆕 CAMBIO 1: Si solo hay una categoría, saltear automáticamente al paso 3
+                    const categories = extractUniqueCategories(services);
+                    const shouldSkipCategoryStep = categories.length === 1;
+                    
+                    console.log('🔍 [PASO 1 DEBUG]', {
+                        totalCategories: categories.length,
+                        shouldSkipCategoryStep,
+                        selectedCategory,
+                        categories: categories.map(c => c.name)
+                    });
+                    
+                    return (
+                        <>
+                            <div className="text-lefet mt-10 mb-6">
+                                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                                    Seleccioná tu Obra Social
+                                </h2>
+                                <p className="text-gray-600 text-lg">
+                                    Esto nos permitirá mostrarte los días y horarios disponibles según tu cobertura
+                                </p>
+                            </div>
 
-                        <SocialWorkSelector
-                            socialWorks={socialWorks.map(sw => ({
-                                _id: sw._id,
-                                name: sw.name
-                            }))}
-                            selectedId={selectedSocialWork}
-                            onSelect={(id) => setSelectedSocialWork(id)}
-                            loading={loadingSocialWorks}
-                        />
+                            <SocialWorkSelector
+                                socialWorks={socialWorks.map(sw => ({
+                                    _id: sw._id,
+                                    name: sw.name
+                                }))}
+                                selectedId={selectedSocialWork}
+                                onSelect={(id) => setSelectedSocialWork(id)}
+                                loading={loadingSocialWorks}
+                            />
 
-                        <FloatingNav
-                            backDisabled
-                            nextDisabled={selectedSocialWork === undefined}
-                            onNext={() => {
-                                setStep(2);
-                            }}
-                        />
-                    </>
-                )}
+                            <FloatingNav
+                                backDisabled
+                                nextDisabled={selectedSocialWork === undefined}
+                                onNext={() => {
+                                    if (shouldSkipCategoryStep) {
+                                        console.log('✨ Salteando paso de categoría (solo hay una):', categories[0]?.name);
+                                        console.log('✨ selectedCategory actual:', selectedCategory);
+                                        setStep(3);
+                                    } else {
+                                        setStep(2);
+                                    }
+                                }}
+                            />
+                        </>
+                    );
+                })()}
 
                 {/* 🆕 PASO 2: Seleccionar Categoría */}
                 {step === 2 && (
@@ -3564,6 +3743,16 @@ export default function ReservarPage() {
                 {/* 🆕 PASO 3: Seleccionar Servicio (filtrado por categoría) */}
                 {step === 3 && (
                     <>
+                        {(() => {
+                            console.log('🔍 [PASO 3 DEBUG]', {
+                                selectedCategory,
+                                totalServices: services.length,
+                                filteredServices: filterServicesByCategory(services, selectedCategory).length
+                            });
+                            
+                            return null;
+                        })()}
+                        
                         <div className="text-left mt-10 mb-6">
                             <h2 className="text-3xl font-bold text-gray-900 mb-2">
                                 Nuestros Servicios
@@ -3601,7 +3790,9 @@ export default function ReservarPage() {
                                     backDisabled={false}
                                     onBack={() => {
                                         setSelectedServices([]); // Limpiar servicios seleccionados
-                                        setStep(2);
+                                        // 🆕 CAMBIO 1: Volver al paso correcto según si hay múltiples categorías
+                                        const categories = extractUniqueCategories(services);
+                                        setStep(categories.length === 1 ? 1 : 2);
                                     }}
                                     nextDisabled={selectedServices.length === 0 || submitting}
                                     onNext={async () => {
@@ -3984,62 +4175,74 @@ export default function ReservarPage() {
 
                             {/* Columna Derecha: Calendario + Tabs + Horarios */}
                             <div className="space-y-6 col-span-2">
-                                {/* Tabs: Presencial / Virtual - Solo mostrar si tiene ambas modalidades */}
+                                {/* Tabs: Presencial / Virtual - 🆕 CAMBIO 2: Mostrar solo las modalidades disponibles */}
                                 {(() => {
                                     // 🔥 Usar las modalidades disponibles del estado (ya consultadas del backend)
                                     const availableModalities = availableModalitiesByService[currentServiceId] || [];
-                                    const hasBothModalities = availableModalities.includes('presencial') && availableModalities.includes('virtual');
+                                    const hasPresencial = availableModalities.includes('presencial');
+                                    const hasVirtual = availableModalities.includes('virtual');
+                                    const hasBothModalities = hasPresencial && hasVirtual;
                                     
                                     // 🐛 Debug: mostrar valores
                                     console.log('🔍 [TABS DEBUG]', {
                                         serviceId: currentServiceId,
                                         serviceName: currentService?.name,
                                         availableModalities,
+                                        hasPresencial,
+                                        hasVirtual,
                                         hasBothModalities
                                     });
                                     
-                                    if (!hasBothModalities) return null;
+                                    // 🆕 CAMBIO 2: Si solo tiene una modalidad, no mostrar tabs (ya está auto-seleccionada)
+                                    if (!hasBothModalities) {
+                                        console.log('✨ Solo una modalidad disponible, no se muestran tabs');
+                                        return null;
+                                    }
                                     
                                     return (
                                         <div className="flex gap-2 justify-start">
-                                            <button
-                                                type="button"
-                                                className={cn(
-                                                    "px-8 py-3 font-semibold transition-all rounded-lg border-2",
-                                                    modalityByService[currentServiceId] === 'presencial' || !modalityByService[currentServiceId]
-                                                        ? "bg-green-500 border-green-500 text-white shadow-md"
-                                                        : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
-                                                )}
-                                                onClick={async () => {
-                                                    setModalityByService(prev => ({ ...prev, [currentServiceId]: 'presencial' }));
-                                                    // Recargar días disponibles con nueva modalidad
-                                                    setSelectedDateObj(undefined);
-                                                    setTimeSlots([]);
-                                                    setSelectedTimeBlock(null);
-                                                    await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'presencial');
-                                                }}
-                                            >
-                                                📍 Presencial
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={cn(
-                                                    "px-8 py-3 font-semibold transition-all rounded-lg border-2",
-                                                    modalityByService[currentServiceId] === 'virtual'
-                                                        ? "bg-green-500 border-green-500 text-white shadow-md"
-                                                        : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
-                                                )}
-                                                onClick={async () => {
-                                                    setModalityByService(prev => ({ ...prev, [currentServiceId]: 'virtual' }));
-                                                    // Recargar días disponibles con nueva modalidad
-                                                    setSelectedDateObj(undefined);
-                                                    setTimeSlots([]);
-                                                    setSelectedTimeBlock(null);
-                                                    await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'virtual');
-                                                }}
-                                            >
-                                                💻 Virtual
-                                            </button>
+                                            {hasPresencial && (
+                                                <button
+                                                    type="button"
+                                                    className={cn(
+                                                        "px-8 py-3 font-semibold transition-all rounded-lg border-2",
+                                                        modalityByService[currentServiceId] === 'presencial' || !modalityByService[currentServiceId]
+                                                            ? "bg-green-500 border-green-500 text-white shadow-md"
+                                                            : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
+                                                    )}
+                                                    onClick={async () => {
+                                                        setModalityByService(prev => ({ ...prev, [currentServiceId]: 'presencial' }));
+                                                        // Recargar días disponibles con nueva modalidad
+                                                        setSelectedDateObj(undefined);
+                                                        setTimeSlots([]);
+                                                        setSelectedTimeBlock(null);
+                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'presencial');
+                                                    }}
+                                                >
+                                                    📍 Presencial
+                                                </button>
+                                            )}
+                                            {hasVirtual && (
+                                                <button
+                                                    type="button"
+                                                    className={cn(
+                                                        "px-8 py-3 font-semibold transition-all rounded-lg border-2",
+                                                        modalityByService[currentServiceId] === 'virtual'
+                                                            ? "bg-green-500 border-green-500 text-white shadow-md"
+                                                            : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
+                                                    )}
+                                                    onClick={async () => {
+                                                        setModalityByService(prev => ({ ...prev, [currentServiceId]: 'virtual' }));
+                                                        // Recargar días disponibles con nueva modalidad
+                                                        setSelectedDateObj(undefined);
+                                                        setTimeSlots([]);
+                                                        setSelectedTimeBlock(null);
+                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'virtual');
+                                                    }}
+                                                >
+                                                    💻 Virtual
+                                                </button>
+                                            )}
                                         </div>
                                     );
                                 })()}
@@ -4049,52 +4252,74 @@ export default function ReservarPage() {
                                     <CardContent className="p-6">
                                         <div className="w-full">
                                             {!loadingDays ? (
-                                                <CalendarComponent
-                                                    mode="single"
-                                                    selected={selectedDateObj}
-                                                    month={visibleMonth}
-                                                    onMonthChange={async (m) => {
-                                                        setVisibleMonth(m);
-                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId]);
-                                                    }}
-                                                    onSelect={async (date) => {
-                                                        setSelectedDateObj(date || undefined);
-                                                        if (date && availableDays.includes(fmtDay(date))) {
-                                                            setTimeSlots([]);
-                                                            setSelectedTimeBlock(null);
-                                                            await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
-                                                            scrollToTimes();
-                                                        } else {
-                                                            setTimeSlots([]);
-                                                            setSelectedTimeBlock(null);
-                                                        }
-                                                    }}
-                                                    disabled={(date) => {
-                                                        if (loadingDays) return true;
-                                                        if (disableAllDays) return true;
-                                                        if (isPast(date)) return true;
-                                                        return !availableDays.includes(fmtDay(date));
-                                                    }}
-                                                    locale={es}
-                                                    className="rounded-lg border-2 border-green-200 w-full p-3"
-                                                    classNames={{
-                                                        months: "w-full",
-                                                        month: "w-full",
-                                                        table: "w-full border-collapse",
-                                                        head_row: "grid grid-cols-7",
-                                                        row: "grid grid-cols-7 mt-2",
-                                                        head_cell: "text-center text-muted-foreground text-[0.8rem] py-1",
-                                                        cell: "p-0 relative w-full",
-                                                        day: "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors hover:bg-green-100 hover:text-green-900 focus:outline-none focus:ring-2 focus:ring-green-300",
-                                                        day_selected: "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
-                                                        day_today: "bg-green-50 text-green-700 font-semibold rounded-lg",
-                                                        day_outside: "text-muted-foreground opacity-60",
-                                                        day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
-                                                        day_range_start: "rounded-l-lg",
-                                                        day_range_end: "rounded-r-lg",
-                                                        day_range_middle: "rounded-none",
-                                                    }}
-                                                />
+                                                <>
+                                                    {/* 🆕 CAMBIO 3: Mensaje si no hay disponibilidad en 3 meses (solo después de búsqueda automática) */}
+                                                    {showNoAvailabilityMessage && availableDays.length === 0 ? (
+                                                        <div className="text-center py-12 space-y-4">
+                                                            <div className="text-6xl mb-4">📅</div>
+                                                            <h3 className="text-xl font-bold text-gray-900">
+                                                                No hay disponibilidad
+                                                            </h3>
+                                                            <p className="text-gray-600 max-w-md mx-auto">
+                                                                No encontramos fechas disponibles en los próximos 3 meses para este servicio.
+                                                                Por favor, contactá con nosotros para coordinar un horario.
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <CalendarComponent
+                                                            mode="single"
+                                                            selected={selectedDateObj}
+                                                            month={visibleMonth}
+                                                            onMonthChange={async (m) => {
+                                                                // 🆕 Simplemente cargar el mes seleccionado por el usuario
+                                                                console.log('📅 [MANUAL-SEARCH] Usuario cambió a mes:', fmtMonth(m));
+                                                                setVisibleMonth(m);
+                                                                setShowNoAvailabilityMessage(false); // Desactivar mensaje en navegación manual
+                                                                setSelectedDateObj(undefined);
+                                                                setTimeSlots([]);
+                                                                setSelectedTimeBlock(null);
+                                                                await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId] || 'presencial');
+                                                            }}
+                                                            onSelect={async (date) => {
+                                                                setSelectedDateObj(date || undefined);
+                                                                if (date && availableDays.includes(fmtDay(date))) {
+                                                                    setTimeSlots([]);
+                                                                    setSelectedTimeBlock(null);
+                                                                    await loadTimeSlots(currentServiceId, currentProfId, date, modalityByService[currentServiceId]);
+                                                                    scrollToTimes();
+                                                                } else {
+                                                                    setTimeSlots([]);
+                                                                    setSelectedTimeBlock(null);
+                                                                }
+                                                            }}
+                                                            disabled={(date) => {
+                                                                if (loadingDays) return true;
+                                                                if (disableAllDays) return true;
+                                                                if (isPast(date)) return true;
+                                                                return !availableDays.includes(fmtDay(date));
+                                                            }}
+                                                            locale={es}
+                                                            className="rounded-lg border-2 border-green-200 w-full p-3"
+                                                            classNames={{
+                                                                months: "w-full",
+                                                                month: "w-full",
+                                                                table: "w-full border-collapse",
+                                                                head_row: "grid grid-cols-7",
+                                                                row: "grid grid-cols-7 mt-2",
+                                                                head_cell: "text-center text-muted-foreground text-[0.8rem] py-1",
+                                                                cell: "p-0 relative w-full",
+                                                                day: "h-10 w-full cursor-pointer p-0 rounded-lg transition-colors hover:bg-green-100 hover:text-green-900 focus:outline-none focus:ring-2 focus:ring-green-300",
+                                                                day_selected: "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600 rounded-lg",
+                                                                day_today: "bg-green-50 text-green-700 font-semibold rounded-lg",
+                                                                day_outside: "text-muted-foreground opacity-60",
+                                                                day_disabled: "opacity-40 cursor-not-allowed pointer-events-none rounded-lg",
+                                                                day_range_start: "rounded-l-lg",
+                                                                day_range_end: "rounded-r-lg",
+                                                                day_range_middle: "rounded-none",
+                                                            }}
+                                                        />
+                                                    )}
+                                                </>
                                             ) : (
                                                 <div className="w-full">
                                                     <Skeleton className="h-[248px] w-full" />
