@@ -2853,7 +2853,7 @@ export default function ReservarPage() {
         }
     }
 
-    const loadSgTimeSlots = async (slug: string, groupId: string, date: Date) => {
+    const loadSgTimeSlots = async (slug: string, groupId: string, date: Date, modality?: string) => {
         const dateStr = fmtDay(date)
         if (!sgAvailableDays.includes(dateStr)) {
             setSgTimeSlots([])
@@ -2861,7 +2861,14 @@ export default function ReservarPage() {
         }
         setSgLoadingSlots(true)
         try {
-            const url = `${API_BASE}/${slug}/session-group/${groupId}/day-slots?date=${dateStr}`
+            const params = new URLSearchParams()
+            params.set("date", dateStr)
+
+            // Usar la modalidad pasada por parámetro o extraerla de groupData
+            const modalityToUse = modality ?? groupData?.bookings?.[0]?.modality ?? null
+            if (modalityToUse) params.set("modality", modalityToUse)
+
+            const url = `${API_BASE}/${slug}/session-group/${groupId}/day-slots?${params.toString()}`
             const res = await axios.get(url)
             const payload = res.data?.data ?? res.data
             const slots: string[] = Array.isArray(payload) ? payload : (payload?.slots ?? payload?.items ?? [])
