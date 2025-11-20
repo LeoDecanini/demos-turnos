@@ -4229,6 +4229,23 @@ export default function ReservarPage() {
                                                 </div>
                                             );
                                         })()}
+
+                                        {/* Modalidad */}
+                                        {(() => {
+                                            const modality = modalityByService[currentServiceId];
+                                            if (!modality) return null;
+                                            return (
+                                                <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                                        <span className="text-lg">{modality === 'virtual' ? '💻' : '🏢'}</span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs text-gray-500 font-medium">Modalidad</p>
+                                                        <p className="font-semibold text-gray-900">{modality === 'virtual' ? 'Virtual' : 'Presencial'}</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </CardContent>
                                 </Card>
                             </div>
