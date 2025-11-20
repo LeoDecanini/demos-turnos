@@ -20,6 +20,7 @@ import {
     UserIcon,
     Shield,
     AlertTriangle,
+    XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -79,12 +80,15 @@ function ActionInlineRouterNF({
     groupMode,
     modality,                // <-- NUEVO
 }: {
-    action: "cancel" | "reschedule";
+    action: "cancel" | "reschedule" | "administrar";
     bookingId: string;
     serviceId?: string | null;
     groupMode?: boolean;
     modality?: "presencial" | "virtual";  // <-- NUEVO
 }) {
+    if (action === "administrar") {
+        return <AdministrarInlineNF bookingId={bookingId} serviceId={serviceId} groupMode={groupMode} modality={modality} />;
+    }
     if (action === "cancel") {
         return <CancelInlineNF bookingId={bookingId} />;
     }
@@ -95,6 +99,142 @@ function ActionInlineRouterNF({
             groupMode={groupMode}
             modality={modality}    // <-- NUEVO
         />
+    );
+}
+
+/** ==== Administrar (mostrar opciones) ==== */
+function AdministrarInlineNF({ 
+    bookingId, 
+    serviceId, 
+    groupMode, 
+    modality 
+}: { 
+    bookingId: string;
+    serviceId?: string | null;
+    groupMode?: boolean;
+    modality?: "presencial" | "virtual";
+}) {
+    const slug = getSlugFromEnvOrHost();
+    const [loadingInfo, setLoadingInfo] = React.useState(true);
+    const [bookingInfo, setBookingInfo] = React.useState<{
+        serviceName?: string;
+        professionalName?: string | null;
+        startISO?: string;
+        endISO?: string;
+        status?: string;
+    } | null>(null);
+
+    // Cargar info de la reserva
+    React.useEffect(() => {
+        if (!slug || !bookingId) return;
+        setLoadingInfo(true);
+        fetch(`${API_BASE}/${slug}/bookings/${bookingId}`, {
+            headers: { "Content-Type": "application/json" },
+        })
+            .then((r) => (r.ok ? r.json() : Promise.reject("Error al cargar reserva")))
+            .then((data) => {
+                const booking = data.data || data;
+                setBookingInfo({
+                    serviceName: booking.service?.name || "Servicio",
+                    professionalName: booking.professional?.name,
+                    startISO: booking.start,
+                    endISO: booking.end,
+                    status: booking.status,
+                });
+            })
+            .catch((err) => {
+                console.error(err);
+                setBookingInfo(null);
+            })
+            .finally(() => setLoadingInfo(false));
+    }, [slug, bookingId]);
+
+    if (loadingInfo) {
+        return (
+            <div className="min-h-screen pt-[120px] bg-white">
+                <div className="max-w-lg mx-auto p-4">
+                    <Skeleton className="h-[200px] w-full" />
+                </div>
+            </div>
+        );
+    }
+
+    if (!bookingInfo) {
+        return (
+            <div className="min-h-screen pt-[120px] bg-white">
+                <div className="max-w-lg mx-auto p-4">
+                    <Card className="border-rose-200 bg-rose-50/60">
+                        <CardContent className="p-6 text-center">
+                            <p className="text-rose-700">No se pudo cargar la información de la reserva.</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
+
+    const cancelUrl = `?action=cancel&id=${bookingId}`;
+    const rescheduleUrl = `?action=reschedule&id=${bookingId}${serviceId ? `&serviceId=${serviceId}` : ""}${groupMode ? "&groupMode=true" : ""}${modality ? `&modality=${modality}` : ""}`;
+
+    return (
+        <div className="min-h-screen pt-[120px] bg-white">
+            <div className="max-w-lg mx-auto p-4 space-y-4">
+                {/* Contexto de la reserva */}
+                <BookingContextCard
+                    serviceName={bookingInfo.serviceName}
+                    professionalName={bookingInfo.professionalName || undefined}
+                    startISO={bookingInfo.startISO}
+                    endISO={bookingInfo.endISO}
+                />
+
+                {/* Opciones de administración */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-xl font-bold text-gray-900">
+                            Administrar reserva
+                        </CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Elegí qué querés hacer con tu reserva
+                        </p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {/* Botón Reprogramar */}
+                        <Button
+                            asChild
+                            className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+                        >
+                            <Link href={rescheduleUrl}>
+                                <CalendarIcon className="w-5 h-5 mr-2" />
+                                Reprogramar reserva
+                            </Link>
+                        </Button>
+
+                        {/* Botón Cancelar */}
+                        <Button
+                            asChild
+                            variant="outline"
+                            className="w-full h-12 border-rose-300 text-rose-600 hover:bg-rose-50"
+                        >
+                            <Link href={cancelUrl}>
+                                <XCircle className="w-5 h-5 mr-2" />
+                                Cancelar reserva
+                            </Link>
+                        </Button>
+
+                        {/* Botón Volver */}
+                        <Button
+                            asChild
+                            variant="ghost"
+                            className="w-full h-12 text-gray-600"
+                        >
+                            <Link href="/">
+                                Volver al inicio
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
     );
 }
 
@@ -2773,6 +2913,7 @@ export default function ReservarPage() {
     const actionFromQS = useMemo(() => (sp.get("action") || sp.get("do") || "").toLowerCase(), [sp]) as
         | "cancel"
         | "reschedule"
+        | "administrar"
         | "";
     const bookingIdFromQS = useMemo(() => sp.get("id") || sp.get("bookingId") || "", [sp]);
     const rescheduleServiceIdQS = useMemo(() => sp.get("serviceId"), [sp]);
@@ -2970,11 +3111,11 @@ export default function ReservarPage() {
 
     // ======== RENDERS CONDICIONALES (después de todos los hooks) ========
 
-    // Modo NF (Narrow Focus): cancelar o reprogramar
-    if (bookingIdFromQS && (actionFromQS === "cancel" || actionFromQS === "reschedule")) {
+    // Modo NF (Narrow Focus): cancelar, reprogramar o administrar
+    if (bookingIdFromQS && (actionFromQS === "cancel" || actionFromQS === "reschedule" || actionFromQS === "administrar")) {
         return (
             <ActionInlineRouterNF
-                action={actionFromQS as "cancel" | "reschedule"}
+                action={actionFromQS as "cancel" | "reschedule" | "administrar"}
                 bookingId={bookingIdFromQS}
                 serviceId={rescheduleServiceIdQS}
                 groupMode={groupModeQS}
