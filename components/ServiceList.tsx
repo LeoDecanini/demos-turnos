@@ -22,6 +22,11 @@ export type ServiceItem = {
   depositRequired?: boolean
   depositValue?: number
   depositType?: "percent" | "fixed" | null
+  // Campos calculados del backend
+  depositAmountCalculated?: number
+  depositRequiredCalculated?: boolean
+  depositTypeCalculated?: "percent" | "fixed" | null
+  depositCurrencyCalculated?: string
 }
 
 type Props = {
@@ -102,9 +107,12 @@ export default function ServiceList({
                   Popular
                 </span>
               )}
-              {s.depositRequired && s.depositValue != null && s.depositType && (
+              {s.depositRequiredCalculated && s.depositAmountCalculated != null && s.depositTypeCalculated && (
                 <span className="inline-flex items-center text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">
-                  Seña: {money(s.depositValue, s.currency)}
+                  Seña:{" "}
+                  {s.depositTypeCalculated === "percent" && (s.depositValue ?? 0) > 0 && (s.depositValue ?? 0) < 100
+                    ? `${s.depositValue}%`
+                    : money(s.depositAmountCalculated, s.depositCurrencyCalculated || s.currency)}
                 </span>
               )}
             </div>
