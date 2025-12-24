@@ -46,6 +46,15 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import BranchMap from "@/components/BranchMap";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 // =======================================================
 // ===============  MODO ENFOCADO (NF)  ==================
@@ -104,12 +113,12 @@ function ActionInlineRouterNF({
 }
 
 /** ==== Administrar (mostrar opciones) ==== */
-function AdministrarInlineNF({ 
-    bookingId, 
-    serviceId, 
-    groupMode, 
-    modality 
-}: { 
+function AdministrarInlineNF({
+    bookingId,
+    serviceId,
+    groupMode,
+    modality
+}: {
     bookingId: string;
     serviceId?: string | null;
     groupMode?: boolean;
@@ -502,8 +511,8 @@ function RescheduleInlineNF({
     // Profesional FIJO proveniente del booking
     const [selectedProfessional, setSelectedProfessional] = React.useState<string>("any");
 
-    // Modalidad: inicializar con la prop o por defecto 'presencial'
-    const [selectedModality, setSelectedModality] = React.useState<'presencial' | 'virtual'>(modalityProp || 'presencial');
+    // 🔒 MODALIDAD FIJA: Solo virtual (hardcodeado)
+    const selectedModality = 'virtual'; // Antes era: useState(modalityProp || 'presencial')
 
     // 🆕 Obra social del booking original (para filtrar disponibilidad)
     const [bookingSocialWork, setBookingSocialWork] = React.useState<string | null>(null);
@@ -567,7 +576,7 @@ function RescheduleInlineNF({
                 params.set("modality", selectedModality || 'presencial');
                 // 🆕 CRÍTICO: Agregar obra social del booking (igual que en reserva normal)
                 params.set("socialWork", bookingSocialWork || "null");
-                
+
                 const url = `${API_BASE}/${slug}/available-days?${params.toString()}`;
                 console.log("📅 [RESCHEDULE] URL completa:", url);
                 console.log("📅 [RESCHEDULE] Params:", {
@@ -577,7 +586,7 @@ function RescheduleInlineNF({
                     modality: selectedModality || 'presencial',
                     socialWork: bookingSocialWork || 'null',
                 });
-                
+
                 const res = await fetch(url, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
                 const payload = getPayload(raw);
@@ -609,7 +618,7 @@ function RescheduleInlineNF({
         async (sid: string, _pid: string | "any" | undefined, date: Date) => {
             const dateStr = fmtDay(date);
             console.log("⏰ [RESCHEDULE] loadTimeSlots called:", {
-                serviceId: sid, 
+                serviceId: sid,
                 professionalId: _pid,
                 dateStr,
                 availableDays: availableDays.length,
@@ -637,15 +646,15 @@ function RescheduleInlineNF({
                 if (bookingSocialWork) {
                     params.set("socialWork", bookingSocialWork);
                 }
-                
+
                 console.log("⏰ [RESCHEDULE] Cargando slots con modalidad:", selectedModality || 'presencial', "fecha:", dateStr);
                 console.log("⏰ [RESCHEDULE] socialWork:", bookingSocialWork || 'ninguna');
-                
+
                 const res = await fetch(`${API_BASE}/${slug}/day-slots?${params.toString()}`, { cache: "no-store" });
                 const raw = await res.json().catch(() => ({}));
                 const payload = getPayload(raw);
                 const slots: string[] = Array.isArray(payload) ? payload : payload?.slots ?? payload?.items ?? [];
-                
+
                 console.log("⏰ [RESCHEDULE] Slots disponibles:", slots.length);
                 setTimeSlots(slots);
                 setSelectedTime("");
@@ -755,14 +764,15 @@ function RescheduleInlineNF({
                 });
 
                 if (profId) setSelectedProfessional(String(profId));
-                
-                // 🔥 IMPORTANTE: Actualizar modalidad desde el booking original
-                if (modality === 'virtual' || modality === 'presencial') {
-                    console.log("🎭 [RESCHEDULE] Estableciendo modalidad:", modality);
-                    setSelectedModality(modality);
-                } else {
-                    console.warn("⚠️ [RESCHEDULE] Modalidad no válida o undefined:", modality);
-                }
+
+                // � MODALIDAD FIJA: Ya no se actualiza desde el booking, siempre es 'virtual'
+                // if (modality === 'virtual' || modality === 'presencial') {
+                //     console.log("🎭 [RESCHEDULE] Estableciendo modalidad:", modality);
+                //     setSelectedModality(modality);
+                // } else {
+                //     console.warn("⚠️ [RESCHEDULE] Modalidad no válida o undefined:", modality);
+                // }
+                console.log("🎭 [RESCHEDULE] Modalidad fija: virtual");
 
                 // 🔥 IMPORTANTE: Guardar obra social del booking original
                 if (socialWork) {
@@ -1517,12 +1527,12 @@ export default function ReservarPage() {
     );
     const [profIdx, setProfIdx] = useState(0);
 
-    // Estado para modalidad (presencial/virtual)
-    const [modalityByService, setModalityByService] = useState<Record<string, 'presencial' | 'virtual'>>({});
-    // 🆕 Estado para guardar las modalidades disponibles por servicio
-    const [availableModalitiesByService, setAvailableModalitiesByService] = useState<Record<string, ('presencial' | 'virtual')[]>>({});
-    // Rastrear si el paso 4 (modalidad) fue saltado porque hay una única modalidad
-    const [step4WasSkipped, setStep4WasSkipped] = useState(false);
+    // 🔒 MODALIDAD FIJA: Solo virtual (comentado código de selección de modalidad)
+    // const [modalityByService, setModalityByService] = useState<Record<string, 'presencial' | 'virtual'>>({});
+    // const [availableModalitiesByService, setAvailableModalitiesByService] = useState<Record<string, ('presencial' | 'virtual')[]>>({});
+    // const [step4WasSkipped, setStep4WasSkipped] = useState(false);
+    // ⚡ MODO VIRTUAL ONLY: Siempre usamos 'virtual'
+    const modalityByService: Record<string, 'virtual'> = {};
 
     const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
     const [availableDays, setAvailableDays] = useState<string[]>([]);
@@ -1545,6 +1555,8 @@ export default function ReservarPage() {
     const [cuit, setCuit] = useState("");
     const [obraSocial, setObraSocial] = useState("");
     const [notes, setNotes] = useState("");
+    const [gender, setGender] = useState("");
+    const [birthdate, setBirthdate] = useState("");
 
     // 🏥 Obras sociales disponibles
     const [socialWorks, setSocialWorks] = useState<Array<{ _id: string; name: string }>>([]);
@@ -1666,6 +1678,10 @@ export default function ReservarPage() {
                 ? user.obraSocial._id
                 : (user.obraSocial || "");
             setObraSocial(String(obraSocialId));
+            // @ts-ignore
+            setGender(user.gender || "");
+            // @ts-ignore
+            setBirthdate(user.birthdate ? new Date(user.birthdate).toISOString().split('T')[0] : "");
         }
     }, [user]);
 
@@ -2136,7 +2152,7 @@ export default function ReservarPage() {
         srvId: string,
         profId?: string | "any",
         monthStr?: string,
-        modality?: 'presencial' | 'virtual'
+        modality?: 'presencial' | 'virtual' // ⚡ Ignorado: siempre se usa 'virtual'
     ) => {
         setLoadingDays(true);
         try {
@@ -2144,8 +2160,8 @@ export default function ReservarPage() {
             params.set("service", srvId);
             params.set("month", monthStr ?? fmtMonth(visibleMonth));
             if (profId && profId !== "any") params.set("professional", profId);
-            // Agregar modalidad si está presente, sino por defecto 'presencial'
-            params.set("modality", modality || modalityByService[srvId] || 'presencial');
+            // 🔒 MODALIDAD FIJA: Siempre virtual
+            params.set("modality", 'virtual');
 
             // 🆕 Agregar obra social seleccionada para filtrar días exclusivos
             // Si es null, enviamos "null" como string para indicar "sin obra social"
@@ -2194,7 +2210,7 @@ export default function ReservarPage() {
         srvId: string,
         profId: string | "any" | undefined,
         date: Date,
-        modality?: 'presencial' | 'virtual'
+        modality?: 'presencial' | 'virtual' // ⚡ Ignorado: siempre se usa 'virtual'
     ) => {
         const dateStr = fmtDay(date);
         if (!srvId || !availableDays.includes(dateStr)) return;
@@ -2204,8 +2220,8 @@ export default function ReservarPage() {
             params.set("service", srvId);
             params.set("date", dateStr);
             if (profId && profId !== "any") params.set("professional", profId);
-            // Agregar modalidad si está presente, sino por defecto 'presencial'
-            params.set("modality", modality || modalityByService[srvId] || 'presencial');
+            // 🔒 MODALIDAD FIJA: Siempre virtual
+            params.set("modality", 'virtual');
             // 🆕 Agregar obra social si está seleccionada
             if (selectedSocialWork) {
                 params.set("socialWork", selectedSocialWork);
@@ -2437,15 +2453,17 @@ export default function ReservarPage() {
                     cuit: cuit.trim(),
                     // 🆕 Usar selectedSocialWork del paso 1 en lugar de obraSocial del formulario
                     obraSocial: selectedSocialWork || undefined,
+                    gender: gender || undefined,
+                    birthdate: birthdate || undefined,
                 },
                 notes: notes?.trim() || undefined,
-                modality: modalityByService[selectedServices[0]] || 'presencial',
+                modality: 'virtual', // 🔒 Siempre virtual
                 socialWork: selectedSocialWork || undefined, // 🆕 Pasar obra social como campo separado
             };
 
             console.log('🔍 [Frontend] Enviando booking BULK con modalidad:', {
                 serviceId: selectedServices[0],
-                modality: modalityByService[selectedServices[0]],
+                modality: 'virtual', // 🔒 Siempre virtual
                 fallback: 'presencial',
                 finalModality: bulkPayload.modality,
                 modalityByService: modalityByService,
@@ -2487,6 +2505,8 @@ export default function ReservarPage() {
                         dni: dni.trim(),
                         cuit: cuit.trim(),
                         obraSocial: obraSocial.trim() || undefined,
+                        gender: gender || undefined,
+                        birthdate: birthdate || undefined,
                     },
                     notes: notes?.trim() || undefined,
                     modality: modalityByService[selectedServices[0]] || 'presencial',
@@ -2684,109 +2704,29 @@ export default function ReservarPage() {
     };
 
     // --- Avance automático al elegir profesional
-
     const goNextAfterProfessional = async () => {
-
         console.log("🚀 [goNextAfterProfessional] Iniciando...")
 
         if (profIdx + 1 < selectedServices.length) {
             setProfIdx((i) => i + 1);
         } else {
-            // 🔍 Consultar al backend qué modalidades están realmente disponibles
-            const firstServiceId = selectedServices[0];
-            const service = services.find(s => s._id === firstServiceId);
-
-            if (!service) {
-                console.log('⚠️ [goNextAfterProfessional] Servicio no encontrado, yendo a paso 6 (modalidad)');
-                setStep(6);
-                scrollToTop();
-                return;
-            }
-
-            try {
-                // Consultar al backend las modalidades reales desde CalendarWindows
-                const slug = SUBDOMAIN ?? (typeof window !== "undefined" ? window.location.hostname.split(".")[0] : "");
-                const professionalId = selection[firstServiceId]?.professionalId;
-                const branchId = selection[firstServiceId]?.branchId;
-
-                const params = new URLSearchParams();
-                params.set("service", firstServiceId);
-                if (professionalId && professionalId !== "any") params.set("professional", professionalId);
-                if (branchId) params.set("branch", branchId);
-
-                console.log('🔍 Consultando modalidades disponibles al backend...', {
-                    serviceId: firstServiceId,
-                    serviceName: service.name,
-                    professionalId,
-                    branchId
-                });
-
-                const res = await fetch(`${API_BASE}/${slug}/service-modalities?${params.toString()}`, {
-                    cache: "no-store"
-                });
-                const raw = await res.json().catch(() => ({}));
-                const payload = getPayload(raw);
-
-                let availableModalities: ('presencial' | 'virtual')[] = [];
-
-                if (Array.isArray(payload?.modalities) && payload.modalities.length > 0) {
-                    availableModalities = payload.modalities;
-                    console.log('✅ Modalidades obtenidas del backend:', availableModalities);
-                } else {
-                    // Fallback: usar allowPresencial/allowVirtual del servicio
-                    console.log('⚠️ Backend no retornó modalidades, usando configuración del servicio');
-                    const allowsPresencial = service.allowPresencial !== false; // true por defecto
-                    const allowsVirtual = service.allowVirtual === true; // false por defecto
-
-                    if (allowsPresencial) availableModalities.push('presencial');
-                    if (allowsVirtual) availableModalities.push('virtual');
-
-                    if (availableModalities.length === 0) {
-                        availableModalities.push('presencial');
-                    }
-                }
-
-                console.log('📊 Modalidades finales:', availableModalities);
-
-                // 🔥 Guardar las modalidades disponibles en el estado
-                setAvailableModalitiesByService(prev => ({
-                    ...prev,
-                    [firstServiceId]: availableModalities
-                }));
-
-                // ✨ Auto-seleccionar si solo hay una modalidad
-                if (availableModalities.length === 1) {
-                    const onlyModality = availableModalities[0];
-                    setModalityByService(prev => ({
-                        ...prev,
-                        [firstServiceId]: onlyModality
-                    }));
-                    console.log('✅ Solo una modalidad disponible, auto-seleccionando:', onlyModality);
-                }
-
-                // Ir al paso 6 (modalidad + calendario)
-                console.log('📋 Mostrando paso de fecha/hora con modalidad');
-                setStep(6);
-                scrollToTop();
-
-            } catch (error) {
-                console.error('❌ Error consultando modalidades:', error);
-                // En caso de error, ir al paso 6 para que el usuario elija
-                setStep(6);
-                scrollToTop();
-            }
+            // 🔒 MODALIDAD FIJA: Ya no consultamos modalidades, siempre es virtual
+            console.log('📋 Yendo directo a paso 6 (fecha/hora) - modalidad: virtual');
+            setStep(6);
+            scrollToTop();
         }
     };
 
     useEffect(() => {
         if (step !== 6 || !currentServiceId) return; // Paso 6 ahora incluye calendario
         const pid = selection[currentServiceId]?.professionalId || "any";
-        const modality = modalityByService[currentServiceId] || 'presencial';
+        // 🔒 MODALIDAD FIJA: Siempre virtual
+        const modality = 'virtual';
 
         // Cargar disponibilidad del mes actual solamente
         void loadAvailableDays(currentServiceId, pid, fmtMonth(visibleMonth), modality);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [step, currentServiceId, selection[currentServiceId]?.professionalId, modalityByService[currentServiceId]]);
+    }, [step, currentServiceId, selection[currentServiceId]?.professionalId]); // ⚡ Removido: modalityByService (siempre virtual)
 
     useEffect(() => {
         if (step !== 3) return;
@@ -4311,99 +4251,39 @@ export default function ReservarPage() {
                                             );
                                         })()}
 
-                                        {/* Modalidad */}
-                                        {(() => {
-                                            const modality = modalityByService[currentServiceId];
-                                            if (!modality) return null;
-                                            return (
-                                                <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                                                        <span className="text-lg">{modality === 'virtual' ? '💻' : '🏢'}</span>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs text-gray-500 font-medium">Modalidad</p>
-                                                        <p className="font-semibold text-gray-900">{modality === 'virtual' ? 'Virtual' : 'Presencial'}</p>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })()}
+                                        {/* Modalidad - 🔒 SIEMPRE VIRTUAL */}
+                                        <div className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200">
+                                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                                                <span className="text-lg">💻</span>
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-xs text-gray-500 font-medium">Modalidad</p>
+                                                <p className="font-semibold text-gray-900">Virtual</p>
+                                            </div>
+                                        </div>
                                     </CardContent>
                                 </Card>
                             </div>
 
                             {/* Columna Derecha: Calendario + Tabs + Horarios */}
                             <div className="space-y-6 col-span-2">
-                                {/* Tabs: Presencial / Virtual - 🆕 CAMBIO 2: Mostrar solo las modalidades disponibles */}
-                                {(() => {
-                                    // 🔥 Usar las modalidades disponibles del estado (ya consultadas del backend)
-                                    const availableModalities = availableModalitiesByService[currentServiceId] || [];
-                                    const hasPresencial = availableModalities.includes('presencial');
-                                    const hasVirtual = availableModalities.includes('virtual');
-                                    const hasBothModalities = hasPresencial && hasVirtual;
-
-                                    // 🐛 Debug: mostrar valores
-                                    console.log('🔍 [TABS DEBUG]', {
-                                        serviceId: currentServiceId,
-                                        serviceName: currentService?.name,
-                                        availableModalities,
-                                        hasPresencial,
-                                        hasVirtual,
-                                        hasBothModalities
-                                    });
-
-                                    // 🆕 CAMBIO 2: Si solo tiene una modalidad, no mostrar tabs (ya está auto-seleccionada)
-                                    if (!hasBothModalities) {
-                                        console.log('✨ Solo una modalidad disponible, no se muestran tabs');
-                                        return null;
-                                    }
-
-                                    return (
-                                        <div className="flex gap-2 justify-start">
-                                            {hasPresencial && (
-                                                <button
-                                                    type="button"
-                                                    className={cn(
-                                                        "px-8 py-3 font-semibold transition-all rounded-lg border-2",
-                                                        modalityByService[currentServiceId] === 'presencial' || !modalityByService[currentServiceId]
-                                                            ? "bg-green-500 border-green-500 text-white shadow-md"
-                                                            : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
-                                                    )}
-                                                    onClick={async () => {
-                                                        setModalityByService(prev => ({ ...prev, [currentServiceId]: 'presencial' }));
-                                                        // Recargar días disponibles con nueva modalidad
-                                                        setSelectedDateObj(undefined);
-                                                        setTimeSlots([]);
-                                                        setSelectedTimeBlock(null);
-                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'presencial');
-                                                    }}
-                                                >
-                                                    📍 Presencial
-                                                </button>
-                                            )}
-                                            {hasVirtual && (
-                                                <button
-                                                    type="button"
-                                                    className={cn(
-                                                        "px-8 py-3 font-semibold transition-all rounded-lg border-2",
-                                                        modalityByService[currentServiceId] === 'virtual'
-                                                            ? "bg-green-500 border-green-500 text-white shadow-md"
-                                                            : "border-gray-200 text-gray-600 hover:border-green-300 hover:bg-green-50"
-                                                    )}
-                                                    onClick={async () => {
-                                                        setModalityByService(prev => ({ ...prev, [currentServiceId]: 'virtual' }));
-                                                        // Recargar días disponibles con nueva modalidad
-                                                        setSelectedDateObj(undefined);
-                                                        setTimeSlots([]);
-                                                        setSelectedTimeBlock(null);
-                                                        await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(visibleMonth), 'virtual');
-                                                    }}
-                                                >
-                                                    💻 Virtual
-                                                </button>
-                                            )}
-                                        </div>
-                                    );
-                                })()}
+                        {/* 🔒 MODALIDAD FIJA: SOLO VIRTUAL - Tabs de modalidad comentados */}
+                        {/* 
+                        {(() => {
+                            const availableModalities = availableModalitiesByService[currentServiceId] || [];
+                            const hasPresencial = availableModalities.includes('presencial');
+                            const hasVirtual = availableModalities.includes('virtual');
+                            const hasBothModalities = hasPresencial && hasVirtual;
+                            if (!hasBothModalities) return null;
+                            
+                            return (
+                                <div className="flex gap-2 justify-start">
+                                    {hasPresencial && (...)}
+                                    {hasVirtual && (...)}
+                                </div>
+                            );
+                        })()}
+                        */}
 
                                 {/* Calendario */}
                                 <Card className="py-0">
@@ -4436,7 +4316,7 @@ export default function ReservarPage() {
                                                                 setSelectedDateObj(undefined);
                                                                 setTimeSlots([]);
                                                                 setSelectedTimeBlock(null);
-                                                                await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), modalityByService[currentServiceId] || 'presencial');
+                                                                await loadAvailableDays(currentServiceId, currentProfId, fmtMonth(m), 'virtual'); // 🔒 Siempre virtual
                                                             }}
                                                             onSelect={async (date) => {
                                                                 setSelectedDateObj(date || undefined);
@@ -4769,6 +4649,36 @@ export default function ReservarPage() {
                                                 {errors.cuit && (
                                                     <p className="mt-1 text-sm text-red-600">{errors.cuit}</p>
                                                 )}
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                                <div className="flex flex-col gap-2">
+                                                    <Label className="text-sm font-semibold text-gray-700">
+                                                        Género (opcional)
+                                                    </Label>
+                                                    <Select value={gender} onValueChange={setGender}>
+                                                        <SelectTrigger className="h-9 w-full rounded-xl border-2 border-gray-200">
+                                                            <SelectValue placeholder="Seleccionar..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="No definido">No definido</SelectItem>
+                                                            <SelectItem value="Masculino">Masculino</SelectItem>
+                                                            <SelectItem value="Femenino">Femenino</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                <div className="flex flex-col gap-2">
+                                                    <Label className="text-sm font-semibold text-gray-700">
+                                                        Fecha de nacimiento (opcional)
+                                                    </Label>
+                                                    <Input
+                                                        type="date"
+                                                        value={birthdate}
+                                                        onChange={(e) => setBirthdate(e.target.value)}
+                                                        className="h-9 rounded-xl border-2 border-gray-200"
+                                                    />
+                                                </div>
                                             </div>
 
                                             {/* 🚫 Ya NO mostramos el select de obra social porque se eligió en el paso 1 */}
