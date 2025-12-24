@@ -77,7 +77,7 @@ export default function PerfilPage() {
           <nav className="space-y-2">
             <SidebarBtn active={tab === 'perfil'} onClick={() => setTab('perfil')} label="Perfil" />
             <SidebarBtn active={tab === 'reservas'} onClick={() => setTab('reservas')} label="Reservaciones" />
-            <SidebarBtn active={tab === 'declaraciones'} onClick={() => setTab('declaraciones')} label="Declaraciones Juradas" />
+            <SidebarBtn active={tab === 'declaraciones'} onClick={() => setTab('declaraciones')} label="Formularios" />
           </nav>
           <hr className="my-4 border-slate-200" />
           <button
@@ -586,7 +586,7 @@ function DeclaracionesView() {
   if (loading) {
     return (
       <div>
-        <h2 className="text-lg md:text-xl font-semibold text-slate-900">Declaraciones Juradas</h2>
+        <h2 className="text-lg md:text-xl font-semibold text-slate-900">Formularios</h2>
         <p className="text-slate-500 text-xs md:text-sm mt-1">Tus formularios de salud</p>
         <div className="mt-6 space-y-3">
           {[1, 2].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
@@ -599,7 +599,7 @@ function DeclaracionesView() {
 
   return (
     <div>
-      <h2 className="text-lg md:text-xl font-semibold text-slate-900">Declaraciones Juradas</h2>
+      <h2 className="text-lg md:text-xl font-semibold text-slate-900">Formularios</h2>
       <p className="text-slate-500 text-xs md:text-sm mt-1">
         {pendingDeclarations.length} pendiente{pendingDeclarations.length !== 1 ? 's' : ''}, {completedDeclarations.length} completada{completedDeclarations.length !== 1 ? 's' : ''}
       </p>

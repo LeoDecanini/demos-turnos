@@ -4462,11 +4462,6 @@ export default function ReservarPage() {
                                 const nextIdx = scheduleIdx + 1;
                                 if (!selection[currentServiceId]?.date || !selection[currentServiceId]?.time) return;
 
-                                // Asegurar que la modalidad esté guardada
-                                if (!modalityByService[currentServiceId]) {
-                                    setModalityByService(prev => ({ ...prev, [currentServiceId]: 'presencial' }));
-                                }
-
                                 if (nextIdx < selectedServices.length) {
                                     setScheduleIdx(nextIdx);
                                     resetCalendar();
